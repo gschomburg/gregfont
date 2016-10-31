@@ -1,12 +1,12 @@
 var	data = {
     "name": "Kosciuszko",
-    "file": "kosciuszko_all_20x60.ai",
+    "file": "kosciuszko_all_20x60.svg",
     "baseWidth": 20,
     "baseHeight": 60,
     "monospaced": true,
     "baseLetterSpacing": 28,
     "baseLineHeight": 90,
-    "baseLetterSpaceUnit":10,
+    "baseLetterSpaceUnit":0,
     "charLetterSpacing": {
 	    "a":{"sidebearing":[0.5, 0.5], "kerningpairs":{}},
 	    "b":{"sidebearing":[0.5, 0.5], "kerningpairs":{}},

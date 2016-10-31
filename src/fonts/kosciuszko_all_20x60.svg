@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 19.2.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 20 60" style="enable-background:new 0 0 20 60;" xml:space="preserve">
+<style type="text/css">
+	.st0{display:none;}
+	.st1{display:inline;fill:none;stroke:#231F20;stroke-miterlimit:2;}
+	.st2{display:inline;}
+	.st3{fill:none;stroke:#231F20;stroke-miterlimit:2;}
+	.st4{display:inline;fill:none;stroke:#231F20;stroke-miterlimit:10;}
+</style>
+<g id="char-z" class="st0">
+	<polyline class="st1" points="0,30 20,30 0,60 20,60 	"/>
+</g>
+<g id="char-y" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,30 10,60 20,30 		"/>
+		<line class="st3" x1="5" y1="75" x2="10" y2="60"/>
+	</g>
+</g>
+<g id="char-x" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="30" x2="20" y2="60"/>
+		<line class="st3" x1="20" y1="30" x2="0" y2="60"/>
+	</g>
+</g>
+<g id="char-w" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,30 5,60 10,30 		"/>
+		<polyline class="st3" points="10,30 15,60 20,30 		"/>
+	</g>
+</g>
+<g id="char-v" class="st0">
+	<polyline class="st1" points="0,30 10,60 20,30 	"/>
+</g>
+<g id="char-u" class="st0">
+	<g class="st2">
+		<line class="st3" x1="20" y1="29.8" x2="20" y2="59.8"/>
+		<polyline class="st3" points="0,29.8 0,59.8 13.8,59.8 20,52.2 		"/>
+	</g>
+</g>
+<g id="char-t" class="st0">
+	<g class="st2">
+		<line class="st3" x1="10" y1="0" x2="10" y2="60"/>
+		<line class="st3" x1="0" y1="30" x2="20" y2="30"/>
+	</g>
+</g>
+<g id="char-s" class="st0">
+	<polyline class="st1" points="20,30 0,30 0,37.5 20,37.5 20,60 0,60 	"/>
+</g>
+<g id="char-r" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="30" x2="0" y2="60"/>
+		<polyline class="st3" points="20,30 6.2,30 0,45 		"/>
+	</g>
+</g>
+<g id="char-q" class="st0">
+	<g class="st2">
+		<polygon class="st3" points="20,52.5 10,60 0,52.5 0,30 20,30 		"/>
+		<polyline class="st3" points="20,52.5 20,75 26.2,75 		"/>
+	</g>
+</g>
+<g id="char-p" class="st0">
+	<g class="st2">
+		<polygon class="st3" points="20,52.5 10,60 0,52.5 0,30 20,30 		"/>
+		<line class="st3" x1="0" y1="52.5" x2="0" y2="75"/>
+	</g>
+</g>
+<g id="char-o" class="st0">
+	<polygon class="st1" points="20,52.5 10,60 0,52.5 0,30 20,30 	"/>
+</g>
+<g id="char-n" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="60" x2="0" y2="30"/>
+		<polyline class="st3" points="20,60 20,30 10,30 0,37.5 		"/>
+	</g>
+</g>
+<g id="char-m" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="60" x2="0" y2="30"/>
+		<polyline class="st3" points="10,60 10,30 5,30 0,37.5 		"/>
+		<polyline class="st3" points="20,60 20,30 15,30 10,37.5 		"/>
+	</g>
+</g>
+<g id="char-l" class="st0">
+	<polyline class="st1" points="0,0 10,7.5 10,60 20,60 	"/>
+</g>
+<g id="char-k" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="0" x2="0" y2="60"/>
+		<polyline class="st3" points="20,15 10,30 0,30 		"/>
+		<line class="st3" x1="10" y1="30" x2="20" y2="60"/>
+	</g>
+</g>
+<g id="char-j" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,75 5,75 10,68.8 10,30 20,30 		"/>
+		<line class="st3" x1="10" y1="25" x2="10" y2="15"/>
+	</g>
+</g>
+<g id="char-i" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,30 10,30 10,60 20,60 		"/>
+		<line class="st3" x1="10" y1="25" x2="10" y2="15"/>
+	</g>
+</g>
+<g id="char-h" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,30 20,30 20,60 		"/>
+		<line class="st3" x1="0" y1="0" x2="0" y2="60"/>
+	</g>
+</g>
+<g id="char-g" class="st0">
+	<polyline class="st1" points="20,52.5 10,60 0,52.5 0,30 20,30 20,66.2 20,75 10,75 	"/>
+</g>
+<g id="char-f" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="20,7.5 10,16.2 10,60 		"/>
+		<line class="st3" x1="0" y1="30" x2="20" y2="30"/>
+	</g>
+</g>
+<g id="char-e" class="st0">
+	<polyline class="st1" points="20,52.5 10,60 0,52.5 0,30 20,30 20,45 0,45 	"/>
+</g>
+<g id="char-d" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="20,30 0,30 0,52.5 10,60 20,52.5 		"/>
+		<line class="st3" x1="20" y1="0" x2="20" y2="60"/>
+	</g>
+</g>
+<g id="char-c_1_" class="st0">
+	<polyline class="st1" points="20,45 20,52.5 10,60 0,52.5 0,30 20,30 20,35 	"/>
+</g>
+<g id="char-b" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,30 20,30 20,52.5 10,60 0,52.5 		"/>
+		<line class="st3" x1="0" y1="0" x2="0" y2="60"/>
+	</g>
+</g>
+<g id="char-a" class="st0">
+	<polyline class="st1" points="20,52.2 10,59.8 0,52.2 0,29.8 20,29.8 20,60 	"/>
+</g>
+<g id="char-Z" class="st0">
+	<polyline class="st1" points="0,0 20,0 0,60 20,60 	"/>
+</g>
+<g id="char-Y" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="0" x2="10" y2="16.2"/>
+		<line class="st3" x1="20" y1="0" x2="10" y2="16.2"/>
+		<line class="st3" x1="10" y1="16.2" x2="10" y2="60"/>
+	</g>
+</g>
+<g id="char-X" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,0 10,30 16.2,60 		"/>
+		<polyline class="st3" points="20,0 10,30 3.8,60 		"/>
+	</g>
+</g>
+<g id="char-W" class="st0">
+	<polyline class="st1" points="0,0 5,60 10,15 15,60 20,0 	"/>
+</g>
+<g id="char-V" class="st0">
+	<polyline class="st1" points="0,0 0,15 10,60 20,15 20,0 	"/>
+</g>
+<g id="char-U" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,0 0,60 10,60 20,52.5 20,0 		"/>
+		<line class="st3" x1="20" y1="52.5" x2="20" y2="60"/>
+	</g>
+</g>
+<g id="char-T" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="0" x2="20" y2="0"/>
+		<line class="st3" x1="10" y1="0" x2="10" y2="60"/>
+	</g>
+</g>
+<g id="char-S" class="st0">
+	<polyline class="st1" points="20,5 20,0 0,0 0,15 20,15 20,60 0,60 0,55 	"/>
+</g>
+<g id="char-R" class="st0">
+	<g class="st2">
+		<line class="st3" x1="10.1" y1="45" x2="19.4" y2="60"/>
+		<polyline class="st3" points="0,60 0,0 20,0 20,30 10.1,45 0,45 		"/>
+	</g>
+</g>
+<g id="char-Q" class="st0">
+	<g class="st2">
+		<polygon class="st3" points="10,0 0,0 0,52.5 10,60 20,52.5 20,0 		"/>
+		<line class="st3" x1="20" y1="60" x2="10" y2="45"/>
+	</g>
+</g>
+<g id="char-P" class="st0">
+	<polyline class="st1" points="0,60 0,0 20,0 20,30 10,45 0,45 	"/>
+</g>
+<g id="char-O" class="st0">
+	<polygon class="st1" points="10,0 0,0 0,52.5 10,60 20,52.5 20,0 	"/>
+</g>
+<g id="char-N" class="st0">
+	<g class="st2">
+		<line class="st3" x1="20" y1="0" x2="20" y2="60"/>
+		<polyline class="st3" points="0,60 0,0 20,45 		"/>
+	</g>
+</g>
+<g id="char-M" class="st0">
+	<polyline class="st1" points="0,60 0,0 10,45 20,0 20,60 	"/>
+</g>
+<g id="char-L" class="st0">
+	<polyline class="st1" points="0,0 0,60 20,60 	"/>
+</g>
+<g id="char-K" class="st0">
+	<g class="st2">
+		<line class="st3" x1="0" y1="0" x2="0" y2="60"/>
+		<polyline class="st3" points="20,0 10,15 0,15 		"/>
+		<line class="st3" x1="20" y1="60" x2="10" y2="15"/>
+	</g>
+</g>
+<g id="char-J" class="st0">
+	<polyline class="st1" points="20,0 20,52.5 10,60 0,52.5 0,45 	"/>
+</g>
+<g id="char-I" class="st0">
+	<g class="st2">
+		<line class="st3" x1="10" y1="60" x2="10" y2="0"/>
+		<line class="st3" x1="0" y1="60" x2="20" y2="60"/>
+		<line class="st3" x1="0" y1="0" x2="20" y2="0"/>
+	</g>
+</g>
+<g id="char-H" class="st0">
+	<g class="st2">
+		<path class="st3" d="M20,45"/>
+		<line class="st3" x1="0" y1="60" x2="0" y2="0"/>
+		<line class="st3" x1="20" y1="60" x2="20" y2="0"/>
+		<line class="st3" x1="0" y1="15" x2="20" y2="15"/>
+	</g>
+</g>
+<g id="char-G" class="st0">
+	<polyline class="st1" points="10,15 20,15 20,52.5 10.6,60 0,52 0,0 20,0 20,5 	"/>
+</g>
+<g id="char-F" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,60 0,0 20,0 		"/>
+		<path class="st3" d="M0,45"/>
+		<line class="st3" x1="0" y1="15" x2="10" y2="15"/>
+	</g>
+</g>
+<g id="char-E" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="20,0 0,0 0,60 20,60 		"/>
+		<path class="st3" d="M0,15"/>
+		<line class="st3" x1="0" y1="15" x2="10" y2="15"/>
+	</g>
+</g>
+<g id="char-D" class="st0">
+	<polygon class="st4" points="10,0 0,0 0,60 10,60 20,52.5 20,15 	"/>
+</g>
+<g id="char-C" class="st0">
+	<polyline class="st1" points="20,45 20,52.5 10,60 0,52.5 0,0 20,0 20,5 	"/>
+</g>
+<g id="char-B" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="9.6,14.8 19.6,30 20,52.5 10,60 0,60 0,0 20,0 20,7.5 0,22.5 		"/>
+	</g>
+</g>
+<g id="char-A" class="st0">
+	<g class="st2">
+		<polyline class="st3" points="0,60 7.5,0 15,0 20,60 		"/>
+		<line class="st3" x1="5.6" y1="15" x2="16.2" y2="15"/>
+	</g>
+</g>
+</svg>

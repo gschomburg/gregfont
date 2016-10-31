@@ -1,6 +1,6 @@
 var	data = {
     "name": "Nassau",
-    "file": "nassau_all_60x60.ai",
+    "file": "nassau_all_60x60.svg",
     "baseWidth": 60,
     "baseHeight": 60,
     "monospaced": false,

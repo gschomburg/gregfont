@@ -2,8 +2,45 @@
 <html>
 	<head>
 		<title>greg font</title>
+		<link rel="stylesheet" type="text/css" href="style/main.css">
 	</head>
 	<body>
-		gregfont
+	<canvas id="fontView" resize="true"></canvas>
+	<div id="settings-panel">
+		gregfont<br/>
+		<form id="settings">
+			<div class="col">
+				<label>Text</label>
+				<textarea id="text-field"></textarea>
+			</div>
+			<div class="col">
+				<label>Font</label>
+				<select id="font-select"name="font">
+					<option value="0" selected>SUTTON</option> 
+					<option value="1">NASSAU</option>
+					<option value="2">KOSCIUSZKO</option>
+				</select>
+				<label>Letter Spacing</label>
+				<input id="letter-spacing" type="number" value="45">
+				<label>Line Height</label>
+				<input id="line-height" type="number" value="90">
+				<label>Monospace</label>
+				<input id="monospace" type="checkbox" checked>
+				<label>Spacing Base</label>
+				<input id="spacing-base" type="number" value="6">
+				<label>Stroke Weight</label>
+				<input id="stroke-weight" type="number" value="2">
+				<button type="button" id="build">BUILD</button>
+				<button type="button" id="export">EXPORT SVG</button>
+			</div>
+		</form>
+	</div>
+	
+
+	<script type="text/javascript" src="libs/jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" src="libs/paper-full.min.js"></script>	
+	<script type="text/paperscript" src="js/main.js" canvas="fontView"></script>
+	
 	</body>
+
 </html>

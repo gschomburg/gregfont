@@ -1,0 +1,49 @@
+body{
+	background-color: #F7F7F7;
+	color: #111111;
+	margin: 0;
+    overflow: hidden;
+    height: 100%;
+}
+canvas[resize] {
+    width: 100%;
+    height: 100%;
+}
+#settings-panel{
+	width: 800px;
+	min-height: 300px;
+	background-color: #333333;
+	color: white;
+	display: block;
+	position:absolute;
+	bottom: 0px;
+
+	padding: 10px 10px 10px 10px;
+	box-sizing: border-box;
+}
+#settings{
+	display: flex;
+}
+#settings-panel .col{
+	flex: auto;
+	box-sizing: border-box;
+	padding-right: 10px;
+}
+#fontView{
+	// border: 1px solid red;
+	// display: block;
+	position:absolute;
+}
+#text-field{
+	width: 100%;
+	height: 150px;
+	position: relative;
+	resize: none;
+	box-sizing: border-box;
+}
+label{
+	display: block;
+}
+button{
+	display: block;
+}

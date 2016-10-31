@@ -1,6 +1,6 @@
 var	data = {
     "name": "Sutton",
-    "file": "sutton_all_30x60.ai",
+    "file": "sutton_all_30x60.svg",
     "baseWidth": 30,
     "baseHeight": 60,
     "monospaced": true,
