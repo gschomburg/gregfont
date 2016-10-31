@@ -1,0 +1,201 @@
+ABCDEFGHIJ
+KLMNOPQRS
+TUVWXYZ
+abcdefghij
+klmnopqrs
+tuvwxyz
+0123456789
+~!?.,<>:;'"
+[]{}\/|+=-*_-
+
+THE QUICK BROWN FOX JUMPED
+OVER THE LAZY DOG'S BACK.
+The quick brown fox jumped
+over the lazy dog's back.
+1234567890
+
+ABCDEFGHIJ
+KLMNOPQRS
+TUVWXYZ
+0123456789
+
+
+kerning pairs
+
+AAABACADAEAFAGAHA
+AIAJAKALAMANAOAPA
+AQARASATAUAVAWA
+THE QUICK BROWN FOX JUMPED
+OVER THE LAZY DOGS BACK
+AARON ABANDON ACADEMY ADAM
+AENEAS AFFIRM FANG BAG GAUGE
+AHOY HANDSOME AILEEN MARTIAN
+TAJIK JACOBTAKE KAART ALONSO
+LAMDA AMORE MARS AND NASA
+SHAOLIN MOAN APOLLO PANAMA
+AQUA QAHIR ARABIC ASSASSIN
+LATIN ISTANBUR AUNT JUANITA
+AVION ADVANCE SAW WAND SAX
+XAVIER CRAYON YARD AZUR CABEZA
+LAWYER
+
+justice jury
+janitor
+jackle jerk
+ajax
+ijijij
+jijiji
+OjKjLjMjWj
+Ajax KjGjWjQjSjZjXjCjVjBjNj
+RjTjTjIjLjOjPjPjNj1j2j3j4j5j6j7j8j9j0
+
+PAIRS
+
+AG AC AJ AO AQ AU AV AW AY AT AP
+GG GC GJ GO GQ GU GV GW GY GT GP
+CG CC CJ CO CQ CU CV CW CY CT CP
+JG JC JJ JO JQ JU JV JW JY JT JP
+OG OC OJ OO OQ OU OV OW OY OT OP
+QG QC QJ QO QQ QU QV QW QY QT QP
+UG UC UJ UO UQ UU UV UW UY UT UP
+VG VC VJ VO VQ VU VV VW VY VT VP
+WG WC WJ WO WQ WU WV WW WY WT WP
+YG YC YJ YO YQ YU YV YW YY YT YP
+PG PC PJ PO PQ PU PV PW PY PT PP PA
+TG TC TJ TO TQ TU TV TW TY TT TS TP
+
+EZ EI ET EY EJ
+FZ FI FT FY FJ
+TL TE TJ TZ
+QT QZ
+
+ag ac aj ao aq au av aw ay at ap
+gg gc gj go gq gu gv gw gy gt gp
+cg cc cj co cq cu cv cw cy ct cp
+jg jc jj jo jq ju jv jw jy jt jp
+og oc oj oo oq ou ov ow oy ot op
+qg qc qj qo qq qu qv qw qy qt qp
+ug uc uj uo uq uu uv uw uy ut up
+vg vc vj vo vq vu vv vw vy vt vp
+wg wc wj wo wq wu wv ww wy wt wp
+yg yc yj yo yq yu yv yw yy yt yp
+pg pc pj po pq pu pv pw py pt pp pa
+tg tc tj to tq tu tv tw ty tt ts tp
+
+ez ei et ey ej
+fz fi ft fy fj
+tl te tj tz
+qt qz
+
+
+NUMBERS
+1234567890
+1115547888
+9921334117
+7765847723
+7171727273
+8181894838
+6667677696
+24252623272829
+121314151617181910
+007010203040506070809
+
+
+Initial Caps
+Aaron Able Ache Advert
+Aegis Aft Age Ahe Ails 
+Ajar Akin Aloe Amish And
+Aone Ape Aqua Are Ascot
+Atlas Auto Avon Awe Axe 
+Aye Azo
+Band Bet Bing Bloat Bog
+Bring Bumpy
+Carry Celar Cinthia Cope Crap 
+Cult Cycle
+Dark Demon Dingy Dope Dumb 
+Each Eels Einar Eons Euchre 
+Ever Ewer Exit Eyes
+Fact Fever Fire Fıne Font Framer
+Fur Fyrd Folder Funk 
+Gayle Gentle Girl Gnome
+Gonot Grinning Gulf Gwen Gyro 
+Harder Help Hilton Honor Hunk Hymn
+Ian Ieo Iggy Iillian Ion Iugia Iyaaa
+Jacky Jester Jimmy Joint Junk  
+Kangaroo Keep Kill Kline
+Kop Kudees Kwick Kva Kyle 
+Karn Koff Kudos
+Lay Learned Listing Load Lung Lw Lynch 
+Mail Meal Minx Mode Music Myth
+Nail Next Nile Nooky Numb 
+Oatmeal Oer Offer Ogor Oink Oolong Out Over Oyster
+Painter Peal Pile Pıne Pjb Plaster
+Pointer Printer Putt Pygmy Punk Pal Pil Pol
+Qanat Qels Qix Qon Quest Qi
+Rate Red Right Royal Run Ryal Ran Road Rung
+Sallie Scuzz Sensation Shell Sink Smelly Snowball Soul 
+Spoke Sqish Stoner Sung Svelt Swap Symantic
+Tail Teal Them Timer Tıme Toll Trustee 
+Tsing Tumbs Twizzlers Typing Tap Torn Tuff Ty
+Uarco Ue Ui Umbrella Under Uo 
+Upper Ursula User Utterly Uu Uv Uwe
+Vain Vc Veto Vine Vıne Vlad
+Vow Vroor Vs Vulgar Vying 
+Vamping Voter Val Va Vel Vol Vy
+Wale Wet What Window Wınd 
+Wm Wow Wren Wsa Wte Wud 
+Wxe Wynde Wane Wal Wa Wol Wy Wul
+Xanth Xelo Xi Xo Xu Xylo Xe Xo
+Yale Yddes Yearling Yicks Yıeld 
+Yoyo Ypring Yrs Ys Yuck Yviye Yz 
+Zanzabar Zellis Zion Zope Zulu Zyle
+
+
+Lowercase
+
+stop go pluck wane wax exit
+dance cycle duck drake dole
+nice welcome lawyer lance layer
+music muscle mail meal mode myth
+mist many much how do you yack
+off fill kick llama Lima
+ask answer amazon aft aqua
+aegis avon are cope crap cult
+truck tractor tail them royal
+putt quest typing tap thumbs
+utter fat jack just in time
+jail jerk bjork baja kluje major
+mujher
+jury journal joust jotter jitter
+ajax ancient animal zam zim zebra
+
+1234567890
+1115547888
+9921334117
+7765847723
+7171727273
+8181894838
+6667677696
+24252623272829
+121314151617181910
+007010203040506070809
+
+Readability + Punctuation
+
+Technology’s new rules (link in Chinese) could, if they were enforced as written, essentially shut down China as a market for foreign news outlets, publishers, gaming companies, information providers, and entertainment companies starting on March 10. Issued in conjunction with the State Administration of Press, Publication, Radio, Film and Television (SARFT), they set strict new guidelines for what can be published online, and how that publisher should conduct business in China.
+
+“Sino-foreign joint ventures, Sino-foreign cooperative ventures, and foreign business units shall not engage in online publishing services,” the rules state. Any publisher of online content, including “texts, pictures, maps, games, animations, audios, and videos,” will also be required to store their “necessary technical equipment, related servers, and storage devices” in China, the directive says.
+
+Facebook are clamoring to get in—all drawn by the country’s massive online population, estimated at nearly 700 million people. But the new rules would allow only 100% Chinese companies to produce
+“SARFT has many duties, but with respect to the internet its main task is to regulate online audio and video content, which includes administering the ‘License for Publication of Audio-Visual Programs Through Information Networks,'” (link in Chinese) he said. MIIT, the regulation’s other drafter, “is the nation’s principal internet regulator and the primary body responsible for licensing and registering Chinese websites.”
+
+ It’s okay to share “weekend wino” memes with your girlfriends, but the addict
+ According to a 2008 study in The Gerontologist there is a “commonly held view that willpower and personal strength alone is needed to control addiction.” This myth is perpetuated.
+
+Even so, they will be tough to enforce, Ying Chan, the director of the journalism program at the University of Hong Kong, told Quartz. “Using rules of the print age to govern the internet does not work,” she said.
+I stopped to visit my 65-year-old mother and her 58-year-old husband.
+I’d have thought I was looking at the early phases of dementia or maybe Parkinson’s. Instead, I suspected that his symptoms were the result of pills–most likely prescribed by a doctor who.
+
+“The magnitude of the association between social relationships and mortality has now been established,” according to a 2008 meta-analysis study in PLOS Medicine, which pulled data from 308,849 individuals.
+
+“Loneliness will make you sicker faster and exacerbates all the bad things about being by yourself,” agrees Kori Novak, a gerontologist and researcher at Oxford University.

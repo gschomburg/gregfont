@@ -199,7 +199,15 @@ function init(){
 function testFont(){
 	console.log('go', FONT_DATA[0].paperSymbols);
 	resetRenderSettings();
-	renderType("Hello World!\nHELLO,WORLD")
+	renderType("ABCDEFGHIJ\n"+
+"KLMNOPQRS\n"+
+"TUVWXYZ\n"+
+"abcdefghij\n"+
+"klmnopqrs\n"+
+"tuvwxyz\n"+
+"0123456789\n"+
+"~!?.,<>:;'\"\n"+
+"[]{}\\/|+=-*_-");
 }
 
 init();
