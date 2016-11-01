@@ -1,12 +1,31 @@
+/*
+TODO/FEATURES
+
+font size base 60 tall 20 - 120
+end cap style?
+word wrap + word wrap distance
+
+alignment? left right ... center?
+auto update on change?
+*/
+
+
+
 var FONTS_PATH="fonts/";
 var FONT_PATHS=["sutton.js", "nassau.js", "kosciuszko.js"];
 var FONT_DATA=[];
 
 var CURRENT_FONT_ID=0;
 
-console.log('js');
-
-reset();
+var specimen = "ABCDEFGHIJ\n"+
+				"KLMNOPQRS\n"+
+				"TUVWXYZ\n"+
+				"abcdefghij\n"+
+				"klmnopqrs\n"+
+				"tuvwxyz\n"+
+				"0123456789\n"+
+				"~!?.,<>:;'\"\n"+
+				"[]{}\\/|+=-*_-";
 
 //UI
 /**************************************/
@@ -18,19 +37,25 @@ $( "#build" ).click(function() {
 });
 
 $( "#font-select" ).change(function() {
-	console.log($( this ).val());
   	CURRENT_FONT_ID = $( this ).val();
   	resetRenderSettings();
+});
+
+$( "#font-scale" ).change(function() {
+  $( "#font-scale" ).val( clamp( $( "#font-scale" ).val(), .333, 2) );
 });
 
 function getRenderSettings(){
 	//get the render settings from the form
 	var settings={
+		strokeWeight: Number($( '#stroke-weight' ).val()),
+		fontSize: Number($( '#font-scale' ).val()),
+		wordWrap: $( '#word-wrap-toggle' ).prop('checked'),
+		wordWrapWidth: Number($( '#word-wrap-width' ).val()),
 		letterSpacing: Number($( '#letter-spacing' ).val()),
 		lineHeight: Number($( '#line-height' ).val()),
 		monospace: $( '#monospace' ).prop('checked'),
 		spacingBase: Number($( '#spacing-base' ).val()),
-		strokeWeight: Number($( '#stroke-weight' ).val()),
 	};
 	return settings;
 }
@@ -49,35 +74,44 @@ function resetRenderSettings(){
 /**************************************/
 function renderType(stringText){
 	var renderSettings=getRenderSettings();
-	console.log("renderSettings",renderSettings);
 	var margin = 10;
 	var xPos=margin;
 	var yPos=margin;
 	
 	var wordGroup;
+	var scale = clamp(renderSettings.fontSize, .33, 2);
 	for(var i=0; i<stringText.length; i++){
-		console.log("char")
 		if(stringText[i] == " "){
-			console.log('space');
-			xPos += renderSettings.letterSpacing;
-			//xPos += letterSpacing+(fontSpacingBase*2);
-
+			if(monospace){
+				xPos += renderSettings.letterSpacing;
+			}else{
+				xPos += renderSettings.letterSpacing + (fontSpacingBase*2);
+			}
 			wordGroup = null;
+
+			if(renderSettings.wordWrap && xPos > renderSettings.wordWrapWidth/scale){
+				xPos = margin;
+				yPos += renderSettings.lineHeight;
+			}
 		}else if(stringText[i] == "\n"){
-			console.log('return');
+
 			xPos = margin;
 			yPos += renderSettings.lineHeight;
 			wordGroup = null;
 		}else if(stringText[i] == "\t"){
-			console.log('tab');
 			//tab is equal to 4 spaces?
-			xPos += renderSettings.letterSpacing*4;
+			if(monospace){
+				xPos += renderSettings.letterSpacing*4;
+			}else{
+				xPos += (renderSettings.letterSpacing*4) + (fontSpacingBase*2);
+			}
 			wordGroup = null;
+
 		}else{
 			if(wordGroup==null){
 				wordGroup = new Group();
-				// allGroup.addChild(wordGroup);
 			}
+			
 
 			var charLayer = getCharacterGroup(stringText[i]);
 			if(charLayer==null){
@@ -99,17 +133,30 @@ function renderType(stringText){
 				xPos += sideBearing[0] * renderSettings.spacingBase;
 				//position the letter
 				copy.position = new Point(xPos + offset.x, yPos + offset.y);
+				//add the width of the letter
 				xPos += copy.bounds.width;
 				//add the right side bearing
 				xPos += sideBearing[1] * renderSettings.spacingBase;
 			}
 		}
-		
 	}
+	//scale the type
+	
+	project.activeLayer.scale(scale, new Point(0, 0));
+}
+
+function clamp(val, min, max){
+	if(val<min) return min;
+	if(val>max) return max;
+	return val;
 }
 
 function getCharacterGroup(character){
 	var charData = characterMap[character];
+	if(charData==null){
+		console.log("Error Character Not Mapped: " + character);
+		return null;
+	}
 	return FONT_DATA[CURRENT_FONT_ID].paperSymbols.children['char-' + charData.name];
 }
 
@@ -126,8 +173,6 @@ function getCharSideBearing(_char){
 }
 
 function reset(){
-	// allGroup.remove();
-	// allGroup = new Group();
 	project.clear();
 }
 
@@ -194,24 +239,20 @@ function init(){
 	loadFontData(0);
 	loadFontData(1);
 	loadFontData(2);
+	//specimen
+	$('#text-field').val(specimen);
 }
 
-function testFont(){
-	console.log('go', FONT_DATA[0].paperSymbols);
+//wait until everything is loaded
+function initRun(){
+	// console.log('go', FONT_DATA[0].paperSymbols);
+	reset();
 	resetRenderSettings();
-	renderType("ABCDEFGHIJ\n"+
-"KLMNOPQRS\n"+
-"TUVWXYZ\n"+
-"abcdefghij\n"+
-"klmnopqrs\n"+
-"tuvwxyz\n"+
-"0123456789\n"+
-"~!?.,<>:;'\"\n"+
-"[]{}\\/|+=-*_-");
+	buildText();
 }
 
 init();
-setTimeout(testFont, 1000);
+setTimeout(initRun, 1000);
 
 var characterMap = {
     "a":{name:"a", layer:null},

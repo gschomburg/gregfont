@@ -69,12 +69,9 @@ FZ FI FT FY FJ
 TL TE TJ TZ
 QT QZ
 
-ag ac aj ao aq au av aw ay at ap
-gg gc gj go gq gu gv gw gy gt gp
-cg cc cj co cq cu cv cw cy ct cp
-jg jc jj jo jq ju jv jw jy jt jp
-og oc oj oo oq ou ov ow oy ot op
-qg qc qj qo qq qu qv qw qy qt qp
+ag ac aj ao aq au av aw ay at ap gg gc gj go gq gu gv gw gy gt gp
+cg cc cj co cq cu cv cw cy ct cp jg jc jj jo jq ju jv jw jy jt jp
+og oc oj oo oq ou ov ow oy ot op qg qc qj qo qq qu qv qw qy qt qp
 ug uc uj uo uq uu uv uw uy ut up
 vg vc vj vo vq vu vv vw vy vt vp
 wg wc wj wo wq wu wv ww wy wt wp
@@ -129,7 +126,7 @@ Lay Learned Listing Load Lung Lw Lynch
 Mail Meal Minx Mode Music Myth
 Nail Next Nile Nooky Numb 
 Oatmeal Oer Offer Ogor Oink Oolong Out Over Oyster
-Painter Peal Pile Pıne Pjb Plaster
+Painter Peal Pile Pine Pjb Plaster
 Pointer Printer Putt Pygmy Punk Pal Pil Pol
 Qanat Qels Qix Qon Quest Qi
 Rate Red Right Royal Run Ryal Ran Road Rung
