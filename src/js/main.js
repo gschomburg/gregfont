@@ -5,6 +5,7 @@ end cap style?
 alignment? left right ... center?
 
 force upper case/lowercase?
+color?
 
 XXXXXXhave buttons for sample text
 XXXXXXfont size base 60 tall 20 - 120
@@ -88,6 +89,7 @@ $( "#sample-select" ).change(function() {
 function getRenderSettings(){
 	//get the render settings from the form
 	var settings={
+		strokeCap: $( '#cap-select' ).val(),
 		strokeWeight: Number($( '#stroke-weight' ).val()),
 		fontSize: Number($( '#font-scale' ).val()),
 		wordWrap: $( '#word-wrap-toggle' ).prop('checked'),
@@ -161,6 +163,10 @@ function renderType(stringText){
 			var offset = charLayer.bounds.center;
 			var copy = charLayer.clone();
 			copy.visible=true;
+			console.log(renderSettings.strokeCap);
+			if(renderSettings.strokeCap != 'default'){
+				copy.strokeCap = renderSettings.strokeCap;
+			}
 			copy.strokeWidth = renderSettings.strokeWeight;
 			wordGroup.addChild(copy);
 

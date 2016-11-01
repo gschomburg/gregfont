@@ -63,7 +63,6 @@ WG WC WJ WO WQ WU WV WW WY WT WP
 YG YC YJ YO YQ YU YV YW YY YT YP
 PG PC PJ PO PQ PU PV PW PY PT PP PA
 TG TC TJ TO TQ TU TV TW TY TT TS TP
-
 EZ EI ET EY EJ
 FZ FI FT FY FJ
 TL TE TJ TZ
@@ -78,7 +77,6 @@ wg wc wj wo wq wu wv ww wy wt wp
 yg yc yj yo yq yu yv yw yy yt yp
 pg pc pj po pq pu pv pw py pt pp pa
 tg tc tj to tq tu tv tw ty tt ts tp
-
 ez ei et ey ej
 fz fi ft fy fj
 tl te tj tz
@@ -150,21 +148,14 @@ Zanzabar Zellis Zion Zope Zulu Zyle
 
 Lowercase
 
-stop go pluck wane wax exit
-dance cycle duck drake dole
-nice welcome lawyer lance layer
-music muscle mail meal mode myth
-mist many much how do you yack
-off fill kick llama Lima
-ask answer amazon aft aqua
-aegis avon are cope crap cult
-truck tractor tail them royal
-putt quest typing tap thumbs
-utter fat jack just in time
-jail jerk bjork baja kluje major
-mujher
-jury journal joust jotter jitter
-ajax ancient animal zam zim zebra
+stop go pluck wane wax exit dance cycle duck drake dole
+nice welcome lawyer lance layer music muscle mail meal mode myth
+mist many much how do you yack off fill kick llama Lima
+ask answer amazon aft aquaaegis avon are cope crap cult
+truck tractor tail them royalputt quest typing tap thumbs
+utter fat jack just in timejail jerk bjork baja kluje major
+mujher jury journal joust jotter jitter ajax ancient animal
+zam zim zebra
 
 1234567890
 1115547888
@@ -186,8 +177,7 @@ Technology’s new rules (link in Chinese) could, if they were enforced as writt
 Facebook are clamoring to get in—all drawn by the country’s massive online population, estimated at nearly 700 million people. But the new rules would allow only 100% Chinese companies to produce
 “SARFT has many duties, but with respect to the internet its main task is to regulate online audio and video content, which includes administering the ‘License for Publication of Audio-Visual Programs Through Information Networks,'” (link in Chinese) he said. MIIT, the regulation’s other drafter, “is the nation’s principal internet regulator and the primary body responsible for licensing and registering Chinese websites.”
 
- It’s okay to share “weekend wino” memes with your girlfriends, but the addict
- According to a 2008 study in The Gerontologist there is a “commonly held view that willpower and personal strength alone is needed to control addiction.” This myth is perpetuated.
+ It’s okay to share “weekend wino” memes with your girlfriends, but the addict. According to a 2008 study in The Gerontologist there is a “commonly held view that willpower and personal strength alone is needed to control addiction.” This myth is perpetuated.
 
 Even so, they will be tough to enforce, Ying Chan, the director of the journalism program at the University of Hong Kong, told Quartz. “Using rules of the print age to govern the internet does not work,” she said.
 I stopped to visit my 65-year-old mother and her 58-year-old husband.

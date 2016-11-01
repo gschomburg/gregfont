@@ -15,7 +15,8 @@
 				<div class ="form-group" id="dev-samples">
 					<label>Samples:</label>
 					<select id="sample-select" name="sample">
-						<option value="icaps" selected>Initial Caps</option> 
+					<option disabled selected value> Select A Sample </option>
+						<option value="icaps">Initial Caps</option> 
 						<option value="lowercase">Lowercase</option>
 						<option value="kerningPairs1">Kerning Pairs 1</option>
 						<option value="kerningPairs2">Kerning Pairs 2</option>
@@ -51,7 +52,15 @@
 				</div>
 			</div>
 			<div class="col">
-				
+				<div class ="form-group">
+					<label>End Caps:</label>
+					<select id="cap-select" name="caps" class="build-on-change">
+						<option value="default">Default/Source</option> 
+						<option value="butt">Butt</option> 
+						<option value="round">Round</option>
+						<option value="square">Square</option>
+					</select>
+				</div>
 				<div class ="form-group">
 					<label>Stroke Weight:</label>
 					<input id="stroke-weight" class="build-on-change" type="number" value="2">
