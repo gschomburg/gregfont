@@ -5,6 +5,7 @@ body{
     overflow: hidden;
     height: 100%;
     font-family: 'Raleway', sans-serif;
+    font-size: 1em;
 }
 
 canvas[resize] {
@@ -20,7 +21,7 @@ canvas[resize] {
 
 #settings-panel{
 	width: 100%;
-	min-height: 250px;
+	// min-height: 250px;
 	min-width: 900px;
 	background-color: #333333;
 	color: white;
@@ -31,13 +32,19 @@ canvas[resize] {
 	padding: 10px 10px 10px 10px;
 	box-sizing: border-box;
 }
+
 #settings{
 	display: flex;
 }
+
 #settings-panel .col{
 	flex: auto;
 	box-sizing: border-box;
 	padding-right: 10px;
+}
+#settings-panel .col.larger{
+	flex-grow: 2.5;
+	position: relative;
 }
 #fontView{
 	// border: 1px solid red;
@@ -50,12 +57,55 @@ canvas[resize] {
 	position: relative;
 	resize: none;
 	box-sizing: border-box;
+	font-size: .9em;
 }
+.form-group{
+	margin-bottom: 10px;
+}
+
 label{
-	display: block;
+	display: inline-block;
+	width: 50%;
+	text-align: right;
+	margin-right: 15px;
+}
+input{
+	width: 50px;
+	text-align: center;
+}
+input[type=checkbox]{
+	margin: 0;
+}
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
 }
 button{
 	display: block;
 	width: 100%;
 	height: 30px;
+}
+
+#dev-samples{
+	display: none;
+}
+#dev-samples.show{
+	display: block;
+}
+
+#build{
+	position: absolute;
+	right:-20px;
+	bottom:4px;
+	width: 30px;
+	height: 30px;
+	display: none;
+
+	padding: 0 0;
+	font-size: 1.5em;
+	font-weight: 500;
+}
+#build.show{
+	display: block;
 }

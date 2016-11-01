@@ -1,12 +1,15 @@
 /*
 TODO/FEATURES
 
-font size base 60 tall 20 - 120
 end cap style?
-word wrap + word wrap distance
-
 alignment? left right ... center?
-auto update on change?
+
+force upper case/lowercase?
+
+XXXXXXhave buttons for sample text
+XXXXXXfont size base 60 tall 20 - 120
+XXXXXXword wrap + word wrap distance
+XXXXXXauto update on change?
 */
 
 
@@ -27,7 +30,9 @@ var specimen = "ABCDEFGHIJ\n"+
 				"~!?.,<>:;'\"\n"+
 				"[]{}\\/|+=-*_-";
 
-//UI
+var textSamples =[];
+
+//UI EVENTS
 /**************************************/
 $( "#export" ).click(function() {
   exportSVG();
@@ -43,6 +48,41 @@ $( "#font-select" ).change(function() {
 
 $( "#font-scale" ).change(function() {
   $( "#font-scale" ).val( clamp( $( "#font-scale" ).val(), .333, 2) );
+});
+
+$("#text-field").on('input',function(e){
+	if($("#text-field").val().length > 600){
+		$("#build").addClass("show");
+		return;
+	}
+	$("#build").removeClass("show");
+	buildText();
+});
+
+$(".build-on-change").change(function(){
+	// console.log("change");
+	buildText();
+});
+
+
+$(window).bind('keydown', function(event) {
+	console.log('key');
+	if (event.ctrlKey) {
+		switch (String.fromCharCode(event.which).toLowerCase()) {
+			case 'd':
+			$( "#dev-samples" ).toggleClass("show");
+			break;
+		}
+	}
+});
+
+$( "#sample-select" ).change(function() {
+  	var sample = $( this ).val();
+  	if(textSamples[sample] !=null){
+  		$("#text-field").val(textSamples[sample]);
+  	}
+  	buildText();
+  	//resetRenderSettings();
 });
 
 function getRenderSettings(){
@@ -141,7 +181,6 @@ function renderType(stringText){
 		}
 	}
 	//scale the type
-	
 	project.activeLayer.scale(scale, new Point(0, 0));
 }
 
@@ -353,3 +392,74 @@ var characterMap = {
     "+":{name:"plus", layer:null},
     "*":{name:"asterix", layer:null}
 }
+
+//SAMPLE CONTENT DEFINITIONS
+/**************************************/
+
+
+textSamples.icaps = "Aaron Able Ache Advert\n" +
+"Aegis Aft Age Ahe Ails \n" +
+"Ajar Akin Aloe Amish And \n" +
+"Aone Ape Aqua Are Ascot \n" +
+"Atlas Auto Avon Awe Axe \n" +
+"Aye Azo \n" +
+"Band Bet Bing Bloat Bog \n" + 
+"Bring Bumpy \n" + 
+"Carry Celar Cinthia Cope Crap \n" + 
+"Cult Cycle \n" + 
+"Dark Demon Dingy Dope Dumb \n" + 
+"Each Eels Einar Eons Euchre \n" + 
+"Ever Ewer Exit Eyes \n" + 
+"Fact Fever Fire Fıne Font Framer \n" + 
+"Fur Fyrd Folder Funk \n" + 
+"Gayle Gentle Girl Gnome \n" + 
+"Gonot Grinning Gulf Gwen Gyro \n" + 
+"Harder Help Hilton Honor Hunk Hymn \n" + 
+"Ian Ieo Iggy Iillian Ion Iugia Iyaaa \n" + 
+"Jacky Jester Jimmy Joint Junk  \n" + 
+"Kangaroo Keep Kill Kline";
+
+//*
+textSamples.lowercase = "stop go pluck wane wax exit dance cycle duck drake dole \
+nice welcome lawyer lance layer music muscle mail meal mode myth \
+mist many much how do you yack off fill kick llama Lima \
+ask answer amazon aft aquaaegis avon are cope crap cult \
+truck tractor tail them royalputt quest typing tap thumbs \
+utter fat jack just in timejail jerk bjork baja kluje major \
+mujher jury journal joust jotter jitter ajax ancient animal \
+zam zim zebra";
+
+textSamples.kerningPairs1 = "AG AC AJ AO AQ AU AV AW AY AT AP \
+GG GC GJ GO GQ GU GV GW GY GT GP \
+CG CC CJ CO CQ CU CV CW CY CT CP \
+JG JC JJ JO JQ JU JV JW JY JT JP \
+OG OC OJ OO OQ OU OV OW OY OT OP \
+QG QC QJ QO QQ QU QV QW QY QT QP \
+UG UC UJ UO UQ UU UV UW UY UT UP \
+VG VC VJ VO VQ VU VV VW VY VT VP \
+WG WC WJ WO WQ WU WV WW WY WT WP \
+YG YC YJ YO YQ YU YV YW YY YT YP \
+PG PC PJ PO PQ PU PV PW PY PT PP PA \
+TG TC TJ TO TQ TU TV TW TY TT TS TP \
+EZ EI ET EY EJ \
+FZ FI FT FY FJ \
+TL TE TJ TZ QT QZ";
+
+textSamples.kerningPairs2 = "ag ac aj ao aq au av aw ay at ap gg gc gj go gq gu gv gw gy gt gp \
+cg cc cj co cq cu cv cw cy ct cp jg jc jj jo jq ju jv jw jy jt jp \
+og oc oj oo oq ou ov ow oy ot op qg qc qj qo qq qu qv qw qy qt qp \
+ug uc uj uo uq uu uv uw uy ut up \
+vg vc vj vo vq vu vv vw vy vt vp \
+wg wc wj wo wq wu wv ww wy wt wp \
+yg yc yj yo yq yu yv yw yy yt yp \
+pg pc pj po pq pu pv pw py pt pp pa \
+tg tc tj to tq tu tv tw ty tt ts tp \
+ez ei et ey ej \
+fz fi ft fy fj \
+tl te tj tz \
+qt qz";
+
+textSamples.read1 = "Technology’s new rules (link in Chinese) could, if they were enforced as written, essentially shut down China as a market for foreign news outlets, publishers, gaming companies, information providers, and entertainment companies starting on March 10. Issued in conjunction with the State Administration of Press, Publication, Radio, Film and Television (SARFT), they set strict new guidelines for what can be published online, and how that publisher should conduct business in China.";
+textSamples.read2 = "Facebook are clamoring to get in—all drawn by the country’s massive online population, estimated at nearly 700 million people. But the new rules would allow only 100% Chinese companies to produce\
+“SARFT has many duties, but with respect to the internet its main task is to regulate online audio and video content, which includes administering the ‘License for Publication of Audio-Visual Programs Through Information Networks,” (link in Chinese) he said. MIIT, the regulation’s other drafter, “is the nation’s principal internet regulator and the primary body responsible for licensing and registering Chinese websites.”";
+//*/
