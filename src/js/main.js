@@ -7,7 +7,10 @@ alignment? left right ... center?
 force upper case/lowercase?
 color?
 
-add in name option when exporting/downloading
+some effects?
+pull effects and sample text out into another 'dev panel'
+
+XXXXXXadd in name option when exporting/downloading
 
 XXXXXXhave buttons for sample text
 XXXXXXfont size base 60 tall 20 - 120
@@ -194,6 +197,8 @@ function renderType(stringText){
 				//add the right side bearing
 				xPos += sideBearing[1] * renderSettings.spacingBase;
 			}
+
+			effects(copy);
 		}
 	}
 	//scale the type
@@ -285,6 +290,93 @@ jQuery.loadScript = function (url, callback) {
         async: true
     });
 }
+
+//get all the segements in an item
+function allSegments(item, recursive){
+	if(recursive>4) return; // stop it at 4 deep
+	var segments=[];
+	
+	if(item.segments !=null && item.segments.length>0){
+		segments = segments.concat(item.segments);
+	}
+
+	//dig down into children
+	if(item.hasChildren()){
+		for (var c=0; c < item.children.length; c++) {
+			var childSegments = allSegments(item.children[c], recursive+1);
+			if(childSegments !=null && childSegments.length>0){
+				segments = segments.concat(childSegments);
+			}
+		}
+	}
+
+	return segments;
+}
+function allCurves(item, recursive){
+	if(recursive>4) return; // stop it at 4 deep
+	var curves=[];
+	
+	if(item.curves !=null && item.curves.length>0){
+		curves = curves.concat(item.curves);
+	}
+
+	//dig down into children
+	if(item.hasChildren()){
+		for (var c=0; c < item.children.length; c++) {
+			var childcurves = allCurves(item.children[c], recursive+1);
+			if(childcurves !=null && childcurves.length>0){
+				curves = curves.concat(childcurves);
+			}
+		}
+	}
+
+	return curves;
+}
+
+
+//SPECIAL EFFECTS
+/**************************************/
+function effects(item){
+	// drawSegments(item);
+	// doStuffToCurves(item);
+}
+function doStuffToCurves(item){
+	var curves = allCurves(item, 0);
+	for(var i = 0; i< curves.length; i++){
+		// if(curves[i].isStraight()){
+		// 	curves[i].path.style.strokeWidth = 10;
+		// }
+		//draw line that is tangent
+		var curve = curves[i];
+		
+
+		stepCurves(curve, 5);
+	}
+}
+function stepCurves(curve, steps){
+	for(var s=1/steps; s<1; s+=1/steps){
+		var tan = curve.getNormalAtTime(s);
+		var p1 = curve.getPointAtTime(s);
+		var p = Path.Line(p1-(tan * 10), p1+(tan * 10));
+		p.strokeColor = 'red'
+		p.strokeWidth = 1;
+	}
+}
+
+function drawSegments(item){
+	
+	var segments = allSegments(item, 0);
+
+	for(var i = 0; i< segments.length; i++){
+		var dot = new Shape.Circle(segments[i].point, 3);
+		dot.fillColor = 'red';
+		item.addChild(dot);
+		// segments[i].path.style.strokeWidth = Math.random()*8;
+	}
+}
+
+
+
 
 //SETUP + INIT
 /**************************************/
