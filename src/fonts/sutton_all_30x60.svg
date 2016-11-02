@@ -384,15 +384,18 @@
 <g id="char-U" class="st0">
 	<path class="st3" d="M0,0v45c0,8.3,6.7,15,15,15c8.3,0,15-6.7,15-15V0"/>
 </g>
-<g id="char-T" class="st0">
-	<polyline class="st3" points="30,0 0,0 15,0 15,60 	"/>
+<g id="char-T">
+	<g id="group-char-T">
+		<line class="st2" x1="15" y1="0" x2="15" y2="60"/>
+		<line class="st2" x1="30" y1="0" x2="0" y2="0"/>
+	</g>
 </g>
 <g id="char-S" class="st0">
 	<path class="st3" d="M0,45c0,8.3,6.7,15,15,15c8.3,0,15-6.7,15-15s-6.7-15-15-15C6.7,30,0,23.3,0,15C0,6.7,6.7,0,15,0
 		c8.3,0,15,6.7,15,15"/>
 </g>
 <g id="char-R" class="st0">
-	<g id="group-char-R" class="st1">
+	<g id="group" class="st1">
 		<line class="st2" x1="0" y1="30" x2="30" y2="60"/>
 		<path class="st2" d="M0,30h15c8.3,0,15-6.7,15-15c0-8.3-6.7-15-15-15H0v60"/>
 	</g>
@@ -427,10 +430,10 @@
 <g id="char-J" class="st0">
 	<path class="st3" d="M10,0h20v45c0,8.3-6.7,15-15,15C6.7,60,0,53.3,0,45"/>
 </g>
-<g id="char-I">
-	<line class="st2" x1="0" y1="60" x2="30" y2="60"/>
-	<line class="st2" x1="30" y1="0" x2="0" y2="0"/>
-	<line class="st2" x1="15" y1="0" x2="15" y2="60"/>
+<g id="char-I" class="st0">
+	<line class="st3" x1="0" y1="60" x2="30" y2="60"/>
+	<line class="st3" x1="30" y1="0" x2="0" y2="0"/>
+	<line class="st3" x1="15" y1="0" x2="15" y2="60"/>
 </g>
 <g id="char-H" class="st0">
 	<g id="group-char-H" class="st1">

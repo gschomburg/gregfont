@@ -7,11 +7,14 @@ alignment? left right ... center?
 force upper case/lowercase?
 color?
 
+add in name option when exporting/downloading
+
 XXXXXXhave buttons for sample text
 XXXXXXfont size base 60 tall 20 - 120
 XXXXXXword wrap + word wrap distance
 XXXXXXauto update on change?
 */
+
 
 
 
@@ -36,7 +39,12 @@ var textSamples =[];
 //UI EVENTS
 /**************************************/
 $( "#export" ).click(function() {
-  exportSVG();
+	var fileName = $("#text-field").val();
+	fileName = fileName.trim();
+	fileName = fileName.substr(0, 12);
+	fileName = fileName.replace(/[\n \t]/g,"_");
+	console.log("fileName " + fileName);
+	downloadSVG(fileName);
 });
 $( "#build" ).click(function() {
   buildText();
@@ -250,9 +258,8 @@ function loadFontSVG(id){
 	paper.project.importSVG(FONTS_PATH + FONT_DATA[id].file, options);
 }
 
-function exportSVG(fileName){
+function downloadSVG(fileName){
 	paper.project.exportSVG();
-
 
    if(!fileName) {
        fileName = "gf_000.svg"
