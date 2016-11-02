@@ -42,7 +42,9 @@ $( "#export" ).click(function() {
 	var fileName = $("#text-field").val();
 	fileName = fileName.trim();
 	fileName = fileName.substr(0, 12);
-	fileName = fileName.replace(/[\n \t]/g,"_");
+	//replace whitespace with underscores
+	fileName = fileName.replace(/[\s]/g,"_");
+	fileName = fileName.replace(/[^a-zA-Z\d_]/g,"");
 	console.log("fileName " + fileName);
 	downloadSVG(fileName);
 });
