@@ -1,6 +1,7 @@
 /*
 TODO/FEATURES
 
+copy SVG to clipboard
 end cap style?
 alignment? left right ... center?
 
