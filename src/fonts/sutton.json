@@ -2,6 +2,7 @@
 	"format": "gregfont",
 	"version": 2,
 	"name": "Sutton",
+	"status": "final",
 	"cell": {
 		"width": 30,
 		"height": 60
@@ -22,6 +23,8 @@
 		"lineHeight": 90
 	},
 	"kerning": {},
+	"revision": 1,
+	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":0,"rsb":0,"paths":[{"d":"M5,55l20,-50"},{"d":"M30,15l0,30c0,8.3 -6.7,15 -15,15c-8.3,0 -15,-6.7 -15,-15l0,-30c0,-8.3 6.7,-15 15,-15c8.3,0 15,6.7 15,15z"}]},
 		"1": {"lsb":0,"rsb":0,"paths":[{"d":"M15,60l-15,-10l15,10l0,-60l-15,0l30,0"}]},

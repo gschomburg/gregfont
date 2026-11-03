@@ -1,0 +1,31 @@
+{
+	"format": "gregfont",
+	"version": 2,
+	"name": "Clinton",
+	"status": "draft",
+	"cell": {
+		"width": 40,
+		"height": 60
+	},
+	"guides": {
+		"cap": 60,
+		"xHeight": 30,
+		"descender": -20
+	},
+	"style": {
+		"strokeCap": "round",
+		"strokeJoin": "round",
+		"miterLimit": 10
+	},
+	"spacing": {
+		"monospaced": false,
+		"letterSpacing": 45,
+		"lineHeight": 90
+	},
+	"kerning": {},
+	"revision": 1,
+	"modified": "2026-11-03",
+	"glyphs": {
+		"B": {"lsb":4,"rsb":4,"paths":[{"d":"M2.5,0c2.071,0 3.75,1.679 3.75,3.75v56.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,45c7.594,0 13.75,-6.156 13.75,-13.75v-17.5c0,-7.594 -6.156,-13.75 -13.75,-13.75c-7.594,0 -13.75,6.156 -13.75,13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,60c4.142,0 7.5,-3.358 7.5,-7.5c0,-4.142 -3.358,-7.5 -7.5,-7.5","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,60h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,45h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M0,0h2.5","strokeCap":"butt","strokeJoin":"miter"}]}
+	}
+}

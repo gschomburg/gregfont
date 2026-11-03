@@ -60,6 +60,12 @@ The layout matches the editor: menus and tips in the top bar, the selected text'
 | Nassau | 60×60 | Proportional | Letters, digits, punctuation |
 | Kosciuszko | 20×60 | Monospaced | Letters only |
 | Troutman | 40×60 | Proportional | Letters, digits, punctuation |
+| Bleeker_03 | 51.5×60 | Proportional | Capitals, 0 and 2 |
+| Clinton | 40×60 | Proportional | Just started (1 glyph) |
+| Garfield 2015 | 40×60 | Proportional | Capitals, some digits |
+| Locust 28 | 27.5×45 | Proportional | Capitals, digits |
+
+All are marked **proof** for now (see `status` under Font format).
 
 Curly quotes, the apostrophe `’` and en/em dashes fall back to the plain `"` `'` `-` glyphs when a font doesn't have them.
 
@@ -195,7 +201,6 @@ src/
     fonts.json        Which fonts to load, in dropdown order
     fonts.js          Generated copy of all fonts, for pages opened from disk
     <font>.json       Fonts
-    <font>_all_WxH.ai Original Illustrator sources
 tools/
   server.py           Dev server (static files + saving fonts)
   build_fonts.py      Rebuilds src/fonts/fonts.js

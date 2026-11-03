@@ -2,6 +2,7 @@
 	"format": "gregfont",
 	"version": 2,
 	"name": "Kosciuszko",
+	"status": "final",
 	"cell": {
 		"width": 20,
 		"height": 60
@@ -22,6 +23,8 @@
 		"lineHeight": 90
 	},
 	"kerning": {},
+	"revision": 1,
+	"modified": "2026-11-03",
 	"glyphs": {
 		"z": {"lsb":0,"rsb":0,"paths":[{"d":"M0,30l20,0l-20,-30l20,0"}]},
 		"y": {"lsb":0,"rsb":0,"paths":[{"d":"M0,30l10,-30l10,30"},{"d":"M5,-15l5,15"}]},
