@@ -2719,6 +2719,10 @@
 		}
 	} catch (e) { /* ignore */ }
 
+	// Space around the preview text, in font units. Fixed, so a thicker
+	// stroke grows in place instead of moving the text.
+	function previewMargin(f) { return Math.max(f.cell.height * 0.08, 2); }
+
 	function savePreviewView() {
 		try { localStorage.setItem('gregfont-editor-preview', JSON.stringify(previewView)); } catch (e) { /* ignore */ }
 	}
@@ -2738,7 +2742,7 @@
 			monospace: mono, letterSpacing: f.spacing.letterSpacing, lineHeight: f.spacing.lineHeight,
 			width: avail / scale
 		});
-		var pad = previewView.stroke * 2;
+		var pad = previewMargin(f);
 		var svg = svgEl('svg', {
 			width: avail, height: Math.ceil((result.height + pad * 2) * scale),
 			viewBox: [-pad, -pad, avail / scale, result.height + pad * 2].join(' ')
@@ -2750,8 +2754,8 @@
 
 	// One clickable glyph for the preview or specimen.
 	function previewGlyph(f, placed) {
-		var top = -Math.max(f.guides.cap, f.cell.height) - previewView.stroke;
-		var bottom = Math.max(-(f.guides.descender || 0), 0) + previewView.stroke;
+		var top = -Math.max(f.guides.cap, f.cell.height) - previewMargin(f);
+		var bottom = Math.max(-(f.guides.descender || 0), 0) + previewMargin(f);
 		var g = svgEl('g', { transform: 'translate(' + placed.x + ' ' + placed.y + ')' });
 		g.appendChild(glyphGroup(f, placed.char, previewView.stroke, false));
 		g.dataset.ch = placed.char;
@@ -2785,8 +2789,8 @@
 			margin: 0
 		});
 		// heights around each glyph's baseline, in screen orientation
-		var top = -Math.max(f.guides.cap, f.cell.height) - previewView.stroke;
-		var bottom = Math.max(-(f.guides.descender || 0), 0) + previewView.stroke;
+		var top = -Math.max(f.guides.cap, f.cell.height) - previewMargin(f);
+		var bottom = Math.max(-(f.guides.descender || 0), 0) + previewMargin(f);
 		var baseline = result.glyphs.length ? result.glyphs[0].y : f.cell.height;
 		var right = 0, left = 0;
 		var svg = svgEl('svg');
@@ -2796,7 +2800,7 @@
 			right = Math.max(right, placed.x + (ink ? ink.right : f.cell.width));
 			left = Math.min(left, placed.x + (ink ? ink.left : 0));
 		});
-		var pad = previewView.stroke * 2;
+		var pad = previewMargin(f);
 		var vbW = Math.max(right - left + pad * 2, 1), vbH = bottom - top;
 		var h = Math.max(box.clientHeight - 12, 10);   // the strip's inner height
 		svg.setAttribute('viewBox', [left - pad, baseline + top, vbW, vbH].join(' '));
