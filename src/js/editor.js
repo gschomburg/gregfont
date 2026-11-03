@@ -2197,7 +2197,10 @@
 	function loadShow() {
 		try {
 			var saved = JSON.parse(localStorage.getItem('gregfont-editor-show') || 'null');
-			if (saved) Object.keys(state.show).forEach(function (k) { if (typeof saved[k] === 'boolean') state.show[k] = saved[k]; });
+			if (saved) Object.keys(state.show).forEach(function (k) {
+				// stroke order always starts off
+				if (k !== 'order' && typeof saved[k] === 'boolean') state.show[k] = saved[k];
+			});
 		} catch (e) { /* ignore */ }
 	}
 
