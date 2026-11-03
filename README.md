@@ -198,5 +198,6 @@ Fonts:
 
 Typesetter:
 
+- Extend ends to guides skips ends that meet a guide at an angle (more than about 30° from vertical), like Nassau's "a" terminal or the arms of an "x". Idea: extend a flat end just far enough that its highest corner reaches half a stroke past the line, so diagonals get a small nudge and vertical stems are unchanged.
 - Effects (the old typesetter had a stub for drawing segment points and curve normals).
 - Text on a path, and named alternate glyphs in text.
