@@ -7,7 +7,7 @@ window.GREGFONT_BUNDLE = {
 "sutton.json": {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Sutton",
+	"name": "Sutton 99",
 	"status": "final",
 	"cell": {
 		"width": 30,
@@ -29,7 +29,7 @@ window.GREGFONT_BUNDLE = {
 		"lineHeight": 90
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":0,"rsb":0,"paths":[{"d":"M5,55l20,-50"},{"d":"M30,15l0,30c0,8.3 -6.7,15 -15,15c-8.3,0 -15,-6.7 -15,-15l0,-30c0,-8.3 6.7,-15 15,-15c8.3,0 15,6.7 15,15z"}]},
@@ -132,7 +132,7 @@ window.GREGFONT_BUNDLE = {
 "nassau.json": {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Nassau",
+	"name": "Nassau 269",
 	"status": "final",
 	"cell": {
 		"width": 60,
@@ -154,7 +154,7 @@ window.GREGFONT_BUNDLE = {
 		"lineHeight": 115
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":9.6,"rsb":9.6,"paths":[{"d":"M40,15c0,-11 -9,-20 -20,-20c-11,0 -20,9 -20,20l0,25c0,11 9,20 20,20c11,0 20,-9 20,-20z"}]},
@@ -255,7 +255,7 @@ window.GREGFONT_BUNDLE = {
 "kosciuszko.json": {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Kosciuszko",
+	"name": "Kosciuszko 184",
 	"status": "final",
 	"cell": {
 		"width": 20,
@@ -277,7 +277,7 @@ window.GREGFONT_BUNDLE = {
 		"lineHeight": 90
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"z": {"lsb":0,"rsb":0,"paths":[{"d":"M0,30l20,0l-20,-30l20,0"}]},
@@ -337,8 +337,8 @@ window.GREGFONT_BUNDLE = {
 "troutman.json": {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Troutman",
-	"status": "final",
+	"name": "Troutman 31",
+	"status": "proof",
 	"cell": {
 		"width": 40,
 		"height": 60
@@ -359,7 +359,7 @@ window.GREGFONT_BUNDLE = {
 		"lineHeight": 115
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 3,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":1.176,"rsb":1.224,"paths":[{"d":"M18,45.9c10.6,-1.5 5.5,-48 -10,-45.8c-16.2,2.3 -5.3,47.9 10,45.8z"}]},
@@ -460,7 +460,7 @@ window.GREGFONT_BUNDLE = {
 "bleeker_03.json": {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Bleeker_03",
+	"name": "Bleecker 426",
 	"status": "draft",
 	"cell": {
 		"width": 51.5,
@@ -482,7 +482,7 @@ window.GREGFONT_BUNDLE = {
 		"lineHeight": 92.25
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":5.35,"rsb":5.35,"paths":[{"d":"M5.35,30.28c0,16.569 13.431,30 30,30c16.569,0 30,-13.431 30,-30c0,-16.569 -13.431,-30 -30,-30c-16.569,0 -30,13.431 -30,30z"},{"d":"M47.358,57.778l-39.64,-39.64"}]},
@@ -518,7 +518,7 @@ window.GREGFONT_BUNDLE = {
 "clinton.json": {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Clinton",
+	"name": "Clinton 2401",
 	"status": "draft",
 	"cell": {
 		"width": 40,
@@ -540,7 +540,7 @@ window.GREGFONT_BUNDLE = {
 		"lineHeight": 90
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"B": {"lsb":4,"rsb":4,"paths":[{"d":"M2.5,0c2.071,0 3.75,1.679 3.75,3.75v56.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,45c7.594,0 13.75,-6.156 13.75,-13.75v-17.5c0,-7.594 -6.156,-13.75 -13.75,-13.75c-7.594,0 -13.75,6.156 -13.75,13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,60c4.142,0 7.5,-3.358 7.5,-7.5c0,-4.142 -3.358,-7.5 -7.5,-7.5","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,60h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,45h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M0,0h2.5","strokeCap":"butt","strokeJoin":"miter"}]}

@@ -1,7 +1,7 @@
 {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Sutton",
+	"name": "Sutton 99",
 	"status": "final",
 	"cell": {
 		"width": 30,
@@ -23,7 +23,7 @@
 		"lineHeight": 90
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":0,"rsb":0,"paths":[{"d":"M5,55l20,-50"},{"d":"M30,15l0,30c0,8.3 -6.7,15 -15,15c-8.3,0 -15,-6.7 -15,-15l0,-30c0,-8.3 6.7,-15 15,-15c8.3,0 15,6.7 15,15z"}]},

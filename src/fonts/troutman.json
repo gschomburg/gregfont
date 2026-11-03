@@ -1,8 +1,8 @@
 {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Troutman",
-	"status": "final",
+	"name": "Troutman 31",
+	"status": "proof",
 	"cell": {
 		"width": 40,
 		"height": 60
@@ -23,7 +23,7 @@
 		"lineHeight": 115
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 3,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":1.176,"rsb":1.224,"paths":[{"d":"M18,45.9c10.6,-1.5 5.5,-48 -10,-45.8c-16.2,2.3 -5.3,47.9 10,45.8z"}]},

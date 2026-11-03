@@ -1,7 +1,7 @@
 {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Bleeker_03",
+	"name": "Bleecker 426",
 	"status": "draft",
 	"cell": {
 		"width": 51.5,
@@ -23,7 +23,7 @@
 		"lineHeight": 92.25
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":5.35,"rsb":5.35,"paths":[{"d":"M5.35,30.28c0,16.569 13.431,30 30,30c16.569,0 30,-13.431 30,-30c0,-16.569 -13.431,-30 -30,-30c-16.569,0 -30,13.431 -30,30z"},{"d":"M47.358,57.778l-39.64,-39.64"}]},

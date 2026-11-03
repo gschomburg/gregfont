@@ -1,7 +1,7 @@
 {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Nassau",
+	"name": "Nassau 269",
 	"status": "final",
 	"cell": {
 		"width": 60,
@@ -23,7 +23,7 @@
 		"lineHeight": 115
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"0": {"lsb":9.6,"rsb":9.6,"paths":[{"d":"M40,15c0,-11 -9,-20 -20,-20c-11,0 -20,9 -20,20l0,25c0,11 9,20 20,20c11,0 20,-9 20,-20z"}]},

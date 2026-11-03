@@ -1,7 +1,7 @@
 {
 	"format": "gregfont",
 	"version": 2,
-	"name": "Kosciuszko",
+	"name": "Kosciuszko 184",
 	"status": "final",
 	"cell": {
 		"width": 20,
@@ -23,7 +23,7 @@
 		"lineHeight": 90
 	},
 	"kerning": {},
-	"revision": 1,
+	"revision": 2,
 	"modified": "2026-11-03",
 	"glyphs": {
 		"z": {"lsb":0,"rsb":0,"paths":[{"d":"M0,30l20,0l-20,-30l20,0"}]},
