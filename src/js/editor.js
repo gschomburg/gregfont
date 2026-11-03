@@ -1783,9 +1783,7 @@
 		if (ctrl && key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
 		if (ctrl && key === 'y') { e.preventDefault(); redo(); return; }
 		if (ctrl && key === 'a') { e.preventDefault(); selectAll(); return; }
-		if (ctrl && key === 'c') { copySelection(); return; }
-		if (ctrl && key === 'x') { e.preventDefault(); cutSelection(); return; }
-		if (ctrl && key === 'v') { paste(); return; }
+		if (ctrl && (key === 'c' || key === 'x' || key === 'v')) return;   // the copy / cut / paste events below
 		if (ctrl && key === 'j') { e.preventDefault(); joinSelection(); return; }
 		if (ctrl && key === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); return; }
 		if (ctrl && key === "'") { e.preventDefault(); toggleShow('grid'); return; }
@@ -2255,7 +2253,112 @@
 	}
 
 	function cutSelection() {
-		if (copySelection()) deleteSelection();
+		if (copySelection()) { deleteSelection(); return true; }
+		return false;
+	}
+
+	// --- the system clipboard
+	//
+	// Copying in the editor also puts the paths on the system clipboard,
+	// tagged, so they paste between tabs, and so a paste can tell them from
+	// something copied in another app since. SVG on the clipboard (Illustrator
+	// with Preferences > Clipboard Handling > Copy as SVG) pastes as paths.
+
+	var CLIP_TAG = 'gregfont-paths:';
+
+	function clipText() { return CLIP_TAG + JSON.stringify(state.clipboard); }
+
+	function pasteText(text) {
+		text = text || '';
+		if (text.indexOf(CLIP_TAG) === 0) {
+			try { state.clipboard = JSON.parse(text.slice(CLIP_TAG.length)); } catch (e) { /* keep ours */ }
+			paste();
+		} else if (/<svg[\s>]/i.test(text)) {
+			pasteSVG(text);
+		} else {
+			paste();
+		}
+	}
+
+	// Pasted artwork lands on the baseline at the left of the cell, selected:
+	// Illustrator's copy doesn't say where it was on the artboard. 1:1 scale.
+	function pasteSVG(text) {
+		var r;
+		try {
+			r = GregFont.pathsFromSVG(P, text);
+		} catch (err) {
+			console.error(err);
+			setStatus('Couldn\u2019t read the SVG on the clipboard: ' + err.message, true);
+			return;
+		}
+		if (!r.entries.length) { setStatus('The clipboard has SVG in it, but no paths', true); return; }
+		var f = font(), count = 0;
+		var offset = new P.Point(-r.ink.x, -(r.ink.y + r.ink.height));
+		finishPen();
+		edit(function () {
+			deselectAll();
+			var added = [];
+			r.entries.forEach(function (e) {
+				var item = P.PathItem.create(e.d);
+				item.translate(offset);
+				var parts = item instanceof P.CompoundPath ? item.removeChildren() : [item];
+				item.remove();
+				parts.forEach(function (p) {
+					var style = {};
+					['strokeCap', 'strokeJoin', 'miterLimit'].forEach(function (k) {
+						if (e[k] !== undefined && e[k] !== f.style[k]) style[k] = e[k];
+					});
+					p.data.style = style;
+					if (e.group) p.data.group = e.group;
+					added.push(p);
+				});
+			});
+			regroup(added);
+			added.forEach(function (p) {
+				pathStyle(p);
+				glyphLayer.addChild(p);
+				selectPath(p);
+			});
+			count = added.length;
+		});
+		updatePathStyleRow();
+		setStatus('Pasted ' + count + ' path' + (count === 1 ? '' : 's') + ' from the clipboard, on the baseline at the left of the cell. Drag or nudge into place.' +
+			(r.warnings.length ? ' (' + r.warnings.join('; ') + ')' : ''));
+	}
+
+	function clipboardBusy(e) {
+		return isTyping(e) || (window.GregShapeImport && GregShapeImport.isOpen()) || !font();
+	}
+
+	document.addEventListener('copy', function (e) {
+		if (clipboardBusy(e) || !copySelection()) return;
+		e.clipboardData.setData('text/plain', clipText());
+		e.preventDefault();
+	});
+	document.addEventListener('cut', function (e) {
+		if (clipboardBusy(e) || !cutSelection()) return;
+		e.clipboardData.setData('text/plain', clipText());
+		e.preventDefault();
+	});
+	document.addEventListener('paste', function (e) {
+		if (clipboardBusy(e)) return;
+		var dt = e.clipboardData;
+		e.preventDefault();
+		pasteText(dt ? dt.getData('image/svg+xml') || dt.getData('text/plain') : '');
+	});
+
+	// the Edit menu can't get a clipboard event, so it asks the clipboard
+	function menuCopy(cut) {
+		if (!(cut ? cutSelection() : copySelection())) return;
+		if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(clipText()).catch(function () { /* the editor's own copy still works */ });
+	}
+
+	function menuPaste() {
+		if (navigator.clipboard && navigator.clipboard.readText) {
+			navigator.clipboard.readText().then(pasteText, function () { paste(); });
+		} else {
+			paste();
+		}
 	}
 
 	// ---------------------------------------------------------------- menus
@@ -2278,9 +2381,9 @@
 			{ label: 'Undo', key: 'Ctrl+Z', run: function () { undo(); }, enabled: function () { return state.undo.length > 0 || !!penPath; } },
 			{ label: 'Redo', key: 'Ctrl+Shift+Z', run: function () { redo(); }, enabled: function () { return state.redo.length > 0; } },
 			'-',
-			{ label: 'Cut', key: 'Ctrl+X', run: cutSelection, enabled: hasSelection },
-			{ label: 'Copy', key: 'Ctrl+C', run: copySelection, enabled: function () { return editablePaths().length > 0; } },
-			{ label: 'Paste', key: 'Ctrl+V', run: paste, enabled: function () { return !!state.clipboard; } },
+			{ label: 'Cut', key: 'Ctrl+X', run: function () { menuCopy(true); }, enabled: hasSelection },
+			{ label: 'Copy', key: 'Ctrl+C', run: function () { menuCopy(false); }, enabled: function () { return editablePaths().length > 0; } },
+			{ label: 'Paste', key: 'Ctrl+V', run: menuPaste },
 			{ label: 'Delete', key: 'Del', run: deleteSelection, enabled: hasSelection },
 			{ label: 'Delete points, keep path joined', key: 'Alt+Del', run: removeAnchors, enabled: function () { return selectedSegments().length > 0; } },
 			'-',

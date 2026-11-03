@@ -933,6 +933,31 @@
 	}
 
 	/*
+	 * Paths from SVG text (say, copied from Illustrator) as one bundle:
+	 * { entries, ink, warnings } in the file's units, y down. Each top-level
+	 * group with several paths becomes a path group.
+	 */
+	function pathsFromSVG(ps, svgText) {
+		var text = String(svgText).trim();
+		if (!/xmlns=/.test(text)) text = text.replace(/<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+		var r = shapesFromSVG(ps, text);
+		var entries = [], ink = null, gid = 0;
+		r.shapes.forEach(function (s) {
+			var local = {};
+			var whole = s.entries.length > 1 && !s.entries.some(function (e) { return e.group; });
+			var mine = whole ? ++gid : 0;
+			s.entries.forEach(function (e) {
+				var c = Object.assign({}, e);
+				if (c.group) { if (!local[c.group]) local[c.group] = ++gid; c.group = local[c.group]; }
+				else if (whole) c.group = mine;
+				entries.push(c);
+			});
+			ink = ink ? ink.unite(s.ink) : s.ink.clone();
+		});
+		return { entries: entries, ink: ink, warnings: r.warnings };
+	}
+
+	/*
 	 * Build a new font from shapes you've named. picks: [{ ch, entries, ink,
 	 * baseline }] in file units (y down). Nothing is scaled: a unit in the
 	 * file is a font unit. The cell height is the capitals' height (or the
@@ -1032,6 +1057,7 @@
 		layoutBlock: layoutBlock,
 		fromSVG: fromSVG,
 		shapesFromSVG: shapesFromSVG,
+		pathsFromSVG: pathsFromSVG,
 		shapeRows: shapeRows,
 		fontFromShapes: fontFromShapes,
 		STANDARD_ORDER: STANDARD_ORDER,
