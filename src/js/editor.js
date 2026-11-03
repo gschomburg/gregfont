@@ -1844,42 +1844,111 @@
 		});
 	}
 
-	// Greedy nearest-neighbour: from 0,0, keep drawing whichever stroke has an
-	// end (or, for a closed shape, any point) nearest the pen, flipping it if
-	// needed. Only applied if it shortens the pen-up travel.
+	// The ways a stroke can be drawn: an open stroke either way round; a
+	// closed shape starting (and ending) at any of its points. `change`
+	// marks options that differ from how it's drawn now.
+	function strokeOptions(p) {
+		if (p.closed) {
+			return p.segments.map(function (s, i) {
+				return { start: i, reverse: false, a: s.point, b: s.point, change: i === 0 ? 0 : 1 };
+			});
+		}
+		return [
+			{ start: 0, reverse: false, a: p.firstSegment.point, b: p.lastSegment.point, change: 0 },
+			{ start: 0, reverse: true, a: p.lastSegment.point, b: p.firstSegment.point, change: 1 }
+		];
+	}
+
+	// The drawing plan with the least pen-up travel, starting from 0,0.
+	// Up to 12 strokes it checks every order, direction and start point
+	// (dynamic programming over subsets); ties keep the current setup. More
+	// strokes than that fall back to nearest-next.
+	function bestPlan(paths) {
+		var n = paths.length, origin = new P.Point(0, 0);
+		var TIE = 1e-4;   // tiny cost for changing things, so ties keep what's there
+		var nodes = [];   // every (stroke, option)
+		paths.forEach(function (p, i) {
+			strokeOptions(p).forEach(function (o) { o.stroke = i; o.path = p; nodes.push(o); });
+		});
+		var K = nodes.length;
+
+		if (n > 12) {
+			var pos = origin, left = paths.slice(), plan = [];
+			while (left.length) {
+				var best = null;
+				nodes.forEach(function (o) {
+					if (left.indexOf(o.path) < 0) return;
+					var d = pos.getDistance(o.a) + o.change * TIE;
+					if (!best || d < best.d) best = { d: d, o: o };
+				});
+				plan.push(best.o);
+				pos = best.o.b;
+				left.splice(left.indexOf(best.o.path), 1);
+			}
+			return plan;
+		}
+
+		var full = (1 << n) - 1;
+		var cost = new Float64Array((full + 1) * K).fill(Infinity);
+		var prev = new Int32Array((full + 1) * K).fill(-1);
+		nodes.forEach(function (o, k) {
+			cost[(1 << o.stroke) * K + k] = origin.getDistance(o.a) + o.change * TIE + (o.stroke === 0 ? 0 : TIE / 2);
+		});
+		for (var mask = 1; mask <= full; mask++) {
+			for (var k = 0; k < K; k++) {
+				var here = cost[mask * K + k];
+				if (here === Infinity) continue;
+				var from = nodes[k];
+				for (var j = 0; j < K; j++) {
+					var to = nodes[j];
+					if (mask & (1 << to.stroke)) continue;
+					var next = mask | (1 << to.stroke);
+					var c = here + from.b.getDistance(to.a) + to.change * TIE +
+						(to.stroke === from.stroke + 1 ? 0 : TIE / 2);   // prefer the current order
+					if (c < cost[next * K + j]) {
+						cost[next * K + j] = c;
+						prev[next * K + j] = k;
+					}
+				}
+			}
+		}
+		var end = -1;
+		for (k = 0; k < K; k++) {
+			if (end < 0 || cost[full * K + k] < cost[full * K + end]) end = k;
+		}
+		var planOut = [], m = full;
+		while (end >= 0) {
+			planOut.unshift(nodes[end]);
+			var before = prev[m * K + end];
+			m &= ~(1 << nodes[end].stroke);
+			end = before;
+		}
+		return planOut;
+	}
+
+	function planTravel(plan) {
+		var pos = new P.Point(0, 0), total = 0;
+		plan.forEach(function (o) { total += pos.getDistance(o.a); pos = o.b; });
+		return total;
+	}
+
+	// Reorder, flip and re-start strokes to shorten pen-up travel. Points and
+	// curves never move. Only applied if it's actually shorter.
 	function optimizeStrokes() {
 		var paths = strokePaths();
 		if (paths.length === 0) { setStatus('Nothing to optimize'); return; }
 		var before = travelOf(paths);
-		var pos = new P.Point(0, 0), left = paths.slice(), plan = [], after = 0;
-		while (left.length) {
-			var best = null;
-			left.forEach(function (p) {
-				if (p.closed) {
-					p.segments.forEach(function (s, i) {
-						var d = pos.getDistance(s.point);
-						if (!best || d < best.d - EPS) best = { d: d, path: p, start: i, reverse: false, end: s.point };
-					});
-				} else {
-					var d1 = pos.getDistance(p.firstSegment.point), d2 = pos.getDistance(p.lastSegment.point);
-					if (!best || d1 < best.d - EPS) best = { d: d1, path: p, reverse: false, end: p.lastSegment.point };
-					if (d2 < best.d - EPS) best = { d: d2, path: p, reverse: true, end: p.firstSegment.point };
-				}
-			});
-			plan.push(best);
-			after += best.d;
-			pos = best.end;
-			left.splice(left.indexOf(best.path), 1);
-		}
+		var plan = bestPlan(paths);
+		var after = planTravel(plan);
 		if (after >= before - 0.05) {
-			setStatus('Already as short as this gets (pen-up travel ' + round(before, 0.1) + ')');
+			setStatus('Already as short as it gets (pen-up travel ' + round(before, 0.1) + ')');
 			return;
 		}
 		edit(function () {
-			plan.forEach(function (step) {
-				if (step.start) rotateClosedStart(step.path, step.start);
-				if (step.reverse) step.path.reverse();
-				glyphLayer.addChild(step.path);   // re-adding moves it to the end
+			plan.forEach(function (o) {
+				if (o.start) rotateClosedStart(o.path, o.start);
+				if (o.reverse) o.path.reverse();
+				glyphLayer.addChild(o.path);   // re-adding moves it to the end
 			});
 			deselectAll();
 		});
