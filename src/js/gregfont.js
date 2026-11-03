@@ -283,10 +283,13 @@
 	 * shapes and corners grow outward by half the stroke, but a flat stroke
 	 * end stops where it was drawn, so stems look short next to round
 	 * letters. This lengthens each open end that finishes on (or within a
-	 * hair of) a guide line, running roughly up or down, so its edge lands
-	 * half a stroke past the guide, the same as the rest of the ink.
-	 * Round and square ends already reach that far, so those just snap onto
-	 * the guide. Ends away from the guides (tails, diagonals) are left alone.
+	 * hair of) a guide line just enough that the end's outermost corner
+	 * lands half a stroke past the guide, the same as the rest of the ink.
+	 * A straight stem gets half a stroke; an end cut at an angle already
+	 * has a corner partway there, so it gets less (about 0.27 of a stroke
+	 * at 34 degrees from vertical, 0.07 at 75). Round ends already reach
+	 * that far at any angle, so those just snap onto the guide. Ends away
+	 * from the guides, or running nearly flat along them, are left alone.
 	 *
 	 * d is one path's data in font units (y up); width is the stroke width
 	 * in font units; cap is the end style used to draw it. Returns new path
@@ -297,7 +300,6 @@
 		var g = font.guides || {};
 		var guides = [0, g.xHeight, g.cap, g.descender].filter(function (v) { return typeof v === 'number' && isFinite(v); });
 		var tol = Math.max(font.cell.height * 0.03, 1);
-		var reach = cap === 'butt' ? width / 2 : 0;   // how far past the guide the end point goes
 		var item = ps.PathItem.create(d);
 		item.remove();
 		var parts = item instanceof ps.CompoundPath ? item.children.slice() : [item];
@@ -308,14 +310,21 @@
 				var pt = atEnd ? path.lastSegment.point : path.firstSegment.point;
 				// the direction the stroke leaves in, at this end
 				var t = atEnd ? path.getTangentAt(path.length) : path.getTangentAt(0).negate();
-				if (!t || Math.abs(t.y) < 0.85) return;       // only ends running up or down
+				if (!t || Math.abs(t.y) < 0.26) return;       // not ends running nearly flat (over 75 degrees)
 				var near = null;
 				guides.forEach(function (y) {
 					if (Math.abs(pt.y - y) <= tol && (near === null || Math.abs(pt.y - y) < Math.abs(pt.y - near))) near = y;
 				});
 				if (near === null) return;
-				var target = near + (t.y > 0 ? reach : -reach);
-				var len = (target - pt.y) / t.y;
+				// how far the outermost corner of the end sits past the end point,
+				// towards the guide's outside: a flat end's corner is half the
+				// width out sideways; a square end adds half a width along the
+				// stroke; a round end reaches half a width in every direction
+				var side = Math.abs(t.x) * width / 2, along = Math.abs(t.y) * width / 2;
+				var corner = cap === 'round' ? width / 2 : cap === 'square' ? side + along : side;
+				var sign = t.y > 0 ? 1 : -1;
+				var len = (near + sign * width / 2 - sign * corner - pt.y) / t.y;
+				len = Math.min(len, width / 2 + tol);           // never more than about half a stroke
 				if (Math.abs(len) < 1e-3 || len < -tol) return;
 				var to = pt.add(t.multiply(len));
 				if (len < 0) {
