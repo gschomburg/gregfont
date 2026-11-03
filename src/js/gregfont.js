@@ -104,6 +104,47 @@
 		}).then(normalize);
 	}
 
+	/*
+	 * Load every font listed in <base>fonts.json. Resolves to [{ file, font }]
+	 * in list order. If fetching fails (as it does when a page is opened
+	 * straight from disk), falls back to fonts/fonts.js, a copy of the fonts
+	 * as a script that the page loads with a <script> tag.
+	 */
+	function loadAll(base) {
+		base = base || 'fonts/';
+		return fetch(base + 'fonts.json', { cache: 'no-store' })
+			.then(function (res) {
+				if (!res.ok) throw new Error('Could not load ' + base + 'fonts.json (' + res.status + ')');
+				return res.json();
+			})
+			.then(function (manifest) {
+				return Promise.all(manifest.fonts.map(function (file) {
+					return load(base + file).then(function (font) { return { file: file, font: font }; });
+				}));
+			})
+			.catch(function (err) {
+				var bundle = global.GREGFONT_BUNDLE;
+				if (!bundle) throw err;
+				return bundle.fonts.filter(function (file) { return bundle.data[file]; }).map(function (file) {
+					// copy, so edits never touch the bundle itself
+					return { file: file, font: normalize(JSON.parse(JSON.stringify(bundle.data[file]))) };
+				});
+			});
+	}
+
+	var BUNDLE_HEADER = '// Generated from fonts.json and the font files so the pages work when opened\n' +
+		'// straight from disk. Don\'t edit: the JSON files are the fonts. Rebuild with\n' +
+		'// python tools/build_fonts.py (saving from the editor also rebuilds it).\n';
+
+	// fonts/fonts.js from [[file name, file text]], in list order.
+	// Same output as bundle_script() in tools/build_fonts.py.
+	function bundleScript(pairs) {
+		return BUNDLE_HEADER + 'window.GREGFONT_BUNDLE = {\n"fonts": ' +
+			JSON.stringify(pairs.map(function (p) { return p[0]; })).replace(/","/g, '", "') + ',\n"data": {\n' +
+			pairs.map(function (p) { return JSON.stringify(p[0]) + ': ' + p[1].trim(); }).join(',\n') +
+			'\n}\n};\n';
+	}
+
 	function round(n) {
 		return Math.round(n * 1000) / 1000;
 	}
@@ -516,6 +557,8 @@
 		charFromLayerName: charFromLayerName,
 		normalize: normalize,
 		load: load,
+		loadAll: loadAll,
+		bundleScript: bundleScript,
 		stringify: stringify,
 		lookup: lookup,
 		glyphItem: glyphItem,

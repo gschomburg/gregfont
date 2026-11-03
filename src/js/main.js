@@ -261,13 +261,9 @@ function buildText(){
 //LOADING & SAVING
 /**************************************/
 function loadFonts(){
-	return fetch(FONTS_PATH + "fonts.json", { cache: 'no-store' })
-		.then(function(res){ return res.json(); })
-		.then(function(manifest){
-			return Promise.all(manifest.fonts.map(function(file){
-				return GregFont.load(FONTS_PATH + file);
-			}));
-		});
+	return GregFont.loadAll(FONTS_PATH).then(function(list){
+		return list.map(function(item){ return item.font; });
+	});
 }
 
 function fillFontSelect(){
@@ -387,9 +383,8 @@ function init(){
 		buildText();
 	}).catch(function(err){
 		console.error("Failed to load fonts", err);
-		var msg = location.protocol === 'file:'
-			? 'Fonts can’t load from a file:// page. Run "python tools/server.py" and open http://localhost:8000'
-			: 'Could not load fonts: ' + err.message;
+		var msg = 'Could not load fonts: ' + err.message +
+			(location.protocol === 'file:' ? ' (fonts/fonts.js is missing; run python tools/build_fonts.py)' : '');
 		$('<div id="load-error">').text(msg).css({
 			position: 'fixed', top: 0, left: 0, right: 0, padding: '10px 16px', zIndex: 10,
 			background: '#e25c5c', color: '#fff', font: '14px Raleway, sans-serif'

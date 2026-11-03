@@ -9,13 +9,23 @@ Glyphs are stroked paths rendered with [Paper.js](http://paperjs.org/). Because 
 
 ## Running it
 
-There is no build step. Run the dev server from the repo root, then open http://localhost:8000 (typesetter) or http://localhost:8000/editor.html (editor):
+There is no build step. Either way below works.
+
+**Open the files directly.** Drag `src/index.html` (typesetter) or `src/editor.html` (editor) into the browser. Browsers block reading other files from a page opened this way, so the fonts come from `src/fonts/fonts.js`, a copy of every font that loads as a script. When you save in the editor, Chrome and Edge ask once for the `src/fonts` folder and then save straight into it, keeping `fonts.json` and `fonts.js` up to date. Other browsers download the font file instead.
+
+**Or run the dev server** from the repo root, then open http://localhost:8000 (typesetter) or http://localhost:8000/editor.html (editor):
 
 ```sh
 python tools/server.py        # or: python tools/server.py 8080
 ```
 
-It serves `src/` and also lets the editor save font files straight into `src/fonts/`. Any other static server pointed at `src/` works for just setting text. Opening `index.html` straight from disk won't work, because fonts are loaded with `fetch`.
+It serves `src/`, and the editor saves through it with no folder prompt. Other static servers (like VS Code's Live Server extension) work too, and saving then falls back to the folder prompt. Live Server reloads the page whenever a file changes, including when you save a font, so set `liveServer.settings.ignoreFiles` to include `src/fonts/**`.
+
+`fonts.js` is rebuilt whenever the editor or the dev server saves. After changing a font file any other way (by hand, or with git), rebuild it:
+
+```sh
+python tools/build_fonts.py
+```
 
 ## Typesetter
 
@@ -107,7 +117,7 @@ The layout follows desktop drawing apps:
 | Snap | <kbd>G</kbd> toggles snapping to the grid; set the grid size in the toolbar. |
 | View | Mouse wheel zooms, Space-drag or middle-drag pans, <kbd>F</kbd> fits the glyph. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
-| Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Without the dev server, the file is downloaded instead. |
+| Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `src/fonts` folder. Browsers without folder access download the file instead. |
 
 The **Font** panel sets the name, cell size, guide lines, default stroke caps and joins, and the typesetter defaults. Individual paths can override caps and joins from the **Glyph** panel. To add a glyph that isn't in the grid (é, ß, or a named alternate), type it into the box under the grid.
 
@@ -146,10 +156,12 @@ src/
   libs/               jQuery 3.1.1 (typesetter), Paper.js 0.12.18 core (vendored)
   fonts/
     fonts.json        Which fonts to load, in dropdown order
+    fonts.js          Generated copy of all fonts, for pages opened from disk
     <font>.json       Fonts
     <font>_all_WxH.ai Original Illustrator sources
 tools/
   server.py           Dev server (static files + saving fonts)
+  build_fonts.py      Rebuilds src/fonts/fonts.js
 textSample*.txt       Scratch character sets for testing
 ```
 

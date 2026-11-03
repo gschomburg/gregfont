@@ -2258,33 +2258,133 @@
 			while (taken.indexOf(file) >= 0) file = base + '-' + (n++) + '.json';
 			entry.file = file;
 		}
-		GregFont.saveToServer(entry.file, entry.font).then(function (ok) {
-			if (ok) {
-				entry.dirty = false;
-				refreshFontSelect();
-				updateFontPanel();
-				setStatus('Saved fonts/' + entry.file + ' at ' + new Date().toLocaleTimeString());
-				return;
-			}
-			// No dev server: download the file instead.
-			var blob = new Blob([GregFont.stringify(entry.font)], { type: 'application/json' });
-			var a = document.createElement('a');
-			a.href = URL.createObjectURL(blob);
-			a.download = entry.file;
-			a.click();
-			setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-			setStatus('Dev server not running, so the font was downloaded. Put it in src/fonts/ and add it to fonts.json.', true);
+		function saved(where) {
+			entry.dirty = false;
+			refreshFontSelect();
+			updateFontPanel();
+			setStatus('Saved ' + where + entry.file + ' at ' + new Date().toLocaleTimeString());
+		}
+		// From the dev server: save through it. Opened from disk: write into
+		// the fonts folder (Chrome/Edge ask for it once). Otherwise download.
+		var viaServer = location.protocol === 'file:' ? Promise.resolve(false) : GregFont.saveToServer(entry.file, entry.font);
+		viaServer.then(function (ok) {
+			if (ok) { saved('fonts/'); return; }
+			if (!window.showDirectoryPicker) { downloadFont(entry); return; }
+			saveToFolder(entry).then(function (dirName) {
+				saved(dirName + '/');
+			}, function (err) {
+				if (err && err.name === 'AbortError') { setStatus('Not saved: no folder chosen', true); return; }
+				console.error(err);
+				setStatus('Not saved: ' + err.message, true);
+			});
+		});
+	}
+
+	function downloadFont(entry) {
+		var blob = new Blob([GregFont.stringify(entry.font)], { type: 'application/json' });
+		var a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = entry.file;
+		a.click();
+		setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+		setStatus('This browser can\u2019t write to folders, so the font was downloaded. Put it in src/fonts/, add it to fonts.json, and run python tools/build_fonts.py.', true);
+	}
+
+	// --- saving into the fonts folder (File System Access API)
+
+	var fontsDir = null;
+
+	// The chosen folder is remembered in IndexedDB, so it's only picked once.
+	function rememberedDir(value) {
+		return new Promise(function (resolve) {
+			try {
+				var req = indexedDB.open('gregfont-editor', 1);
+				req.onupgradeneeded = function () { req.result.createObjectStore('handles'); };
+				req.onerror = function () { resolve(null); };
+				req.onsuccess = function () {
+					var tx = req.result.transaction('handles', 'readwrite');
+					var store = tx.objectStore('handles');
+					if (value) { store.put(value, 'fonts'); tx.oncomplete = function () { resolve(value); }; }
+					else {
+						var get = store.get('fonts');
+						get.onsuccess = function () { resolve(get.result || null); };
+						get.onerror = function () { resolve(null); };
+					}
+				};
+			} catch (e) { resolve(null); }
+		});
+	}
+
+	function withPermission(dir) {
+		var opts = { mode: 'readwrite' };
+		return dir.queryPermission(opts).then(function (p) {
+			return p === 'granted' ? p : dir.requestPermission(opts);
+		}).then(function (p) {
+			if (p !== 'granted') throw new Error('no permission to write to the ' + dir.name + ' folder');
+			return dir;
+		});
+	}
+
+	function pickFontsDir() {
+		setStatus('Choose the src/fonts folder to save into\u2026');
+		return window.showDirectoryPicker({ id: 'gregfont-fonts', mode: 'readwrite' }).then(function (dir) {
+			return dir.getFileHandle('fonts.json').then(function () { return dir; }, function () {
+				throw new Error('that folder has no fonts.json; choose the src/fonts folder');
+			});
+		}).then(function (dir) {
+			rememberedDir(dir);
+			return dir;
+		});
+	}
+
+	function getFontsDir() {
+		if (fontsDir) return withPermission(fontsDir);
+		return rememberedDir().then(function (dir) {
+			return dir ? withPermission(dir).catch(pickFontsDir) : pickFontsDir();
+		}).then(function (dir) {
+			fontsDir = dir;
+			return dir;
+		});
+	}
+
+	function readText(dir, name) {
+		return dir.getFileHandle(name).then(function (h) { return h.getFile(); }).then(function (f) { return f.text(); });
+	}
+
+	function writeText(dir, name, text) {
+		return dir.getFileHandle(name, { create: true }).then(function (h) { return h.createWritable(); }).then(function (w) {
+			return w.write(text).then(function () { return w.close(); });
+		});
+	}
+
+	// Write the font, add it to fonts.json if new, and rebuild fonts.js from
+	// the files on disk. Resolves to the folder's name.
+	function saveToFolder(entry) {
+		return getFontsDir().then(function (dir) {
+			return writeText(dir, entry.file, GregFont.stringify(entry.font))
+				.then(function () { return readText(dir, 'fonts.json'); })
+				.then(function (text) {
+					var manifest = JSON.parse(text);
+					if (manifest.fonts.indexOf(entry.file) >= 0) return manifest;
+					manifest.fonts.push(entry.file);
+					return writeText(dir, 'fonts.json', JSON.stringify(manifest, null, '\t') + '\n').then(function () { return manifest; });
+				})
+				.then(function (manifest) {
+					return Promise.all(manifest.fonts.map(function (file) {
+						return readText(dir, file).then(function (t) { return [file, t]; }, function () { return null; });
+					}));
+				})
+				.then(function (pairs) {
+					return writeText(dir, 'fonts.js', GregFont.bundleScript(pairs.filter(Boolean)));
+				})
+				.then(function () { return dir.name; });
 		});
 	}
 
 	function loadAll() {
-		return fetch('fonts/fonts.json', { cache: 'no-store' })
-			.then(function (res) { return res.json(); })
-			.then(function (manifest) {
-				return Promise.all(manifest.fonts.map(function (file) {
-					return GregFont.load('fonts/' + file).then(function (f) { addEntry(f, file); });
-				}));
-			});
+		return GregFont.loadAll('fonts/').then(function (list) {
+			list.forEach(function (item) { addEntry(item.font, item.file); });
+		});
 	}
 
 	// ----------------------------------------------------------------- wire up
@@ -2392,8 +2492,7 @@
 		console.error(err);
 		newFont();
 		// after newFont(), which sets its own status
-		setStatus(location.protocol === 'file:'
-			? 'Fonts can’t load from a file:// page. Run "python tools/server.py" and open http://localhost:8000/editor.html'
-			: 'Could not load fonts: ' + err.message, true);
+		setStatus('Could not load fonts: ' + err.message +
+			(location.protocol === 'file:' ? ' (fonts/fonts.js is missing; run python tools/build_fonts.py)' : ''), true);
 	});
 })();

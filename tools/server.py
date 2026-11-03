@@ -2,8 +2,8 @@
 
 Serves src/ like any static server, and also accepts
     PUT /fonts/<name>.json
-to save a font file into src/fonts/ (adding it to fonts/fonts.json if new).
-That's how the editor saves straight to disk.
+to save a font file into src/fonts/ (adding it to fonts/fonts.json if new,
+and rebuilding fonts/fonts.js). That's how the editor saves straight to disk.
 
 Usage:  python tools/server.py [port]      (default port 8000)
 Only listens on 127.0.0.1.
@@ -14,6 +14,8 @@ import os
 import re
 import sys
 from functools import partial
+
+from build_fonts import build as build_bundle
 
 SRC = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
 FONTS = os.path.join(SRC, 'fonts')
@@ -47,6 +49,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         with open(os.path.join(FONTS, file_name), 'wb') as f:
             f.write(body)
         add_to_manifest(file_name)
+        build_bundle(FONTS)
 
         self.send_response(204)
         self.end_headers()
