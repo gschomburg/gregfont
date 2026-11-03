@@ -2674,6 +2674,8 @@
 	function updateFontPanel() {
 		var f = font();
 		$('font-name').value = f.name;
+		$('font-status').value = GregFont.statusOf(f);
+		$('font-revision').textContent = f.revision ? 'rev ' + f.revision + (f.modified ? ' \u00b7 ' + f.modified : '') : 'not saved yet';
 		updateFontMeta();
 		$('cell-width').value = f.cell.width;
 		$('cell-height').value = f.cell.height;
@@ -2704,6 +2706,11 @@
 	function bindFontInputs() {
 		$('font-name').addEventListener('change', function () {
 			font().name = this.value.trim() || 'Untitled';
+			refreshFontSelect();
+			markDirty();
+		});
+		$('font-status').addEventListener('change', function () {
+			font().status = this.value;
 			refreshFontSelect();
 			markDirty();
 		});
@@ -3021,7 +3028,7 @@
 		state.entries.forEach(function (entry, i) {
 			var opt = document.createElement('option');
 			opt.value = i;
-			opt.textContent = entry.font.name + (entry.dirty ? ' *' : '');
+			opt.textContent = GregFont.fontLabel(entry.font) + (entry.dirty ? ' *' : '');
 			select.appendChild(opt);
 		});
 		// ways to start a font, at the bottom of the list
@@ -3070,6 +3077,7 @@
 			format: GregFont.FORMAT,
 			version: GregFont.VERSION,
 			name: 'Untitled',
+			status: 'in-progress',
 			cell: { width: 40, height: 60 },
 			guides: { cap: 60, xHeight: 30, descender: -20 },
 			style: { strokeCap: 'round', strokeJoin: 'round', miterLimit: 10 },
@@ -3246,11 +3254,20 @@
 			while (taken.indexOf(file) >= 0) file = base + '-' + (n++) + '.json';
 			entry.file = file;
 		}
+		// this save's revision and date go in the file; put back if it fails
+		var f = entry.font, before = { revision: f.revision, modified: f.modified };
+		var now = new Date();
+		f.revision = (f.revision || 0) + 1;
+		f.modified = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+		function failed() {
+			if (before.revision === undefined) delete f.revision; else f.revision = before.revision;
+			if (before.modified === undefined) delete f.modified; else f.modified = before.modified;
+		}
 		function saved(where) {
 			entry.dirty = false;
 			refreshFontSelect();
 			updateFontPanel();
-			setStatus('Saved ' + where + entry.file + ' at ' + new Date().toLocaleTimeString());
+			setStatus('Saved ' + where + entry.file + ' (rev ' + f.revision + ') at ' + now.toLocaleTimeString());
 		}
 		// From the dev server: save through it. Opened from disk: write into
 		// the fonts folder (Chrome/Edge ask for it once). Otherwise download.
@@ -3261,6 +3278,7 @@
 			saveToFolder(entry).then(function (dirName) {
 				saved(dirName + '/');
 			}, function (err) {
+				failed();
 				if (err && err.name === 'AbortError') { setStatus('Not saved: no folder chosen', true); return; }
 				console.error(err);
 				setStatus('Not saved: ' + err.message, true);

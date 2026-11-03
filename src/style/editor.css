@@ -92,6 +92,10 @@ body.specimen #preview-expand { border-color: var(--accent); color: var(--accent
 body.sliding { overflow: hidden; }
 body.sliding #preview-bar { box-shadow: 0 -8px 24px var(--shadow); }
 
+.status-row { display: flex; align-items: center; gap: 8px; }
+.status-row select { flex: 1; min-width: 0; font-size: 12px; padding: 3px 6px; }
+#font-revision { white-space: nowrap; }
+
 /* New font from shapes */
 .modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 28px; background: rgba(8, 9, 11, 0.6); }
 .modal[hidden] { display: none; }

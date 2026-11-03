@@ -733,6 +733,12 @@
 			'<svg xmlns="http://www.w3.org/2000/svg" width="' + page.width + 'px" height="' + page.height + 'px" viewBox="0 0 ' + page.width + ' ' + page.height + '">'];
 		var title = doc.boxes.map(function (b) { return b.text.trim(); }).filter(Boolean)[0] || 'gregfont';
 		out.push('<title>' + xmlEscape(title.slice(0, 80)) + '</title>');
+		var used = [];
+		doc.boxes.forEach(function (b) { if (used.indexOf(b.font) < 0) used.push(b.font); });
+		out.push('<desc>Set with gregfont' + (window.GREGFONT_VERSION ? ' ' + window.GREGFONT_VERSION.version : '') + ' in ' + used.map(function (file) {
+			var f = fontEntry(file).font, ver = GregFont.fontVersionText(f);
+			return xmlEscape(f.name + (ver ? ' (' + ver + ')' : ''));
+		}).join(', ') + '</desc>');
 		// the layout, so Open can bring it back (fonts are referenced by file name)
 		var layout = JSON.stringify(doc).replace(/]]>/g, ']]]]><![CDATA[>');
 		out.push('<metadata id="' + LAYOUT_ID + '"><![CDATA[' + layout + ']]></metadata>');
@@ -919,7 +925,8 @@
 		$('type-title').textContent = sel ? 'Text ' + (doc.boxes.indexOf(sel) + 1) + ' of ' + doc.boxes.length : 'New text';
 		$('type-sub').textContent = sel ? '' : 'settings for the next box';
 		$('font-select').value = entry.file;
-		$('font-meta').textContent = Object.keys(f.glyphs).length + ' glyphs · cell ' + f.cell.width + '×' + f.cell.height;
+		var ver = GregFont.fontVersionText(f);
+		$('font-meta').textContent = Object.keys(f.glyphs).length + ' glyphs · cell ' + f.cell.width + '×' + f.cell.height + (ver ? ' · ' + ver : '');
 		setField('t-size', round(b.size));
 		setField('t-pen', round(b.pen));
 		setSegmented('t-cap', b.cap);
@@ -1249,7 +1256,7 @@
 		fonts.forEach(function (f) {
 			var opt = document.createElement('option');
 			opt.value = f.file;
-			opt.textContent = f.font.name;
+			opt.textContent = GregFont.fontLabel(f.font);
 			$('font-select').appendChild(opt);
 		});
 		var saved = null;

@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.4.0">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.4.0">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.5.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.5.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -38,6 +38,15 @@
 			<details id="font-settings" class="fold" data-remember="font-settings" open>
 				<summary>Font settings</summary>
 				<label class="field"><span class="field-label">Name</span><input id="font-name"></label>
+				<div class="status-row">
+					<label for="font-status" class="field-label">Status</label>
+					<select id="font-status" title="Where this font is at. In progress and beta show next to its name in the font lists.">
+						<option value="in-progress">In progress</option>
+						<option value="beta">Beta</option>
+						<option value="done">Done</option>
+					</select>
+					<span id="font-revision" class="meta" title="Each save counts up the revision"></span>
+				</div>
 				<div class="field-pair">
 					<label class="field" data-scrub="x" title="Cell width: drag sideways or type"><span class="field-label">Cell W</span><input type="number" id="cell-width" min="1"></label>
 					<label class="field" data-scrub="x" title="Cell height: drag sideways or type"><span class="field-label">Cell H</span><input type="number" id="cell-height" min="1"></label>
@@ -269,13 +278,13 @@
 			</div>
 		</div>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.4.0"></script>
-		<script src="fonts/fonts.js?v=2.4.0"></script>
-		<script src="js/gregfont.js?v=2.4.0"></script>
-		<script src="js/version.js?v=2.4.0"></script>
-		<script src="js/ui.js?v=2.4.0"></script>
-		<script src="js/samples.js?v=2.4.0"></script>
-		<script src="js/shapeimport.js?v=2.4.0"></script>
-		<script src="js/editor.js?v=2.4.0"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.5.0"></script>
+		<script src="fonts/fonts.js?v=2.5.0"></script>
+		<script src="js/gregfont.js?v=2.5.0"></script>
+		<script src="js/version.js?v=2.5.0"></script>
+		<script src="js/ui.js?v=2.5.0"></script>
+		<script src="js/samples.js?v=2.5.0"></script>
+		<script src="js/shapeimport.js?v=2.5.0"></script>
+		<script src="js/editor.js?v=2.5.0"></script>
 	</body>
 </html>

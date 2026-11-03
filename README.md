@@ -90,6 +90,8 @@ Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json
 - **paths** can override `strokeCap`, `strokeJoin` or `miterLimit` from `style`. Paths the editor has grouped share a `group` number; the typesetter ignores it.
 - **kerning** maps two-character pairs to an adjustment added between them (proportional only).
 - **spacing** holds the defaults the typesetter's controls reset to.
+- **status** is where the font is at: `"in-progress"`, `"beta"` or `"done"` (a font without one is done). In progress and beta show next to the font's name in both apps' font lists. New fonts start in progress; set it under Font settings → Status.
+- **revision** and **modified** count saves: each Save in the editor adds one to the revision and sets the date. The typesetter shows the revision under the font picker and names each font's revision in the SVGs it saves (in the `<desc>`), so you can tell which version a plot used.
 - The file is written one glyph per line, so git diffs show which glyphs changed.
 - Version 1 files (y down, origin at the cell's top-left, an explicit baseline guide) still load; they're converted on the way in and saved as version 2.
 

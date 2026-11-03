@@ -218,6 +218,29 @@
 	}
 
 	// JSON with one glyph per line, so diffs show which glyphs changed.
+	/*
+	 * Where a font is at: 'in-progress' (still being drawn), 'beta' (all
+	 * there, being tried out) or 'done'. A font without one is done. Saving
+	 * from the editor also counts up `revision` and sets `modified` (a date).
+	 */
+	var STATUSES = { 'in-progress': 'in progress', beta: 'beta', done: 'done' };
+
+	function statusOf(font) { return STATUSES[font.status] ? font.status : 'done'; }
+
+	// "Bleeker (in progress)", or just the name when it's done
+	function fontLabel(font) {
+		var s = statusOf(font);
+		return font.name + (s === 'done' ? '' : ' (' + STATUSES[s] + ')');
+	}
+
+	// "rev 3 · in progress", for a line of small print
+	function fontVersionText(font) {
+		var parts = [];
+		if (font.revision) parts.push('rev ' + font.revision);
+		if (statusOf(font) !== 'done') parts.push(STATUSES[statusOf(font)]);
+		return parts.join(' \u00b7 ');
+	}
+
 	function stringify(font) {
 		var top = {};
 		Object.keys(font).forEach(function (k) {
@@ -1017,6 +1040,7 @@
 			format: FORMAT,
 			version: VERSION,
 			name: options.name || 'Untitled',
+			status: 'in-progress',
 			cell: cell,
 			guides: { cap: cap, xHeight: xHeight, descender: descender },
 			style: style,
@@ -1056,6 +1080,10 @@
 		layout: layout,
 		layoutBlock: layoutBlock,
 		fromSVG: fromSVG,
+		STATUSES: STATUSES,
+		statusOf: statusOf,
+		fontLabel: fontLabel,
+		fontVersionText: fontVersionText,
 		shapesFromSVG: shapesFromSVG,
 		pathsFromSVG: pathsFromSVG,
 		shapeRows: shapeRows,
