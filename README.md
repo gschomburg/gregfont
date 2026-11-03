@@ -29,7 +29,13 @@ python tools/build_fonts.py
 
 ## Version
 
-Hover the **gregfont** name in either page's top bar to see the version and its date. It lives in `src/js/version.js`; bump it by hand when publishing (major for changes that break font or layout files, minor for features, patch for fixes).
+Hover the **gregfont** name in either page's top bar to see the version and its date. Before publishing, bump it:
+
+```sh
+python tools/bump_version.py 2.0.2
+```
+
+That writes the version and today's date into `src/js/version.js`, and adds `?v=2.0.2` to every script and stylesheet link in the two pages. Web hosts often tell browsers to keep `.js` and `.css` files for weeks, so without a new `?v=` visitors keep running the old scripts against the new pages. Use the first number for changes that break font or layout files, the middle for features, the last for fixes.
 
 ## Typesetter
 
@@ -175,6 +181,7 @@ src/
 tools/
   server.py           Dev server (static files + saving fonts)
   build_fonts.py      Rebuilds src/fonts/fonts.js
+  bump_version.py     Sets the version and stamps it on the pages' scripts (run before publishing)
 textSample*.txt       Scratch character sets for testing
 ```
 
