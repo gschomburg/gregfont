@@ -361,9 +361,18 @@
 			b.classList.toggle('active', b.dataset.tool === name);
 		});
 		wrap.className = 'tool-' + name;
+		$('help').textContent = TOOL_HELP[name] + ' \u00b7 wheel zooms \u00b7 Space-drag pans';
 		clearHover();
 		updatePathStyleRow();
 	}
+
+	var TOOL_HELP = {
+		select: 'Click or drag a box to pick whole paths \u00b7 drag to move, Alt-drag to copy \u00b7 box handles scale, just outside a corner rotates \u00b7 pink lines set spacing',
+		direct: 'Click points, or a line to pick one segment \u00b7 Shift adds \u00b7 drag handles to reshape (Alt makes a corner) \u00b7 double-click a point for curve/corner, a line to add a point',
+		pen: 'Click for corners, drag for curves \u00b7 click the first point to close, or the end of another path to join \u00b7 Enter or Esc finishes',
+		ellipse: 'Drag out an ellipse \u00b7 Shift for a circle',
+		scissors: 'Click a path to cut it there'
+	};
 
 	// --- selection model
 
@@ -1403,14 +1412,9 @@
 
 		if (ctrl && key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
 		if (ctrl && key === 'y') { e.preventDefault(); redo(); return; }
-		if (ctrl && key === 'a') {
-			e.preventDefault();
-			editablePaths().forEach(selectPath);
-			updatePathStyleRow();
-			return;
-		}
+		if (ctrl && key === 'a') { e.preventDefault(); selectAll(); return; }
 		if (ctrl && key === 'c') { copySelection(); return; }
-		if (ctrl && key === 'x') { e.preventDefault(); if (copySelection()) deleteSelection(); return; }
+		if (ctrl && key === 'x') { e.preventDefault(); cutSelection(); return; }
 		if (ctrl && key === 'v') { paste(); return; }
 		if (ctrl && key === 'j') { e.preventDefault(); joinSelection(); return; }
 		if (ctrl) return;
@@ -1428,9 +1432,7 @@
 			case 'g': setSnap(!state.snap); break;
 			case 'f': fit(); break;
 			case 'enter': finishPen(); break;
-			case 'escape':
-				if (penPath) finishPen(); else { deselectAll(); updatePathStyleRow(); }
-				break;
+			case 'escape': deselect(); break;
 			case 'delete': case 'backspace':
 				e.preventDefault();
 				if (e.altKey) removeAnchors(); else deleteSelection();
@@ -1449,6 +1451,143 @@
 	function setSnap(on) {
 		state.snap = on;
 		$('snap').checked = on;
+	}
+
+	function setAutoSlice(on) {
+		state.autoSlice = on;
+		$('auto-slice').checked = on;
+	}
+
+	function selectAll() {
+		editablePaths().forEach(selectPath);
+		updatePathStyleRow();
+	}
+
+	function deselect() {
+		if (penPath) finishPen();
+		else { deselectAll(); updatePathStyleRow(); }
+	}
+
+	function cutSelection() {
+		if (copySelection()) deleteSelection();
+	}
+
+	// ---------------------------------------------------------------- menus
+
+	function hasSelection() { return selectedPaths().length > 0; }
+
+	// The shortcuts here are only labels; the keydown handler does the work.
+	var MENUS = [
+		{ title: 'File', items: [
+			{ label: 'New font', run: function () { newFont(); } },
+			{ label: 'Import SVG…', run: function () { $('import-file').click(); } },
+			'-',
+			{ label: 'Save', key: 'Ctrl+S', run: function () { save(); } }
+		] },
+		{ title: 'Edit', items: [
+			{ label: 'Undo', key: 'Ctrl+Z', run: function () { undo(); }, enabled: function () { return state.undo.length > 0 || !!penPath; } },
+			{ label: 'Redo', key: 'Ctrl+Shift+Z', run: function () { redo(); }, enabled: function () { return state.redo.length > 0; } },
+			'-',
+			{ label: 'Cut', key: 'Ctrl+X', run: cutSelection, enabled: hasSelection },
+			{ label: 'Copy', key: 'Ctrl+C', run: copySelection, enabled: function () { return editablePaths().length > 0; } },
+			{ label: 'Paste', key: 'Ctrl+V', run: paste, enabled: function () { return !!state.clipboard; } },
+			{ label: 'Delete', key: 'Del', run: deleteSelection, enabled: hasSelection },
+			{ label: 'Delete points, keep path joined', key: 'Alt+Del', run: removeAnchors, enabled: function () { return selectedSegments().length > 0; } },
+			'-',
+			{ label: 'Select all', key: 'Ctrl+A', run: selectAll },
+			{ label: 'Deselect', key: 'Esc', run: deselect, enabled: hasSelection }
+		] },
+		{ title: 'Path', items: [
+			{ label: 'Join', key: 'Ctrl+J', run: joinSelection, enabled: hasSelection },
+			{ label: 'Slice at crossings', key: 'X', run: sliceSelection },
+			'-',
+			{ label: 'Rotate 90° clockwise', key: 'R', run: function () { rotateSelection(90); }, enabled: hasSelection },
+			{ label: 'Rotate 90° counter-clockwise', key: 'Shift+R', run: function () { rotateSelection(-90); }, enabled: hasSelection },
+			{ label: 'Flip horizontal', key: 'H', run: function () { flipSelection(false); }, enabled: hasSelection },
+			{ label: 'Flip vertical', key: 'Shift+H', run: function () { flipSelection(true); }, enabled: hasSelection },
+			'-',
+			{ label: 'Auto-slice new strokes', run: function () { setAutoSlice(!state.autoSlice); }, checked: function () { return state.autoSlice; } }
+		] },
+		{ title: 'View', items: [
+			{ label: 'Fit glyph', key: 'F', run: fit },
+			'-',
+			{ label: 'Snap to grid', key: 'G', run: function () { setSnap(!state.snap); }, checked: function () { return state.snap; } }
+		] }
+	];
+
+	function buildMenus() {
+		var bar = $('menubar'), openMenu = null;
+
+		function close() {
+			if (openMenu) openMenu.classList.remove('open');
+			openMenu = null;
+		}
+
+		function open(m) {
+			close();
+			m.querySelectorAll('.menu-item').forEach(function (b) {
+				var item = b.item;
+				b.disabled = item.enabled ? !item.enabled() : false;
+				b.classList.toggle('checked', !!(item.checked && item.checked()));
+			});
+			m.classList.add('open');
+			openMenu = m;
+		}
+
+		MENUS.forEach(function (menu) {
+			var m = document.createElement('div');
+			m.className = 'menu';
+			var title = document.createElement('button');
+			title.type = 'button';
+			title.className = 'menu-title';
+			title.textContent = menu.title;
+			// mousedown (with preventDefault) so keyboard focus stays on the canvas
+			title.addEventListener('mousedown', function (e) {
+				e.preventDefault();
+				if (openMenu === m) close(); else open(m);
+			});
+			title.addEventListener('mouseenter', function () {
+				if (openMenu && openMenu !== m) open(m);
+			});
+			var list = document.createElement('div');
+			list.className = 'menu-items';
+			menu.items.forEach(function (item) {
+				if (item === '-') {
+					var sep = document.createElement('div');
+					sep.className = 'menu-sep';
+					list.appendChild(sep);
+					return;
+				}
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'menu-item';
+				b.item = item;
+				var label = document.createElement('span');
+				label.textContent = item.label;
+				var key = document.createElement('span');
+				key.className = 'shortcut';
+				key.textContent = item.key || '';
+				b.appendChild(label);
+				b.appendChild(key);
+				b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+				b.addEventListener('click', function () {
+					close();
+					wrap.focus({ preventScroll: true });
+					item.run();
+				});
+				list.appendChild(b);
+			});
+			m.appendChild(title);
+			m.appendChild(list);
+			bar.appendChild(m);
+		});
+
+		document.addEventListener('mousedown', function (e) {
+			if (openMenu && !bar.contains(e.target)) close();
+		}, true);
+		document.addEventListener('keydown', function (e) {
+			if (openMenu && e.key === 'Escape') { close(); e.stopPropagation(); }
+		}, true);
 	}
 
 	// --------------------------------------------------------- glyph grid
@@ -1871,7 +2010,9 @@
 		document.querySelectorAll('.tool').forEach(function (b) {
 			b.addEventListener('click', function () { setTool(b.dataset.tool); });
 		});
+		buildMenus();
 		$('snap').addEventListener('change', function () { state.snap = this.checked; });
+		$('auto-slice').addEventListener('change', function () { state.autoSlice = this.checked; });
 		$('grid-size').addEventListener('change', function () {
 			var v = parseFloat(this.value);
 			if (v > 0) { state.grid = v; drawGuides(); }
@@ -1880,20 +2021,10 @@
 			var v = parseFloat(this.value);
 			if (v > 0) { state.strokeWidth = v; editablePaths().forEach(pathStyle); renderPreview(); }
 		});
-		$('undo').addEventListener('click', undo);
-		$('redo').addEventListener('click', redo);
-		$('fit').addEventListener('click', fit);
-		$('slice').addEventListener('click', sliceSelection);
-		$('join').addEventListener('click', joinSelection);
-		$('rotate').addEventListener('click', function (e) { rotateSelection(e.shiftKey ? -90 : 90); });
-		$('flip').addEventListener('click', function (e) { flipSelection(e.shiftKey); });
-		$('auto-slice').addEventListener('change', function () { state.autoSlice = this.checked; });
 
 		$('font-select').addEventListener('change', function () {
 			openEntry(state.entries[Number(this.value)]);
 		});
-		$('new-font').addEventListener('click', newFont);
-		$('import-svg').addEventListener('click', function () { $('import-file').click(); });
 		$('import-file').addEventListener('change', function () {
 			if (this.files[0]) importSVG(this.files[0]);
 			this.value = '';

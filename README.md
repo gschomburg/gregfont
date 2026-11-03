@@ -80,7 +80,13 @@ All reading, writing and importing lives in `src/js/gregfont.js`.
 
 Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font at the top, pick a glyph on the left, and draw on the canvas. The canvas works in font units, the same numbers stored in the font file.
 
-| Tool / action | How |
+The layout follows desktop drawing apps:
+
+- **Tools** are in the palette down the left of the canvas: Select, Direct select, Pen, Ellipse and Cut. A hint line at the bottom of the canvas explains the current tool.
+- **Commands** are in the menus at the top: **File** (new, import, save), **Edit** (undo, clipboard, delete, select all), **Path** (join, slice, rotate, flip) and **View** (fit, snap). Each menu item shows its keyboard shortcut.
+- **Options** for drawing (snap, grid size, on-screen stroke width, auto-slice) are in the bar above the canvas.
+
+| Tool / command | How |
 | --- | --- |
 | **Select** <kbd>V</kbd> | Picks whole paths. Click a path, Shift-click to add more, or drag a box. A box appears around the selection: drag its handles to scale (Shift keeps proportions, Alt scales from the center), or drag just outside a corner to rotate (Shift for 15° steps). Drag a path to move it, Alt-drag to move a copy. |
 | **Direct** <kbd>A</kbd> | Picks points and the segments between them. Click a point, or click a line to pick just that segment (Flash-style). Shift-click to add more, or drag a box around points. Drag to move them, drag handles to reshape curves (Alt breaks a smooth point into a corner), Alt-drag to move a copy. |

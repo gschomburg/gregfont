@@ -49,7 +49,30 @@ kbd { font-family: inherit; font-size: 10px; color: var(--muted); border: 1px so
 	grid-area: top; display: flex; align-items: center; gap: 8px; padding: 0 12px;
 	background: #222; border-bottom: 1px solid var(--line);
 }
-#topbar .brand { font-weight: 600; margin-right: 8px; }
+#topbar .brand { font-weight: 600; margin-right: 4px; }
+#topbar .divider { width: 1px; align-self: stretch; margin: 10px 4px; background: var(--line); }
+
+/* menus */
+#menubar { display: flex; align-self: stretch; align-items: center; }
+.menu { position: relative; }
+.menu-title { background: none; border: none; border-radius: 4px; padding: 5px 10px; }
+.menu-title:hover, .menu.open .menu-title { background: #3a3a3a; }
+.menu-items {
+	display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; min-width: 220px; width: max-content;
+	background: #2b2b2b; border: 1px solid #555; border-radius: 6px; padding: 4px 0;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+}
+.menu.open .menu-items { display: block; }
+.menu-item {
+	position: relative; display: flex; justify-content: space-between; gap: 24px; width: 100%; white-space: nowrap;
+	background: none; border: none; border-radius: 0; padding: 5px 14px 5px 28px; text-align: left;
+}
+.menu-item:hover:not(:disabled) { background: var(--accent); }
+.menu-item:hover:not(:disabled) .shortcut { color: #dbe9ff; }
+.menu-item:disabled { color: #6f6f6f; cursor: default; }
+.menu-item .shortcut { color: var(--muted); }
+.menu-item.checked::before { content: '¹3'; position: absolute; left: 10px; }
+.menu-sep { height: 1px; background: #444; margin: 4px 0; }
 #topbar .link { margin-left: auto; color: var(--muted); text-decoration: none; }
 #topbar .link:hover { color: var(--text); }
 #status { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -82,17 +105,24 @@ kbd { font-family: inherit; font-size: 10px; color: var(--muted); border: 1px so
 
 /* stage */
 #stage { grid-area: stage; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-#toolbar {
-	display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--panel-2);
-	border-bottom: 1px solid var(--line); flex-wrap: wrap;
+#optionsbar {
+	display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--panel-2);
+	border-bottom: 1px solid var(--line); flex-wrap: wrap; min-height: 38px;
 }
-#toolbar label { display: flex; align-items: center; gap: 4px; color: var(--muted); }
-#toolbar input[type=number] { width: 52px; }
-#toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
-.tool.active { background: var(--accent); border-color: var(--accent); }
-.tool.active kbd { color: #dbe9ff; border-color: #8fbfff; }
+#optionsbar label { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+#optionsbar input[type=number] { width: 52px; }
+#optionsbar .sep { width: 1px; align-self: stretch; background: var(--line); }
+#workspace { flex: 1; display: flex; min-height: 0; }
+#toolbox {
+	flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; padding: 6px;
+	background: var(--panel-2); border-right: 1px solid var(--line);
+}
+.tool { width: 34px; height: 34px; padding: 6px; display: grid; place-items: center; background: none; border-color: transparent; color: #cfcfcf; }
+.tool svg { width: 20px; height: 20px; display: block; }
+.tool:hover { background: #444; }
+.tool.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 #cursor-pos { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
-#canvas-wrap { outline: none; position: relative; flex: 1; min-height: 0; background: var(--canvas); overflow: hidden; }
+#canvas-wrap { outline: none; position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--canvas); overflow: hidden; }
 #editor-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #canvas-wrap.tool-pen, #canvas-wrap.tool-ellipse, #canvas-wrap.tool-scissors { cursor: crosshair; }
 #canvas-wrap.panning { cursor: grab; }
