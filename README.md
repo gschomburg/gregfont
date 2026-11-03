@@ -159,6 +159,20 @@ Import only reads the `char-` layers, so the reference layers can be edited, hid
 3. **File → New font from SVG…** creates the font. The name comes from the file name (`myfont_all_40x60.svg` becomes "Myfont"), and the cell size from the artboard or grid. Side bearings start at 10% of the cell width, and the x-height and descender guides are measured from the `x` and descender letters.
 4. Check the spacing in the preview, adjust, and **Save**.
 
+### Starting a font from a drawing that isn't sorted
+
+For a sheet of letters that was never organised into `char-` layers, make each glyph its own group in Illustrator, save as SVG, and use **File → New font from shapes…** (**New font from SVG…** also lands here when the file has no `char-` layers).
+
+Every group (or loose path) becomes a tile, in reading order: rows top to bottom, left to right. Illustrator's layers and wrapper groups are looked through; text and images are left out.
+
+- **Press the key** for the selected shape's glyph. It moves to *Done* and the next shape is selected, so you can go through the sheet from the keyboard. Every key types its own character (`;` too); the editor's shortcuts are off while the window is open.
+- **Backspace** clears a shape's glyph, **Delete** skips it, the **arrow keys** and **Tab** move. Click a done shape and type to change it. Giving a glyph to a second shape takes it from the first.
+- **Named glyphs** (`ampersandalt`, or a symbol's name like `ampersand`) go in the box in the side panel.
+- **Merge**: Shift-click shapes that belong together (an i drawn as a stem and a separate dot), then **Ctrl+G**.
+- **Baselines**: shapes are sorted into rows, and each row's baseline is where most of its shapes end, so descenders hang below. It's the pink line on each tile; drag it (or the *Row baseline* field) to fix a row.
+- The **Characters** map shows what's been drawn; click one to go to its shape, or an empty one to give it to the selected shape.
+- **Create font** (Ctrl+Enter) makes a new font named after the file. Nothing is scaled: a unit in the file is a unit in the font. The cell height is the capitals' height (or the tallest glyph's), the x-height and descender are measured from the letters, and spacing starts at a tenth of the cell width. It opens unsaved; check the guides and spacing, then Save.
+
 ## Project layout
 
 ```
@@ -171,6 +185,7 @@ src/
   js/ui.js            Shared UI: menus, draggable number fields, tips, theme, folds
   js/version.js       The version shown on hover in the top bar
   js/samples.js       Sample texts for the editor's specimen view
+  js/shapeimport.js   The New font from shapes window
   style/base.css      Shared look: colour tokens (both themes), controls, menus
   style/editor.css, style/typesetter.css
   libs/               Paper.js 0.12.18 core (vendored)

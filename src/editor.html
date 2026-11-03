@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.2.2">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.2.2">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.3.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.3.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -222,12 +222,60 @@
 			</div>
 		</aside>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.2.2"></script>
-		<script src="fonts/fonts.js?v=2.2.2"></script>
-		<script src="js/gregfont.js?v=2.2.2"></script>
-		<script src="js/version.js?v=2.2.2"></script>
-		<script src="js/ui.js?v=2.2.2"></script>
-		<script src="js/samples.js?v=2.2.2"></script>
-		<script src="js/editor.js?v=2.2.2"></script>
+		<!-- File > New font from shapes: name each shape in an SVG -->
+		<div id="shape-import" class="modal" hidden>
+			<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="si-title">
+				<header class="modal-head">
+					<span id="si-title">New font from shapes</span>
+					<span id="si-file" class="meta"></span>
+					<span class="spacer"></span>
+					<button type="button" id="si-close" class="icon-button" aria-label="Cancel">&times;</button>
+				</header>
+				<div class="si-bar">
+					<span id="si-hint">Press the key for the selected shape&rsquo;s glyph &middot; Backspace clears &middot; Delete skips &middot; arrows move &middot; Shift-click shapes, then Ctrl+G merges them</span>
+					<span class="spacer"></span>
+					<span id="si-count" class="meta"></span>
+				</div>
+				<p id="si-warnings" class="si-warnings" hidden></p>
+				<div class="si-body">
+					<div id="si-tiles" role="listbox" aria-label="Shapes"></div>
+					<aside class="si-side">
+						<section>
+							<label class="field" title="The new font's name"><span class="field-label">Font name</span><input id="si-name" autocomplete="off"></label>
+						</section>
+						<section>
+							<div class="panel-heading">Selected</div>
+							<div id="si-selected" class="meta"></div>
+							<label class="field" data-scrub="y" title="Move this shape's row baseline: drag up or down, or drag the pink line on a tile. Every shape in the row moves with it."><span class="field-label">Row baseline</span><input type="number" id="si-baseline" step="0.5" value="0"></label>
+							<form id="si-name-form" class="si-name-form">
+								<label for="si-glyph-name" class="visually-hidden">Glyph name</label>
+								<input id="si-glyph-name" placeholder="or a name: ampersandalt" autocomplete="off">
+								<button type="submit">Set</button>
+							</form>
+						</section>
+						<section class="si-map-section">
+							<div class="panel-heading">Characters</div>
+							<div id="si-map"></div>
+							<span class="meta">Green have a shape. Click one to go to it, or an empty one to give it to the selected shape.</span>
+						</section>
+					</aside>
+				</div>
+				<footer class="modal-foot">
+					<span class="meta">Nothing is scaled: a unit in the file is a unit in the font. Ctrl+Enter creates the font.</span>
+					<span class="spacer"></span>
+					<button type="button" id="si-cancel">Cancel</button>
+					<button type="button" id="si-create" class="primary">Create font</button>
+				</footer>
+			</div>
+		</div>
+
+		<script src="libs/paper-core-0.12.18.min.js?v=2.3.0"></script>
+		<script src="fonts/fonts.js?v=2.3.0"></script>
+		<script src="js/gregfont.js?v=2.3.0"></script>
+		<script src="js/version.js?v=2.3.0"></script>
+		<script src="js/ui.js?v=2.3.0"></script>
+		<script src="js/samples.js?v=2.3.0"></script>
+		<script src="js/shapeimport.js?v=2.3.0"></script>
+		<script src="js/editor.js?v=2.3.0"></script>
 	</body>
 </html>

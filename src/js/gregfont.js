@@ -705,17 +705,7 @@
 			? { width: vb[2], height: vb[3] }
 			: { width: parseFloat(svg.getAttribute('width')) || 60, height: parseFloat(svg.getAttribute('height')) || 60 };
 
-		// Paper only picks up class-based CSS if the SVG is in the document.
-		var holder = document.createElement('div');
-		holder.style.cssText = 'position:absolute;left:-10000px;top:0;visibility:hidden';
-		holder.appendChild(document.importNode(svg, true));
-		document.body.appendChild(holder);
-		var root;
-		try {
-			root = ps.project.importSVG(holder.firstChild, { insert: false, expandShapes: true });
-		} finally {
-			document.body.removeChild(holder);
-		}
+		var root = importSVGItem(ps, svg);
 
 		var gridItem = root.getItems({ match: function (it) { return parseGridLayerName(it.name) !== null; } })[0];
 		var grid = gridItem ? parseGridLayerName(gridItem.name) : null;
@@ -811,6 +801,206 @@
 		return { font: font, ink: ink, warnings: warnings };
 	}
 
+	/*
+	 * New font from shapes: for drawings that aren't sorted into char-
+	 * layers. Every top-level group (or loose path) in the SVG is one shape;
+	 * the editor shows them as tiles and you say which glyph each one is.
+	 */
+
+	// Paper only picks up class-based CSS if the SVG is in the document.
+	function importSVGItem(ps, svg) {
+		var holder = document.createElement('div');
+		holder.style.cssText = 'position:absolute;left:-10000px;top:0;visibility:hidden';
+		holder.appendChild(document.importNode(svg, true));
+		document.body.appendChild(holder);
+		try {
+			return ps.project.importSVG(holder.firstChild, { insert: false, expandShapes: true });
+		} finally {
+			document.body.removeChild(holder);
+		}
+	}
+
+	// The paths of an item (a glyph's group, or one loose path), with styles
+	// and path groups, as path data in the file's coordinates (y down).
+	function shapeEntries(ps, item) {
+		var paths;
+		if (item instanceof ps.Path || item instanceof ps.CompoundPath) paths = [item];
+		else paths = item.getItems({ match: function (it) {
+			return it instanceof ps.Path && !(it.parent instanceof ps.CompoundPath);
+		} }).concat(item.getItems({ class: ps.CompoundPath }));
+		paths = paths.filter(function (p) { return !p.isEmpty() && !p.clipMask && p.visible; });
+		var groupIds = new Map();
+		function groupOf(p) {
+			if (paths.length < 2) return 0;
+			var top = p;
+			while (top.parent && top.parent !== item) top = top.parent;
+			if (top === p || !(top instanceof ps.Group)) return 0;
+			var count = paths.filter(function (q) { return q.isDescendant(top); }).length;
+			if (count < 2 || count === paths.length) return 0;
+			if (!groupIds.has(top)) groupIds.set(top, groupIds.size + 1);
+			return groupIds.get(top);
+		}
+		var ink = null, outline = false;
+		var entries = paths.map(function (p) {
+			ink = ink ? ink.unite(p.bounds) : p.bounds.clone();
+			if (p.fillColor && !p.strokeColor) outline = true;
+			var entry = { d: p.getPathData(null, 3) };
+			STYLE_KEYS.forEach(function (k) { entry[k] = p[k]; });
+			var gid = groupOf(p);
+			if (gid) entry.group = gid;
+			return entry;
+		});
+		return { entries: entries, ink: ink, outline: outline };
+	}
+
+	// Rows of shapes (shapes whose heights overlap), each with a baseline at
+	// the bottom most of its shapes share, so descenders hang below it.
+	// Sets shape.row; returns rows [{ baseline, shapes }] top to bottom, each
+	// in reading order.
+	function shapeRows(shapes) {
+		var rows = [];
+		shapes.slice().sort(function (a, b) { return a.ink.y - b.ink.y; }).forEach(function (s) {
+			var top = s.ink.y, bottom = s.ink.y + s.ink.height, best = null, bestOverlap = 0;
+			rows.forEach(function (r) {
+				var overlap = Math.min(bottom, r.bottom) - Math.max(top, r.top);
+				var need = 0.5 * Math.min(Math.max(s.ink.height, 0.01), r.bottom - r.top);
+				if (overlap >= need && overlap > bestOverlap) { best = r; bestOverlap = overlap; }
+			});
+			if (!best) { best = { top: top, bottom: bottom, shapes: [] }; rows.push(best); }
+			best.top = Math.min(best.top, top);
+			best.bottom = Math.max(best.bottom, bottom);
+			best.shapes.push(s);
+		});
+		rows.sort(function (a, b) { return a.top - b.top; });
+		rows.forEach(function (r, i) {
+			r.shapes.sort(function (a, b) { return a.ink.x - b.ink.x; });
+			var bottoms = r.shapes.map(function (s) { return s.ink.y + s.ink.height; });
+			var heights = r.shapes.map(function (s) { return s.ink.height; }).sort(function (a, b) { return a - b; });
+			var tol = Math.max(heights[Math.floor(heights.length / 2)] * 0.04, 0.5);
+			var best = null;
+			bottoms.forEach(function (b) {
+				var near = bottoms.filter(function (o) { return Math.abs(o - b) <= tol; });
+				var avg = near.reduce(function (n, o) { return n + o; }, 0) / near.length;
+				// most shapes win; on a tie, the higher line (descenders are the few)
+				if (!best || near.length > best.count || (near.length === best.count && avg < best.y)) best = { count: near.length, y: avg };
+			});
+			r.baseline = round(best.y);
+			r.index = i;
+			r.shapes.forEach(function (s) { s.row = i; });
+		});
+		return rows.map(function (r) { return { baseline: r.baseline, shapes: r.shapes }; });
+	}
+
+	/*
+	 * The shapes in an SVG, in reading order: [{ id, entries, ink, row,
+	 * outline }] (ink is a Paper Rectangle in the file's units, y down), plus
+	 * rows [{ baseline, shapes }] and warnings. Illustrator's layers and
+	 * wrapper groups are looked through, so each glyph's own group is a shape.
+	 */
+	function shapesFromSVG(ps, svgText) {
+		var doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+		if (doc.getElementsByTagName('parsererror').length) throw new Error('That file isn’t a readable SVG');
+		var root = importSVGItem(ps, doc.documentElement);
+		var warnings = [], skipped = 0;
+		function isLayer(it) { return it instanceof ps.Group && /^(layer|ebene|calque)[ _-]*\d*$/i.test(it.name || ''); }
+		function kids(it) {
+			return (it.children || []).filter(function (c) {
+				if (c.clipMask || !c.visible) return false;
+				if (c instanceof ps.Path || c instanceof ps.CompoundPath) return !c.isEmpty();
+				if (c instanceof ps.Group) return c.getItems({ class: ps.Path }).length > 0;
+				skipped++;           // text, images
+				return false;
+			});
+		}
+		// look through wrappers (a group holding everything) and layers
+		var units = [];
+		(function walk(it) {
+			var k = kids(it);
+			if (k.length === 1 && k[0] instanceof ps.Group) { walk(k[0]); return; }
+			k.forEach(function (c) { if (isLayer(c)) walk(c); else units.push(c); });
+		})(root);
+		if (skipped) warnings.push(skipped === 1 ? '1 item that isn’t a path (text or an image) was left out' : skipped + ' items that aren’t paths (text or images) were left out');
+		var shapes = units.map(function (it) {
+			var s = shapeEntries(ps, it);
+			return { entries: s.entries, ink: s.ink, outline: s.outline };
+		}).filter(function (s) { return s.ink && s.entries.length; });
+		if (shapes.some(function (s) { return s.outline; })) warnings.push('Some shapes are filled outlines, not strokes; they come in as outlines');
+		var rows = shapeRows(shapes);
+		var ordered = [];
+		rows.forEach(function (r) { ordered = ordered.concat(r.shapes); });
+		ordered.forEach(function (s, i) { s.id = i + 1; });
+		return { shapes: ordered, rows: rows, warnings: warnings };
+	}
+
+	/*
+	 * Build a new font from shapes you've named. picks: [{ ch, entries, ink,
+	 * baseline }] in file units (y down). Nothing is scaled: a unit in the
+	 * file is a font unit. The cell height is the capitals' height (or the
+	 * tallest glyph's), guides are measured from the letters, and every glyph
+	 * starts with its ink a tenth of the cell width from the origin.
+	 */
+	function fontFromShapes(ps, picks, options) {
+		options = options || {};
+		var up = {}, down = {}, widths = [];
+		picks.forEach(function (p) {
+			up[p.ch] = p.baseline - p.ink.y;
+			down[p.ch] = p.ink.y + p.ink.height - p.baseline;
+			widths.push(p.ink.width);
+		});
+		function pick(chars) { return chars.split('').filter(function (c) { return up[c] !== undefined; }); }
+		function median(list) { list = list.slice().sort(function (a, b) { return a - b; }); return list.length ? list[Math.floor(list.length / 2)] : null; }
+		var caps = pick('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+		var cap = caps.length ? Math.max.apply(null, caps.map(function (c) { return up[c]; }))
+			: Math.max.apply(null, Object.keys(up).map(function (c) { return up[c]; }));
+		function half(n) { return Math.round(n * 2) / 2; }   // guides to the nearest half unit
+		cap = Math.max(half(cap), 1);
+		var xs = pick('x').length ? [up.x] : pick('acemnorsuvwz').map(function (c) { return up[c]; });
+		var xHeight = xs.length ? half(median(xs)) : half(cap / 2);
+		var descs = pick('gjpqy').map(function (c) { return down[c]; });
+		var descender = descs.length ? -half(Math.max.apply(null, descs)) : -half(cap / 3);
+		var lower = pick('abcdeghknopqrsuvxyz').map(function (c) { return picks.find(function (p) { return p.ch === c; }).ink.width; });
+		var cellWidth = Math.max(half(median(lower.length ? lower : widths) || cap / 2), 1);
+		var cell = { width: cellWidth, height: cap };
+		var sb = options.sidebearing !== undefined ? options.sidebearing : round(cellWidth * 0.1);
+
+		var all = [];
+		var glyphs = {};
+		picks.forEach(function (p) {
+			var offset = new ps.Point(sb - p.ink.x, -p.baseline);
+			var entries = p.entries.map(function (e) {
+				var item = ps.PathItem.create(e.d);
+				item.remove();
+				item.translate(offset);
+				item.scale(1, -1, new ps.Point(0, 0));       // to y up, origin on the baseline
+				var out = { d: item.getPathData(null, 3) };
+				STYLE_KEYS.forEach(function (k) { if (e[k] !== undefined) out[k] = e[k]; });
+				if (e.group) out.group = e.group;
+				all.push(out);
+				return out;
+			});
+			glyphs[p.ch] = { lsb: sb, rsb: sb, paths: entries };
+		});
+		var style = {};
+		STYLE_KEYS.forEach(function (k) { style[k] = mostCommon(all, k); });
+		if (!style.strokeCap) style.strokeCap = 'round';
+		if (!style.strokeJoin) style.strokeJoin = 'round';
+		if (!style.miterLimit) style.miterLimit = 10;
+		all.forEach(function (entry) {
+			STYLE_KEYS.forEach(function (k) { if (entry[k] === style[k] || entry[k] == null) delete entry[k]; });
+		});
+		return normalize({
+			format: FORMAT,
+			version: VERSION,
+			name: options.name || 'Untitled',
+			cell: cell,
+			guides: { cap: cap, xHeight: xHeight, descender: descender },
+			style: style,
+			spacing: { monospaced: false, letterSpacing: cellWidth, lineHeight: round(cap * 1.5) },
+			kerning: {},
+			glyphs: glyphs
+		});
+	}
+
 	// Save through the dev server (tools/server.py). Resolves false if the
 	// page isn't being served by it.
 	function saveToServer(fileName, font) {
@@ -841,6 +1031,10 @@
 		layout: layout,
 		layoutBlock: layoutBlock,
 		fromSVG: fromSVG,
+		shapesFromSVG: shapesFromSVG,
+		shapeRows: shapeRows,
+		fontFromShapes: fontFromShapes,
+		STANDARD_ORDER: STANDARD_ORDER,
 		toSVG: toSVG,
 		flipPathData: flipPathData,
 		saveToServer: saveToServer

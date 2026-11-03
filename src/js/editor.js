@@ -2267,6 +2267,7 @@
 		{ title: 'File', items: [
 			{ label: 'New font', run: function () { newFont(); } },
 			{ label: 'New font from SVG\u2026', run: function () { chooseSVG('new'); } },
+			{ label: 'New font from shapes\u2026', run: function () { chooseSVG('shapes'); } },
 			'-',
 			{ label: 'Export SVG for Illustrator', run: exportSVG },
 			{ label: 'Update shapes from SVG\u2026', run: function () { chooseSVG('update'); } },
@@ -2990,17 +2991,38 @@
 		$('import-file').click();
 	}
 
+	// New font from shapes: an SVG that isn't sorted into char- layers. Each
+	// group is a tile; you say which glyph each one is (js/shapeimport.js).
+	function importShapes(file, text) {
+		try {
+			GregShapeImport.open({
+				paper: P, svgText: text, fileName: file.name,
+				onCreate: function (f) {
+					state.ch = ['a', 'A'].concat(Object.keys(f.glyphs)).find(function (ch) { return f.glyphs[ch]; }) || 'a';
+					openEntry(addEntry(f, null));
+					setStatus('Made ' + f.name + ' with ' + Object.keys(f.glyphs).length + ' glyphs. Check the guides and spacing, then Save.');
+				},
+				onClose: function () { wrap.focus({ preventScroll: true }); }
+			});
+		} catch (err) {
+			console.error(err);
+			setStatus('Import failed: ' + err.message, true);
+		}
+	}
+
 	function importSVG(file) {
 		if (importMode === 'update') { updateFromSVG(file); return; }
 		var reader = new FileReader();
 		reader.onload = function () {
+			if (importMode === 'shapes') { importShapes(file, reader.result); return; }
 			try {
 				var base = file.name.replace(/\.svg$/i, '').replace(/_all_\d+x\d+$/i, '').replace(/_grid$/i, '');
 				var name = base.charAt(0).toUpperCase() + base.slice(1);
 				var result = GregFont.fromSVG(P, reader.result, { name: name });
 				var count = Object.keys(result.font.glyphs).length;
 				if (!count) {
-					setStatus('No char-<name> layers found in ' + file.name, true);
+					// not sorted into char- layers: name the shapes by hand
+					importShapes(file, reader.result);
 					return;
 				}
 				openEntry(addEntry(result.font, null));
