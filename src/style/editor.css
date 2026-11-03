@@ -23,7 +23,7 @@
 	--canvas: #f3f3f1;
 	--canvas-grid: #e3e3e0;
 	--canvas-grid-major: #d1d1cd;
-	--canvas-cell: #b0b0ab;
+	--canvas-cell: rgba(0, 0, 0, 0.1);
 	--ink: #141414;
 	--guide-cap: #2f6fd0;
 	--guide-xh: #127a58;
@@ -53,7 +53,7 @@
 	--canvas: #1a1b1f;
 	--canvas-grid: #25262b;
 	--canvas-grid-major: #31323a;
-	--canvas-cell: #55575e;
+	--canvas-cell: rgba(255, 255, 255, 0.08);
 	--ink: #f2f2ef;
 	--guide-cap: #6aa5ff;
 	--guide-xh: #3ec99a;

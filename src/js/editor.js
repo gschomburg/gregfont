@@ -24,7 +24,7 @@
 		ink: '#111111',
 		grid: '#e4e4e4',
 		gridMajor: '#d2d2d2',
-		cell: '#9a9a9a',
+		cell: 'rgba(0, 0, 0, 0.1)',
 		guide: { cap: '#2f8cff', xHeight: '#20a37a', baseline: '#e07b00', descender: '#9b59b6' },
 		bearing: '#d6337a',
 		select: '#2f8cff',
@@ -302,9 +302,10 @@
 		}
 
 		// cell box
-		var cell = new P.Path.Rectangle({ point: [0, 0], size: [f.cell.width, f.cell.height], strokeColor: COLORS.cell, insert: false });
-		cell.strokeScaling = false;
+		// the cell: a light fill, under the grid lines
+		var cell = new P.Path.Rectangle({ point: [0, 0], size: [f.cell.width, f.cell.height], fillColor: COLORS.cell, insert: false });
 		guidesLayer.addChild(cell);
+		cell.sendToBack();
 
 		// font guides
 		Object.keys(COLORS.guide).forEach(function (key) {
@@ -1712,7 +1713,7 @@
 			e.preventDefault();
 			var x0 = e.clientX, y0 = e.clientY, start = parseFloat(input.value) || 0;
 			var step = parseFloat(input.step) || 1, min = parseFloat(input.min), scrubbing = false;
-			field.setPointerCapture(e.pointerId);
+			try { field.setPointerCapture(e.pointerId); } catch (err) { /* not a live pointer */ }
 			function move(ev) {
 				// down moves a guide down, which is a bigger y in font units
 				var d = vertical ? ev.clientY - y0 : ev.clientX - x0;
@@ -2089,6 +2090,11 @@
 			$(pair[0]).addEventListener('change', function () {
 				var v = parseFloat(this.value);
 				if (v > 0) { font().cell[pair[1]] = v; fontChanged(true); }
+			});
+			// while dragging, just redraw the cell; thumbnails catch up on release
+			$(pair[0]).addEventListener('scrub', function () {
+				var v = parseFloat(this.value);
+				if (v > 0) { font().cell[pair[1]] = v; drawGuides(); }
 			});
 		});
 		['cap', 'xHeight', 'baseline', 'descender'].forEach(function (k) {
