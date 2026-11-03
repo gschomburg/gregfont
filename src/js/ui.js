@@ -211,6 +211,14 @@
 		});
 	}
 
+	// --- the version, on hover over the name in the top bar
+	function showVersion() {
+		var v = global.GREGFONT_VERSION, brand = document.querySelector('#topbar .brand');
+		if (!v || !brand) return;
+		brand.title = 'gregfont ' + v.version + ' · ' + v.date;
+	}
+	showVersion();
+
 	global.GregUI = {
 		buildMenus: buildMenus,
 		bindScrub: bindScrub,

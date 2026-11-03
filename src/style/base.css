@@ -166,7 +166,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 	grid-area: top; display: flex; align-items: center; gap: 6px; padding: 0 12px;
 	background: var(--bg); border-bottom: 1px solid var(--line);
 }
-#topbar .brand { font-weight: 600; margin-right: 8px; }
+#topbar .brand { font-weight: 600; margin-right: 8px; cursor: default; }
 #topbar .link { color: var(--accent); text-decoration: none; margin: 0 8px; white-space: nowrap; }
 #topbar .link:hover { text-decoration: underline; }
 #tip {

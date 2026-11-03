@@ -27,6 +27,10 @@ It serves `src/`, and the editor saves through it with no folder prompt. Other s
 python tools/build_fonts.py
 ```
 
+## Version
+
+Hover the **gregfont** name in either page's top bar to see the version and its date. It lives in `src/js/version.js`; bump it by hand when publishing (major for changes that break font or layout files, minor for features, patch for fixes).
+
 ## Typesetter
 
 Open `index.html`. It sets text on a page, ready for a plotter. Everything is measured in pixels at 96 per inch (A4 landscape is 1123 × 794), which is how SVG sizes things; plotter software converts to millimetres.
@@ -158,6 +162,7 @@ src/
   js/editor.js        Editor: tools, glyph grid, inspector, preview, specimen, saving
   js/gregfont.js      Font format: load/save, text layout, Paper.js glyphs, SVG import
   js/ui.js            Shared UI: menus, draggable number fields, tips, theme, folds
+  js/version.js       The version shown on hover in the top bar
   js/samples.js       Sample texts for the editor's specimen view
   style/base.css      Shared look: colour tokens (both themes), controls, menus
   style/editor.css, style/typesetter.css
