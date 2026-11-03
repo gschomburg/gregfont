@@ -2537,7 +2537,6 @@
 		$('spacing-monospaced').checked = f.spacing.monospaced;
 		$('spacing-letterSpacing').value = f.spacing.letterSpacing;
 		$('spacing-lineHeight').value = f.spacing.lineHeight;
-		$('preview-mono').checked = f.spacing.monospaced;
 		renderKerning();
 	}
 
@@ -2591,8 +2590,8 @@
 		});
 		$('spacing-monospaced').addEventListener('change', function () {
 			font().spacing.monospaced = this.checked;
-			$('preview-mono').checked = this.checked;
 			fontChanged(false);
+			renderPreview();
 		});
 		['letterSpacing', 'lineHeight'].forEach(function (k) {
 			function set() {
@@ -2687,14 +2686,19 @@
 			body.classList.add('specimen');
 			renderPreview();
 			var rise = before - bar.getBoundingClientRect().top;
-			slide = bar.animate([{ transform: 'translateY(' + rise + 'px)' }, { transform: 'none' }], { duration: 320, easing: easing });
-			slide.onfinish = function () { slide = null; body.classList.remove('sliding'); };
+			var up = slide = bar.animate([{ transform: 'translateY(' + rise + 'px)' }, { transform: 'none' }], { duration: 320, easing: easing });
+			up.onfinish = function () {
+				if (slide !== up) return;   // replaced by a newer slide
+				slide = null;
+				body.classList.remove('sliding');
+			};
 		} else {
 			// slide down until just the bar's normal height is showing, then swap back
 			var drop = bar.getBoundingClientRect().height - (bar.closedHeight || 150);
-			slide = bar.animate([{ transform: 'none' }, { transform: 'translateY(' + drop + 'px)' }], { duration: 260, easing: easing, fill: 'forwards' });
-			slide.onfinish = function () {
-				slide.cancel();
+			var down = slide = bar.animate([{ transform: 'none' }, { transform: 'translateY(' + drop + 'px)' }], { duration: 260, easing: easing, fill: 'forwards' });
+			down.onfinish = function () {
+				if (slide !== down) return;
+				down.cancel();
 				slide = null;
 				body.classList.remove('sliding', 'specimen');
 				renderPreview();
@@ -2704,16 +2708,37 @@
 
 	function isSpecimen() { return document.body.classList.contains('specimen'); }
 
-	// The expanded specimen: the text wrapped to the view's width, at a chosen size.
+	// The preview's own stroke weight (font units) and the specimen's zoom
+	// (screen pixels per font unit).
+	var previewView = { stroke: 2, zoom: 1 };
+	try {
+		var savedView = JSON.parse(localStorage.getItem('gregfont-editor-preview') || 'null');
+		if (savedView) {
+			if (savedView.stroke > 0) previewView.stroke = savedView.stroke;
+			if (savedView.zoom > 0) previewView.zoom = savedView.zoom;
+		}
+	} catch (e) { /* ignore */ }
+
+	function savePreviewView() {
+		try { localStorage.setItem('gregfont-editor-preview', JSON.stringify(previewView)); } catch (e) { /* ignore */ }
+	}
+
+	function setSpecimenZoom(z) {
+		previewView.zoom = Math.min(Math.max(z, 0.1), 12);
+		$('specimen-zoom-reset').textContent = Math.round(previewView.zoom * 100) + '%';
+		savePreviewView();
+		renderPreview();
+	}
+
+	// The expanded specimen: the text wrapped to the view's width, at the zoom.
 	function renderSpecimen(f, box, mono) {
-		var size = Math.max(parseFloat($('specimen-size').value) || 60, 4);
-		var scale = size / f.cell.height;
+		var scale = previewView.zoom;
 		var avail = Math.max(box.clientWidth - 44, 100);
 		var result = GregFont.layoutBlock(P, f, previewText(), {
 			monospace: mono, letterSpacing: f.spacing.letterSpacing, lineHeight: f.spacing.lineHeight,
 			width: avail / scale
 		});
-		var pad = state.strokeWidth * 2;
+		var pad = previewView.stroke * 2;
 		var svg = svgEl('svg', {
 			width: avail, height: Math.ceil((result.height + pad * 2) * scale),
 			viewBox: [-pad, -pad, avail / scale, result.height + pad * 2].join(' ')
@@ -2725,10 +2750,10 @@
 
 	// One clickable glyph for the preview or specimen.
 	function previewGlyph(f, placed) {
-		var top = -Math.max(f.guides.cap, f.cell.height) - state.strokeWidth;
-		var bottom = Math.max(-(f.guides.descender || 0), 0) + state.strokeWidth;
+		var top = -Math.max(f.guides.cap, f.cell.height) - previewView.stroke;
+		var bottom = Math.max(-(f.guides.descender || 0), 0) + previewView.stroke;
 		var g = svgEl('g', { transform: 'translate(' + placed.x + ' ' + placed.y + ')' });
-		g.appendChild(glyphGroup(f, placed.char, state.strokeWidth, false));
+		g.appendChild(glyphGroup(f, placed.char, previewView.stroke, false));
 		g.dataset.ch = placed.char;
 		if (placed.char === state.ch) g.classList.add('current');
 		if (state.kernPick === placed.char) g.classList.add('kern-pick');
@@ -2748,9 +2773,11 @@
 		var f = font(), box = $('preview');
 		box.innerHTML = '';
 		if (!f) return;
-		var mono = $('preview-mono').checked;
+		var mono = !!f.spacing.monospaced;
 		if (isSpecimen()) { renderSpecimen(f, box, mono); return; }
-		var result = GregFont.layout(P, f, previewText().replace(/\s*\n\s*/g, ' '), {
+		// one line, at the strip's height; anything past the right edge is cut off
+		var text = previewText().replace(/\s*\n\s*/g, ' ').slice(0, 240);
+		var result = GregFont.layout(P, f, text, {
 			monospace: mono,
 			letterSpacing: f.spacing.letterSpacing,
 			lineHeight: f.spacing.lineHeight,
@@ -2758,31 +2785,23 @@
 			margin: 0
 		});
 		// heights around each glyph's baseline, in screen orientation
-		var top = -Math.max(f.guides.cap, f.cell.height) - state.strokeWidth;
-		var bottom = Math.max(-(f.guides.descender || 0), 0) + state.strokeWidth;
+		var top = -Math.max(f.guides.cap, f.cell.height) - previewView.stroke;
+		var bottom = Math.max(-(f.guides.descender || 0), 0) + previewView.stroke;
 		var baseline = result.glyphs.length ? result.glyphs[0].y : f.cell.height;
 		var right = 0, left = 0;
 		var svg = svgEl('svg');
 		result.glyphs.forEach(function (placed) {
-			var g = svgEl('g', { transform: 'translate(' + placed.x + ' ' + placed.y + ')' });
-			g.appendChild(glyphGroup(f, placed.char, state.strokeWidth, false));
-			g.dataset.ch = placed.char;
-			if (placed.char === state.ch) g.classList.add('current');
-			if (state.kernPick === placed.char) g.classList.add('kern-pick');
-			// a transparent box makes the whole letter clickable
+			svg.appendChild(previewGlyph(f, placed));
 			var ink = GregFont.inkBounds(P, f, placed.char);
-			var bx = ink ? ink.left : 0, bw = ink ? ink.width : f.cell.width;
-			g.insertBefore(svgEl('rect', { x: bx, y: top, width: Math.max(bw, 4), height: bottom - top, fill: 'transparent' }), g.firstChild);
-			g.addEventListener('click', function (e) {
-				if (e.shiftKey || e.altKey) pickKernLetter(placed.char);
-				else selectGlyph(placed.char);
-			});
-			svg.appendChild(g);
 			right = Math.max(right, placed.x + (ink ? ink.right : f.cell.width));
 			left = Math.min(left, placed.x + (ink ? ink.left : 0));
 		});
-		var pad = state.strokeWidth * 2;
-		svg.setAttribute('viewBox', [left - pad, baseline + top, Math.max(right - left + pad * 2, 1), bottom - top].join(' '));
+		var pad = previewView.stroke * 2;
+		var vbW = Math.max(right - left + pad * 2, 1), vbH = bottom - top;
+		var h = Math.max(box.clientHeight - 12, 10);   // the strip's inner height
+		svg.setAttribute('viewBox', [left - pad, baseline + top, vbW, vbH].join(' '));
+		svg.setAttribute('height', h);
+		svg.setAttribute('width', vbW * h / vbH);
 		box.appendChild(svg);
 		box.title = 'Click a letter to edit it. Shift-click two letters to set up a kerning pair.';
 	}
@@ -3277,7 +3296,16 @@
 			$('preview-sample').value = '';   // typing means your own text again
 			renderPreview();
 		});
-		$('preview-mono').addEventListener('change', renderPreview);
+		$('preview-stroke').value = previewView.stroke;
+		['change', 'scrub'].forEach(function (type) {
+			$('preview-stroke').addEventListener(type, function () {
+				var v = parseFloat(this.value);
+				if (!(v > 0)) return;
+				previewView.stroke = v;
+				savePreviewView();
+				renderPreview();
+			});
+		});
 		(window.GREGFONT_SAMPLES || []).forEach(function (s) {
 			var opt = document.createElement('option');
 			opt.value = s.id;
@@ -3289,16 +3317,24 @@
 			else renderPreview();
 		});
 		$('preview-expand').addEventListener('click', function () { setSpecimen(!isSpecimen()); });
-		['change', 'scrub'].forEach(function (type) { $('specimen-size').addEventListener(type, renderPreview); });
-		$('preview').addEventListener('wheel', function (e) {
-			if (!isSpecimen() || !e.ctrlKey) return;
+		$('specimen-zoom-reset').textContent = Math.round(previewView.zoom * 100) + '%';
+		$('specimen-zoom-in').addEventListener('click', function () { setSpecimenZoom(previewView.zoom * 1.25); });
+		$('specimen-zoom-out').addEventListener('click', function () { setSpecimenZoom(previewView.zoom / 1.25); });
+		$('specimen-zoom-reset').addEventListener('click', function () { setSpecimenZoom(1); });
+		// Ctrl+wheel (or a trackpad pinch) anywhere over the specimen zooms it,
+		// not the browser
+		$('preview-bar').addEventListener('wheel', function (e) {
+			if (!isSpecimen() || !(e.ctrlKey || e.metaKey)) return;
 			e.preventDefault();
-			var input = $('specimen-size');
-			var v = Math.min(Math.max((parseFloat(input.value) || 60) * Math.pow(1.0015, -e.deltaY), 10), 600);
-			input.value = Math.round(v);
-			renderPreview();
+			setSpecimenZoom(previewView.zoom * Math.pow(1.0015, -e.deltaY));
 		}, { passive: false });
-		new ResizeObserver(function () { if (isSpecimen()) renderPreview(); }).observe($('preview'));
+		document.addEventListener('keydown', function (e) {
+			if (!isSpecimen() || !(e.ctrlKey || e.metaKey)) return;
+			if (e.key === '=' || e.key === '+') { e.preventDefault(); e.stopImmediatePropagation(); setSpecimenZoom(previewView.zoom * 1.25); }
+			else if (e.key === '-') { e.preventDefault(); e.stopImmediatePropagation(); setSpecimenZoom(previewView.zoom / 1.25); }
+			else if (e.key === '0') { e.preventDefault(); e.stopImmediatePropagation(); setSpecimenZoom(1); }
+		}, true);
+		new ResizeObserver(function () { renderPreview(); }).observe($('preview'));
 		bindFontInputs();
 
 		window.addEventListener('beforeunload', function (e) {

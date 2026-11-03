@@ -66,7 +66,10 @@ body {
 .panel-heading.inline { white-space: nowrap; }
 .preview-controls input:not([type]) { flex: 1; min-width: 0; }
 #preview { flex: 1; min-height: 0; margin: 0 14px 12px; padding: 6px 14px; background: var(--canvas); color: var(--ink); border-radius: 3px; overflow: hidden; }
-#preview svg { height: 100%; max-width: 100%; display: block; }
+#preview svg { display: block; max-width: none; }
+.zoom-group { align-items: center; gap: 2px; }
+.zoom-group .icon-button { width: 26px; height: 24px; font-size: 15px; line-height: 1; }
+.zoom-group .zoom-label { min-width: 54px; padding: 2px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 #preview g[data-ch] { cursor: pointer; }
 #preview g[data-ch]:hover path { stroke: var(--select); }
 #preview g.current path { stroke: var(--select); }
@@ -81,7 +84,6 @@ body {
 body.specimen #preview-bar { grid-row: 2 / 5; grid-column: 2; z-index: 5; }
 body.specimen .specimen-only { display: flex !important; }
 body.specimen #preview { overflow: auto; padding: 18px 22px; }
-body.specimen #preview svg { height: auto; max-width: none; }
 body.specimen #preview-expand .icon-expand, body.specimen #preview-expand .label-expand { display: none; }
 body.specimen #preview-expand .icon-collapse { display: block; }
 body.specimen #preview-expand .label-collapse { display: inline; }

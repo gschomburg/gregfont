@@ -134,9 +134,9 @@ The layout follows desktop drawing apps:
 
 The **Font** panel sets the name, cell size, guide lines, default stroke caps and joins, and the typesetter defaults. Individual paths can override caps and joins from the **Glyph** panel. To add a glyph that isn't in the grid (é, ß, or a named alternate), type it into the box under the grid.
 
-The **preview** strip at the bottom sets a line of text with the font as you edit. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
+The **preview** strip at the bottom sets a line of text with the font as you edit, at the strip's height; text that doesn't fit is cut off at the right. It's monospaced when the font's **Mono** switch (left panel) is on. **Stroke** sets the preview's stroke weight, in font units. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
 
-The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The **Specimen** button at the right of the preview bar (or picking a sample) slides the preview up into a **specimen view** over the glyph canvas, wrapping the text to the view's width. Set its size in the bar, or Ctrl+wheel to zoom. Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
+The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The **Specimen** button at the right of the preview bar (or picking a sample) slides the preview up into a **specimen view** over the glyph canvas, wrapping the text to the view's width. Zoom with the − / % / + buttons in the bar, Ctrl+wheel (or a trackpad pinch) anywhere over it, or Ctrl+= / Ctrl+− (Ctrl+0 or clicking the % goes back to 100%, one font unit per pixel). Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
 
 ## Working in Illustrator
 

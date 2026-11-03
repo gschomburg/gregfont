@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.0.2">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.0.2">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.0.3">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.0.3">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -58,7 +58,7 @@
 					<span class="field-label">Strokes</span>
 					<select id="style-strokeCap" title="Default end caps" aria-label="Default end caps"><option>butt</option><option>round</option><option>square</option></select>
 					<select id="style-strokeJoin" title="Default corners" aria-label="Default corners"><option>miter</option><option>round</option><option>bevel</option></select>
-					<label class="switch-label" title="Typesetter starts this font monospaced"><input type="checkbox" class="switch" id="spacing-monospaced"> Mono</label>
+					<label class="switch-label" title="Monospaced: the preview sets it this way, and the typesetter starts it this way"><input type="checkbox" class="switch" id="spacing-monospaced"> Mono</label>
 				</div>
 			</details>
 
@@ -120,8 +120,12 @@
 				<select id="preview-sample" title="What to set: your own text, or a sample"><option value="">Your text</option></select>
 				<label for="preview-text" class="visually-hidden">Preview text</label>
 				<input id="preview-text" value="Hamburgefonstiv HAMBURG 0123">
-				<label class="switch-label"><input type="checkbox" class="switch" id="preview-mono"> Monospace</label>
-				<label class="field compact specimen-only" data-scrub="x" title="Specimen size: the cell height in pixels (Ctrl+wheel zooms)"><span class="field-label">Size</span><input type="number" id="specimen-size" value="60" min="10" step="5"></label>
+				<label class="field compact" data-scrub="x" title="Stroke weight for the preview, in font units"><span class="field-label">Stroke</span><input type="number" id="preview-stroke" value="2" min="0.1" step="0.1"></label>
+				<div class="zoom-group specimen-only" role="group" aria-label="Specimen zoom">
+					<button type="button" class="icon-button" id="specimen-zoom-out" title="Zoom out (Ctrl+-, or Ctrl+wheel)" aria-label="Zoom out">&minus;</button>
+					<button type="button" class="zoom-label" id="specimen-zoom-reset" title="Back to 100% (Ctrl+0)">100%</button>
+					<button type="button" class="icon-button" id="specimen-zoom-in" title="Zoom in (Ctrl+=, or Ctrl+wheel)" aria-label="Zoom in">+</button>
+				</div>
 				<button type="button" id="preview-expand" title="Expand into a specimen view (Esc closes it)" aria-label="Expand the preview into a specimen view">
 					<svg class="icon-expand" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>
 					<svg class="icon-collapse" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"/></svg>
@@ -210,12 +214,12 @@
 			</div>
 		</aside>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.0.2"></script>
-		<script src="fonts/fonts.js?v=2.0.2"></script>
-		<script src="js/gregfont.js?v=2.0.2"></script>
-		<script src="js/version.js?v=2.0.2"></script>
-		<script src="js/ui.js?v=2.0.2"></script>
-		<script src="js/samples.js?v=2.0.2"></script>
-		<script src="js/editor.js?v=2.0.2"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.0.3"></script>
+		<script src="fonts/fonts.js?v=2.0.3"></script>
+		<script src="js/gregfont.js?v=2.0.3"></script>
+		<script src="js/version.js?v=2.0.3"></script>
+		<script src="js/ui.js?v=2.0.3"></script>
+		<script src="js/samples.js?v=2.0.3"></script>
+		<script src="js/editor.js?v=2.0.3"></script>
 	</body>
 </html>
