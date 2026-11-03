@@ -245,12 +245,6 @@
 		}).filter(function (g) { return g.items.length; });
 	}
 
-	// "Bleeker (draft)", or just the name when it's final
-	function fontLabel(font) {
-		var s = statusOf(font);
-		return font.name + (s === 'final' ? '' : ' (' + STATUSES[s] + ')');
-	}
-
 	// "rev 3 · in progress", for a line of small print
 	function fontVersionText(font) {
 		var parts = [];
@@ -1100,7 +1094,6 @@
 		fromSVG: fromSVG,
 		STATUSES: STATUSES,
 		statusOf: statusOf,
-		fontLabel: fontLabel,
 		groupByStatus: groupByStatus,
 		fontVersionText: fontVersionText,
 		shapesFromSVG: shapesFromSVG,

@@ -1260,7 +1260,7 @@
 			group.items.forEach(function (f) {
 				var opt = document.createElement('option');
 				opt.value = f.file;
-				opt.textContent = GregFont.fontLabel(f.font);
+				opt.textContent = f.font.name;   // the group heading says the status
 				og.appendChild(opt);
 			});
 			$('font-select').appendChild(og);

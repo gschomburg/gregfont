@@ -3032,7 +3032,7 @@
 			group.items.forEach(function (entry) {
 				var opt = document.createElement('option');
 				opt.value = state.entries.indexOf(entry);
-				opt.textContent = GregFont.fontLabel(entry.font) + (entry.dirty ? ' *' : '');
+				opt.textContent = entry.font.name + (entry.dirty ? ' *' : '');   // the group heading says the status
 				og.appendChild(opt);
 			});
 			select.appendChild(og);
