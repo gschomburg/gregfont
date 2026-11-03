@@ -199,19 +199,30 @@
 		pending = null;
 	}
 
+	// An undo step is { ch, before } for one glyph, or { batch: [...] } for
+	// a change to many glyphs at once (like updating from an SVG).
 	function restore(from, to) {
 		finishPen();   // may add the pen stroke as its own undo step first
 		var e = from.pop();
 		if (!e) return;
-		to.push({ ch: e.ch, before: snapshot(e.ch) });
+		var items = e.batch || [e];
+		var inverse = items.map(function (it) { return { ch: it.ch, before: snapshot(it.ch) }; });
+		to.push(e.batch ? { batch: inverse } : inverse[0]);
 		var f = font();
-		if (e.before === null) delete f.glyphs[e.ch];
-		else f.glyphs[e.ch] = JSON.parse(e.before);
-		GregFont.clearCache(f, e.ch);
+		items.forEach(function (it) {
+			if (it.before === null) delete f.glyphs[it.ch];
+			else f.glyphs[it.ch] = JSON.parse(it.before);
+			GregFont.clearCache(f, it.ch);
+		});
 		markDirty();
-		if (e.ch !== state.ch) selectGlyph(e.ch);
-		else loadGlyph();
-		updateThumb(e.ch);
+		if (e.batch) {
+			renderGrid();
+			loadGlyph();
+		} else {
+			if (e.ch !== state.ch) selectGlyph(e.ch);
+			else loadGlyph();
+			updateThumb(e.ch);
+		}
 		renderPreview();
 	}
 
@@ -1637,7 +1648,10 @@
 	var MENUS = [
 		{ title: 'File', items: [
 			{ label: 'New font', run: function () { newFont(); } },
-			{ label: 'Import SVG…', run: function () { $('import-file').click(); } },
+			{ label: 'New font from SVG\u2026', run: function () { chooseSVG('new'); } },
+			'-',
+			{ label: 'Export SVG for Illustrator', run: exportSVG },
+			{ label: 'Update shapes from SVG\u2026', run: function () { chooseSVG('update'); } },
 			'-',
 			{ label: 'Save', key: 'Ctrl+S', run: function () { save(); } }
 		] },
@@ -2105,11 +2119,20 @@
 		setStatus('New font. Draw some glyphs, then Save.');
 	}
 
+	// what the hidden file input is choosing a file for: 'new' or 'update'
+	var importMode = 'new';
+
+	function chooseSVG(mode) {
+		importMode = mode;
+		$('import-file').click();
+	}
+
 	function importSVG(file) {
+		if (importMode === 'update') { updateFromSVG(file); return; }
 		var reader = new FileReader();
 		reader.onload = function () {
 			try {
-				var base = file.name.replace(/\.svg$/i, '').replace(/_all_\d+x\d+$/i, '');
+				var base = file.name.replace(/\.svg$/i, '').replace(/_all_\d+x\d+$/i, '').replace(/_grid$/i, '');
 				var name = base.charAt(0).toUpperCase() + base.slice(1);
 				var result = GregFont.fromSVG(P, reader.result, { name: name });
 				var count = Object.keys(result.font.glyphs).length;
@@ -2127,6 +2150,103 @@
 			}
 		};
 		reader.readAsText(file);
+	}
+
+	// Replace the current font's shapes with the ones in an SVG (from
+	// Illustrator), keeping spacing, kerning and settings. Glyphs that aren't
+	// in the SVG are left alone; new ones are added with default spacing.
+	function updateFromSVG(file) {
+		var reader = new FileReader();
+		reader.onload = function () {
+			var result;
+			try {
+				result = GregFont.fromSVG(P, reader.result, {});
+			} catch (err) {
+				console.error(err);
+				setStatus('Import failed: ' + err.message, true);
+				return;
+			}
+			var src = result.font, f = font();
+			var chars = Object.keys(src.glyphs);
+			if (!chars.length) {
+				setStatus('No char-<name> layers found in ' + file.name, true);
+				return;
+			}
+			finishPen();
+			var batch = [], changed = 0, added = 0;
+			chars.forEach(function (ch) {
+				// styles are stored relative to the font's, so re-base them on this font
+				var paths = src.glyphs[ch].paths.map(function (e) {
+					var out = { d: e.d };
+					['strokeCap', 'strokeJoin', 'miterLimit'].forEach(function (k) {
+						var v = e[k] !== undefined ? e[k] : src.style[k];
+						if (v !== f.style[k]) out[k] = v;
+					});
+					if (e.group) out.group = e.group;
+					return out;
+				});
+				var g = f.glyphs[ch];
+				if (g && samePaths(g.paths, paths)) return;
+				batch.push({ ch: ch, before: snapshot(ch) });
+				if (g) { g.paths = paths; changed++; }
+				else { f.glyphs[ch] = { lsb: defaultBearing(), rsb: defaultBearing(), paths: paths }; added++; }
+				GregFont.clearCache(f, ch);
+			});
+			if (!batch.length) {
+				setStatus('No changes: the shapes in ' + file.name + ' match this font');
+				return;
+			}
+			state.undo.push({ batch: batch });
+			state.redo = [];
+			markDirty();
+			renderGrid();
+			loadGlyph();
+			renderPreview();
+			var cellNote = (src.cell.width !== f.cell.width || src.cell.height !== f.cell.height)
+				? ' Note: the SVG\u2019s cell is ' + src.cell.width + '\u00d7' + src.cell.height + ', this font\u2019s is ' + f.cell.width + '\u00d7' + f.cell.height + '.'
+				: '';
+			setStatus('Updated ' + changed + ' glyph' + (changed === 1 ? '' : 's') + (added ? ', added ' + added : '') +
+				' from ' + file.name + ' (Ctrl+Z undoes it).' + cellNote, !!cellNote);
+		};
+		reader.readAsText(file);
+	}
+
+	// Path data written by different tools differs in formatting, so compare
+	// shapes after a round trip through Paper, to 2 decimals.
+	function normalizedD(d) {
+		var item = P.PathItem.create(d);
+		item.remove();
+		return item.getPathData(null, 2);
+	}
+
+	// Same shapes, styles and grouping? (Group numbers may differ.)
+	function samePaths(a, b) {
+		if (a.length !== b.length) return false;
+		var groupMap = {};
+		return a.every(function (pa, i) {
+			var pb = b[i];
+			var sameStyle = ['strokeCap', 'strokeJoin', 'miterLimit'].every(function (k) { return pa[k] === pb[k]; });
+			var ga = pa.group || 0, gb = pb.group || 0;
+			if (!ga !== !gb) return false;
+			if (ga) {
+				if (groupMap[ga] === undefined) groupMap[ga] = gb;
+				else if (groupMap[ga] !== gb) return false;
+			}
+			return sameStyle && normalizedD(pa.d) === normalizedD(pb.d);
+		});
+	}
+
+	function exportSVG() {
+		finishPen();
+		var f = font();
+		var svg = GregFont.toSVG(P, f, { strokeWidth: state.strokeWidth });
+		var blob = new Blob([svg], { type: 'image/svg+xml' });
+		var a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = slug(f.name) + '_grid.svg';
+		a.click();
+		setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+		setStatus('Exported ' + a.download + '. Edit it in Illustrator, then use File \u2192 Update shapes from SVG.');
 	}
 
 	function save() {

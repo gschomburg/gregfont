@@ -83,7 +83,7 @@ Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font at the
 The layout follows desktop drawing apps:
 
 - **Tools** are in the palette down the left of the canvas: Select, Direct select, Pen, Anchor point, Ellipse and Cut. A hint line at the bottom of the canvas explains the current tool.
-- **Commands** are in the menus at the top: **File** (new, import, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) and **View** (fit, snap). Each menu item shows its keyboard shortcut.
+- **Commands** are in the menus at the top: **File** (new, import and export SVG, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) and **View** (fit, snap). Each menu item shows its keyboard shortcut.
 - **Options** for drawing (snap, grid size, on-screen stroke width, auto-slice) are in the bar above the canvas.
 
 | Tool / command | How |
@@ -113,11 +113,24 @@ The **Font** panel sets the name, cell size, guide lines, default stroke caps an
 
 The **preview** strip at the bottom sets a line of text with the font as you edit. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
 
-## Adding a font from Illustrator
+## Working in Illustrator
 
-1. Draw each glyph on a `W×H` artboard as its own group/layer named `char-<name>`. Letters and digits use themselves (`char-a`, `char-A`, `char-7`). Symbols use words (`char-dash`, `char-question`, `char-parenthleft`, …); the editor's Glyph panel shows the layer name for each glyph, and the full list is `GLYPH_NAMES` in `gregfont.js`. Any other name becomes a named extra glyph. Illustrator's `_1_`-style suffixes on duplicate names are ignored.
-2. Export to SVG. Any shapes work (paths, lines, polylines, polygons, circles), nested groups too, and stroke styles from Illustrator's CSS classes are kept.
-3. In the editor, click **Import SVG** and pick the file. The font name comes from the file name (`myfont_all_40x60.svg` becomes "Myfont"). The cell size comes from the artboard. Side bearings start at 10% of the cell width, and the x-height and descender guides are measured from the `x` and descender letters.
+The JSON file is the font. Illustrator is for drawing, and SVG is how shapes move between the two.
+
+### Editing an existing font
+
+1. **File → Export SVG for Illustrator** downloads `<font>_grid.svg`. It's the whole font on one artboard, one glyph per cell in a grid. Each glyph is its own `char-<name>` layer, and grouped paths are nested groups. Two reference layers show each cell's box and label, the cap / x-height / baseline / descender guides, and pink side-bearing marks. Standard characters the font doesn't have yet get an empty labelled cell.
+2. Edit in Illustrator and save as SVG. Moving a glyph within its cell moves it in the font. To add a glyph, make a new `char-<name>` layer and draw it in an empty cell; any empty spot on the grid works.
+3. **File → Update shapes from SVG…** reads it back into the open font. Only shapes change. Spacing, kerning and font settings stay as they are, since Illustrator would drop them. Glyphs that didn't change are left untouched, glyphs missing from the SVG are kept, and new glyphs get default spacing. One Ctrl+Z undoes the whole update.
+
+Import only reads the `char-` layers, so the reference layers can be edited, hidden or deleted. The grid's size is stored in the name of the cells layer (`gregfont-grid-…`); keep that layer, or the import will treat the file as the old stacked layout.
+
+### Starting a font in Illustrator
+
+1. Draw each glyph as its own layer named `char-<name>`. Letters and digits use themselves (`char-a`, `char-A`, `char-7`). Symbols use words (`char-dash`, `char-question`, `char-parenthleft`, …); the editor's Glyph panel shows the layer name for each glyph, and the full list is `GLYPH_NAMES` in `gregfont.js`. Any other name becomes a named extra glyph. Illustrator's `_1_`-style suffixes on duplicate names are ignored.
+   Either stack every glyph on one `W×H` artboard, as the original fonts were, or start from an exported grid.
+2. Export to SVG. Any shapes work (paths, lines, polylines, polygons, circles), and stroke styles from Illustrator's CSS classes are kept.
+3. **File → New font from SVG…** creates the font. The name comes from the file name (`myfont_all_40x60.svg` becomes "Myfont"), and the cell size from the artboard or grid. Side bearings start at 10% of the cell width, and the x-height and descender guides are measured from the `x` and descender letters.
 4. Check the spacing in the preview, adjust, and **Save**.
 
 ## Project layout

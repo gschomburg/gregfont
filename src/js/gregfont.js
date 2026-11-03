@@ -25,6 +25,12 @@
  *   Monospaced setting ignores them and places the cell as drawn.
  * - a path may override strokeCap / strokeJoin / miterLimit from font.style.
  * - kerning keys are two-character pairs; values are added to the advance.
+ * - paths with the same `group` number were grouped in the editor.
+ *
+ * For Illustrator, toSVG() writes the font as a grid of cells, one
+ * `char-<name>` layer per glyph, and fromSVG() reads it back. The grid's
+ * size is encoded in the name of the cells layer, since Illustrator keeps
+ * layer names but drops custom attributes.
  *
  * Functions that build or read Paper.js items take a PaperScope (`ps`), so
  * this file doesn't depend on which scope is active.
@@ -223,6 +229,139 @@
 		return { glyphs: out, missing: missing };
 	}
 
+	// --- Illustrator grid
+
+	var GRID_COLUMNS = 10;
+	var STANDARD_ORDER = [].concat(
+		'abcdefghijklmnopqrstuvwxyz'.split(''),
+		'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+		'0123456789'.split(''),
+		Object.keys(GLYPH_NAMES));
+
+	// Numbers in layer names: "." becomes "p" and "-" becomes "m", so
+	// Illustrator doesn't escape them.
+	function encodeNum(n) { return String(round(n)).replace('.', 'p').replace('-', 'm'); }
+	function decodeNum(s) { return parseFloat(s.replace('p', '.').replace('m', '-')); }
+
+	function gridLayerName(g) {
+		return 'gregfont-grid-c' + g.cols + '-w' + encodeNum(g.w) + '-h' + encodeNum(g.h) +
+			'-px' + encodeNum(g.px) + '-py' + encodeNum(g.py) + '-ox' + encodeNum(g.ox) + '-oy' + encodeNum(g.oy);
+	}
+
+	function parseGridLayerName(name) {
+		var n = '([0-9pm]+)';
+		var m = new RegExp('^gregfont-grid-c(\\d+)-w' + n + '-h' + n + '-px' + n + '-py' + n + '-ox' + n + '-oy' + n).exec(name || '');
+		if (!m) return null;
+		return {
+			cols: parseInt(m[1], 10), w: decodeNum(m[2]), h: decodeNum(m[3]),
+			px: decodeNum(m[4]), py: decodeNum(m[5]), ox: decodeNum(m[6]), oy: decodeNum(m[7])
+		};
+	}
+
+	function xmlEscape(str) {
+		return String(str).replace(/[&<>"']/g, function (c) {
+			return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c];
+		});
+	}
+
+	/*
+	 * The font as an SVG for Illustrator: glyphs laid out in a grid, each on
+	 * its own `char-<name>` layer (grouped paths as nested groups), plus
+	 * reference layers with the cell boxes, guides and side-bearing marks.
+	 * Standard characters the font lacks get an empty labelled cell.
+	 *
+	 * options: { strokeWidth }
+	 */
+	function toSVG(ps, font, options) {
+		options = options || {};
+		var sw = options.strokeWidth || 2;
+		var cell = font.cell, guides = font.guides;
+		var order = STANDARD_ORDER.concat(Object.keys(font.glyphs).filter(function (ch) {
+			return STANDARD_ORDER.indexOf(ch) < 0;
+		}));
+
+		// one slot size that fits every glyph, its bearings and the guides
+		var left = 0, right = cell.width;
+		var top = Math.min(0, guides.cap || 0), bottom = Math.max(cell.height, guides.descender || 0);
+		var inks = {};
+		order.forEach(function (ch) {
+			var ink = font.glyphs[ch] ? inkBounds(ps, font, ch) : null;
+			inks[ch] = ink;
+			if (!ink) return;
+			var g = font.glyphs[ch];
+			left = Math.min(left, ink.left - g.lsb);
+			right = Math.max(right, ink.right + g.rsb);
+			top = Math.min(top, ink.top);
+			bottom = Math.max(bottom, ink.bottom);
+		});
+		var margin = Math.max(cell.width, cell.height) * 0.15;
+		var labelRoom = Math.max(cell.height * 0.2, 8);
+		var grid = { cols: GRID_COLUMNS, w: cell.width, h: cell.height };
+		grid.ox = Math.ceil(margin - left);
+		grid.oy = Math.ceil(margin - top);
+		grid.px = Math.ceil(grid.ox + right + margin);
+		grid.py = Math.ceil(grid.oy + bottom + margin + labelRoom);
+		var rows = Math.ceil(order.length / grid.cols);
+		var width = grid.px * grid.cols, height = grid.py * rows;
+
+		var cells = [], guideLines = [], layers = [];
+		var fontSize = round(labelRoom * 0.6);
+		var guideColors = { cap: '#2f8cff', xHeight: '#20a37a', baseline: '#e07b00', descender: '#9b59b6' };
+
+		order.forEach(function (ch, i) {
+			var col = i % grid.cols, row = Math.floor(i / grid.cols);
+			var sx = col * grid.px, sy = row * grid.py;          // slot corner
+			var cx = sx + grid.ox, cy = sy + grid.oy;           // cell origin
+			cells.push('<rect x="' + round(cx) + '" y="' + round(cy) + '" width="' + cell.width + '" height="' + cell.height +
+				'" fill="none" stroke="#bbbbbb" stroke-width="0.5"/>');
+			cells.push('<text x="' + round(sx + grid.px / 2) + '" y="' + round(sy + grid.py - labelRoom * 0.35) +
+				'" font-family="sans-serif" font-size="' + fontSize + '" fill="#999999" text-anchor="middle">' +
+				xmlEscape(GLYPH_NAMES[ch] ? ch + '  ' + GLYPH_NAMES[ch] : ch) + '</text>');
+			Object.keys(guideColors).forEach(function (k) {
+				if (guides[k] === null || guides[k] === undefined) return;
+				var y = round(cy + guides[k]);
+				guideLines.push('<line x1="' + round(sx) + '" y1="' + y + '" x2="' + round(sx + grid.px) + '" y2="' + y +
+					'" stroke="' + guideColors[k] + '" stroke-width="0.3"/>');
+			});
+			var glyph = font.glyphs[ch], ink = inks[ch];
+			if (!glyph) return;
+			if (ink) {
+				[ink.left - glyph.lsb, ink.right + glyph.rsb].forEach(function (x) {
+					x = round(cx + x);
+					guideLines.push('<line x1="' + x + '" y1="' + round(sy) + '" x2="' + x + '" y2="' + round(sy + grid.py - labelRoom) +
+						'" stroke="#d6337a" stroke-width="0.3" stroke-dasharray="1.5 1.5"/>');
+				});
+			}
+
+			// paths, moved into the cell; grouped paths go in a nested group
+			var loose = [], groups = {}, groupOrder = [];
+			glyph.paths.forEach(function (entry) {
+				var item = ps.PathItem.create(entry.d);
+				item.remove();
+				item.translate(new ps.Point(cx, cy));
+				var el = '<path d="' + item.getPathData(null, 3) + '" fill="none" stroke="#000000" stroke-width="' + sw + '"' +
+					' stroke-linecap="' + (entry.strokeCap || font.style.strokeCap) + '"' +
+					' stroke-linejoin="' + (entry.strokeJoin || font.style.strokeJoin) + '"' +
+					' stroke-miterlimit="' + (entry.miterLimit || font.style.miterLimit) + '"/>';
+				if (entry.group) {
+					if (!groups[entry.group]) { groups[entry.group] = []; groupOrder.push(entry.group); }
+					groups[entry.group].push(el);
+				} else {
+					loose.push(el);
+				}
+			});
+			var inner = loose.concat(groupOrder.map(function (gid) { return '<g>' + groups[gid].join('') + '</g>'; }));
+			layers.push('<g id="char-' + xmlEscape(charToName(ch)) + '">' + inner.join('') + '</g>');
+		});
+
+		return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '">\n' +
+			'<title>' + xmlEscape(font.name) + '</title>\n' +
+			'<g id="' + gridLayerName(grid) + '">' + cells.join('') + '</g>\n' +
+			'<g id="gregfont-guides">' + guideLines.join('') + '</g>\n' +
+			layers.join('\n') + '\n</svg>\n';
+	}
+
 	// Most common value of `key` across items.
 	function mostCommon(items, key) {
 		var counts = {}, best = null;
@@ -237,8 +376,12 @@
 	/*
 	 * Build a font from an SVG where each glyph is a group/layer with the id
 	 * `char-<name>` (the Illustrator workflow). Shapes, lines, polylines and
-	 * nested groups are all flattened into path data. The cell size comes from
-	 * the SVG's viewBox.
+	 * nested groups are all flattened into path data; nested groups inside a
+	 * glyph's layer come back as path groups.
+	 *
+	 * Two layouts are understood: a grid written by toSVG() (glyph positions
+	 * are taken relative to whichever cell they sit in), or every glyph drawn
+	 * at the same spot, with the artboard as the cell (the original files).
 	 *
 	 * options: { name, monospaced, letterSpacing, lineHeight, sidebearing }
 	 * Returns { font, ink } where ink[ch] is the glyph's ink bounds.
@@ -264,6 +407,10 @@
 			document.body.removeChild(holder);
 		}
 
+		var gridItem = root.getItems({ match: function (it) { return parseGridLayerName(it.name) !== null; } })[0];
+		var grid = gridItem ? parseGridLayerName(gridItem.name) : null;
+		if (grid) cell = { width: grid.w, height: grid.h };
+
 		var groups = root.getItems({ match: function (it) { return charFromLayerName(it.name) !== null; } });
 		var allPaths = [];
 		var collected = {};
@@ -274,15 +421,40 @@
 			if (collected[ch]) { warnings.push('Duplicate glyph for "' + ch + '" (' + group.name + '), keeping the first'); return; }
 			var paths = group.getItems({ match: function (it) {
 				return it instanceof ps.Path && !(it.parent instanceof ps.CompoundPath);
-			} }).concat(group.getItems({ class: ps.CompoundPath }));
-			var entries = paths.filter(function (p) { return !p.isEmpty(); }).map(function (p) {
+			} }).concat(group.getItems({ class: ps.CompoundPath })).filter(function (p) { return !p.isEmpty(); });
+			var ink = null;
+			paths.forEach(function (p) { ink = ink ? ink.unite(p.bounds) : p.bounds.clone(); });
+
+			// in a grid, move the glyph out of whichever cell it sits in
+			if (grid && ink) {
+				var col = Math.floor(ink.center.x / grid.px), row = Math.floor(ink.center.y / grid.py);
+				var offset = new ps.Point(col * grid.px + grid.ox, row * grid.py + grid.oy);
+				paths.forEach(function (p) { p.translate(offset.negate()); });
+				ink = ink.clone();
+				ink.x -= offset.x;
+				ink.y -= offset.y;
+			}
+
+			// a group nested in the glyph's layer (but not holding all of it) is a path group
+			var groupIds = new Map();
+			function groupOf(p) {
+				var top = p;
+				while (top.parent && top.parent !== group) top = top.parent;
+				if (top === p || !(top instanceof ps.Group)) return 0;
+				var count = paths.filter(function (q) { return q.isDescendant(top); }).length;
+				if (count < 2 || count === paths.length) return 0;
+				if (!groupIds.has(top)) groupIds.set(top, groupIds.size + 1);
+				return groupIds.get(top);
+			}
+
+			var entries = paths.map(function (p) {
 				var entry = { d: p.getPathData(null, 3) };
 				STYLE_KEYS.forEach(function (k) { entry[k] = p[k]; });
+				var gid = groupOf(p);
+				if (gid) entry.group = gid;
 				allPaths.push(entry);
 				return entry;
 			});
-			var ink = null;
-			paths.forEach(function (p) { ink = ink ? ink.unite(p.bounds) : p.bounds.clone(); });
 			collected[ch] = { entries: entries, ink: ink };
 		});
 
@@ -351,6 +523,7 @@
 		inkBounds: inkBounds,
 		layout: layout,
 		fromSVG: fromSVG,
+		toSVG: toSVG,
 		saveToServer: saveToServer
 	};
 })(window);
