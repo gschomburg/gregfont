@@ -28,9 +28,17 @@
 
 		<main id="stage">
 			<div id="toolbar">
-				<button type="button" class="tool" data-tool="select" title="Select / edit points (V)">Select <kbd>V</kbd></button>
-				<button type="button" class="tool" data-tool="pen" title="Pen: click for corners, drag for curves; click the first point to close, Enter/Esc to finish (P)">Pen <kbd>P</kbd></button>
+				<button type="button" class="tool" data-tool="select" title="Select whole paths. Drag the box corners to scale, just outside a corner to rotate. Alt-drag copies. (V)">Select <kbd>V</kbd></button>
+				<button type="button" class="tool" data-tool="direct" title="Direct select: points and the segments between them. Click a segment to pick just that piece. Alt-drag copies. (A)">Direct <kbd>A</kbd></button>
+				<button type="button" class="tool" data-tool="pen" title="Pen: click for corners, drag for curves; click the first point to close, click another path's end to join, Enter/Esc to finish (P)">Pen <kbd>P</kbd></button>
 				<button type="button" class="tool" data-tool="ellipse" title="Ellipse: drag; Shift for a circle (E)">Ellipse <kbd>E</kbd></button>
+				<button type="button" class="tool" data-tool="scissors" title="Scissors: click a path to cut it there (C)">Cut <kbd>C</kbd></button>
+				<span class="sep"></span>
+				<button type="button" id="slice" title="Cut the selected paths (or everything) wherever they cross (X)">Slice <kbd>X</kbd></button>
+				<button type="button" id="join" title="Join the selected open paths, or two selected end points; one open path gets closed (Ctrl+J)">Join <kbd>^J</kbd></button>
+				<button type="button" id="rotate" title="Rotate the selection 90&deg; clockwise; Shift for counter-clockwise (R / Shift+R)">&#8635; 90 <kbd>R</kbd></button>
+				<button type="button" id="flip" title="Flip the selection horizontally; Shift for vertically (H / Shift+H)">Flip <kbd>H</kbd></button>
+				<label title="New pen and ellipse strokes cut, and get cut by, whatever they cross"><input type="checkbox" id="auto-slice"> Auto-slice</label>
 				<span class="sep"></span>
 				<label title="Snap points to the grid (G)"><input type="checkbox" id="snap" checked> Snap <kbd>G</kbd></label>
 				<label>Grid <input type="number" id="grid-size" value="5" min="0.5" step="0.5"></label>
@@ -44,9 +52,10 @@
 			<div id="canvas-wrap" tabindex="-1">
 				<canvas id="editor-canvas"></canvas>
 				<div id="help">
-					Drag points and handles · double-click a point to toggle curve/corner · double-click a line to add a point ·
-					drag the pink lines to set spacing · arrows nudge (Shift = grid) · Delete removes · Ctrl+C/V copies paths between glyphs ·
-					wheel zooms · Space-drag pans
+					V picks whole paths (box: scale, rotate outside corners) · A picks points and segments · Alt-drag copies ·
+					X slices at crossings · C cuts at a click · Ctrl+J joins · dragged points snap onto other points ·
+					double-click a point for curve/corner, a line to add a point · Delete removes (Alt+Delete keeps the path joined) ·
+					drag the pink lines for spacing · wheel zooms · Space-drag pans
 				</div>
 			</div>
 		</main>

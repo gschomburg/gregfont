@@ -43,6 +43,7 @@
 		redo: [],
 		clipboard: null,
 		kernPick: null,
+		autoSlice: false,  // new strokes cut what they cross
 		added: []          // glyphs added from the sidebar but not drawn yet
 	};
 
@@ -55,7 +56,8 @@
 
 	var guidesLayer = P.project.activeLayer;
 	var glyphLayer = new P.Layer();
-	var overlayLayer = new P.Layer();
+	var selLayer = new P.Layer();       // selection highlights and transform box
+	var overlayLayer = new P.Layer();   // hover, marquee, previews
 	glyphLayer.selectedColor = COLORS.select;
 	glyphLayer.activate();
 
@@ -125,6 +127,7 @@
 	// Put the current glyph on the canvas, as separate editable paths.
 	function loadGlyph() {
 		finishPen();
+		selCurves.clear();
 		glyphLayer.removeChildren();
 		var glyph = font().glyphs[state.ch];
 		if (glyph) {
@@ -286,6 +289,7 @@
 			label('lsb ' + glyph.lsb, [lx - px(4), vb.top + px(16)], COLORS.bearing, 'right');
 			label('rsb ' + glyph.rsb, [rx + px(4), vb.top + px(16)], COLORS.bearing);
 		}
+		drawSelection();
 	}
 
 	function bearingLines() {
@@ -312,23 +316,64 @@
 	}
 
 	// ----------------------------------------------------------------- tools
+	//
+	// Selection works like Illustrator:
+	//   Select (V)  picks whole paths and shows a box for scaling and rotating.
+	//   Direct (A)  picks points, and the segments between points.
+	// Paper only tracks selection per point, so direct-selected segments are
+	// kept in selCurves, keyed by the segment's first point.
 
 	var tool = new P.Tool();
 	var drag = null;          // what the current mouse drag is doing
 	var penPath = null;       // path being drawn with the pen
 	var rubber = null;        // pen preview segment
+	var hover = null;         // hover highlight
 	var spaceDown = false;
 	var panning = null;
+	var selCurves = new Set();
+	var EPS = 0.01;           // points closer than this count as the same point
+	var MIN_PIECE = 0.5;      // shortest piece slicing will make, in font units
+
+	// [name, x, y] as fractions of the selection box
+	var BOX_HANDLES = [
+		['nw', 0, 0], ['n', 0.5, 0], ['ne', 1, 0], ['e', 1, 0.5],
+		['se', 1, 1], ['s', 0.5, 1], ['sw', 0, 1], ['w', 0, 0.5]
+	];
+	var RESIZE_CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize' };
+
+	// modifier keys, read from the mouse event itself
+	function mod(e, key) {
+		return e.event ? !!e.event[key + 'Key'] : !!e.modifiers[key];
+	}
 
 	function setTool(name) {
 		finishPen();
+		var paths = selectedPaths();
+		if (name === 'select') {
+			// the Select tool always works on whole paths
+			selCurves.clear();
+			paths.forEach(selectWhole);
+		} else if (name === 'direct' && state.tool === 'select') {
+			paths.forEach(selectPoints);
+		}
 		state.tool = name;
 		document.querySelectorAll('.tool').forEach(function (b) {
 			b.classList.toggle('active', b.dataset.tool === name);
 		});
 		wrap.className = 'tool-' + name;
+		clearHover();
+		updatePathStyleRow();
 	}
 
+	// --- selection model
+
+	function cleanCurves() {
+		selCurves.forEach(function (s) {
+			if (!s.path || !s.path.parent || !s.next) selCurves.delete(s);
+		});
+	}
+
+	// points selected one by one (Direct tool)
 	function selectedSegments() {
 		var out = [];
 		editablePaths().forEach(function (p) {
@@ -337,29 +382,73 @@
 		return out;
 	}
 
+	// a path picked as a whole: selected, but no single points selected
+	function isWhole(p) {
+		return p.selected && !p.segments.some(function (s) { return s.selected; });
+	}
+
 	function selectedPaths() {
-		return editablePaths().filter(function (p) { return p.selected || p.segments.some(function (s) { return s.selected; }); });
+		cleanCurves();
+		var withCurves = new Set();
+		selCurves.forEach(function (s) { withCurves.add(s.path); });
+		return editablePaths().filter(function (p) { return p.selected || withCurves.has(p); });
+	}
+
+	// every point that moves when the selection is dragged or transformed
+	function movingSegments() {
+		cleanCurves();
+		var set = new Set();
+		editablePaths().forEach(function (p) {
+			if (!p.selected) return;
+			var whole = isWhole(p);
+			p.segments.forEach(function (s) { if (whole || s.selected) set.add(s); });
+		});
+		selCurves.forEach(function (s) { set.add(s); set.add(s.next); });
+		return Array.from(set);
+	}
+
+	// is curve i of the path (from point i to the next) selected?
+	function curveSelected(path, i) {
+		var segs = path.segments, a = segs[i], b = segs[(i + 1) % segs.length];
+		return isWhole(path) || selCurves.has(a) || (a.selected && b.selected);
+	}
+
+	function allSelected(p) {
+		return isWhole(p) || p.segments.every(function (s) { return s.selected; });
 	}
 
 	function deselectAll() {
 		editablePaths().forEach(function (p) { p.selected = false; });
+		selCurves.clear();
 	}
 
-	function selectPath(p) {
+	function selectWhole(p) {
+		p.selected = false;   // clears point selection
+		p.selected = true;
+	}
+
+	function selectPoints(p) {
 		p.segments.forEach(function (s) { s.selected = true; });
 	}
 
-	function hitHandle(point) {
-		var tol = px(6), best = null;
-		selectedSegments().forEach(function (s) {
-			['handleIn', 'handleOut'].forEach(function (k) {
-				if (s[k].isZero()) return;
-				var d = s.point.add(s[k]).getDistance(point);
-				if (d < tol && (!best || d < best.d)) best = { segment: s, which: k, d: d };
-			});
-		});
-		return best;
+	function selectPath(p) {
+		if (state.tool === 'direct') selectPoints(p);
+		else selectWhole(p);
 	}
+
+	function toggleAnchor(s) {
+		s.selected = !s.selected;
+		var p = s.path;
+		if (!p.segments.some(function (x) { return x.selected; })) p.selected = false;
+	}
+
+	function pointBounds(segs) {
+		var r = new P.Rectangle(segs[0].point, segs[0].point);
+		segs.forEach(function (s) { r = r.include(s.point); });
+		return r;
+	}
+
+	// --- hit testing
 
 	function hitGlyph(point, opts) {
 		return glyphLayer.hitTest(point, Object.assign({ segments: true, stroke: true, fill: false, tolerance: px(6) }, opts));
@@ -374,10 +463,156 @@
 		return null;
 	}
 
+	// bezier handles that are showing (Direct tool)
+	function hitHandle(point) {
+		var tol = px(6), best = null, cands = [];
+		selectedSegments().forEach(function (s) { cands.push([s, 'handleIn'], [s, 'handleOut']); });
+		selCurves.forEach(function (s) { cands.push([s, 'handleOut'], [s.next, 'handleIn']); });
+		cands.forEach(function (c) {
+			var s = c[0], k = c[1];
+			if (s[k].isZero()) return;
+			var d = s.point.add(s[k]).getDistance(point);
+			if (d < tol && (!best || d < best.d)) best = { segment: s, which: k, d: d };
+		});
+		return best;
+	}
+
+	// the Select tool's transform box
+	function selectionBox() {
+		if (state.tool !== 'select') return null;
+		var paths = selectedPaths();
+		if (!paths.length) return null;
+		var b = paths[0].bounds;
+		paths.slice(1).forEach(function (p) { b = b.unite(p.bounds); });
+		return b;
+	}
+
+	function boxPoint(b, h) {
+		return new P.Point(b.x + b.width * h[1], b.y + b.height * h[2]);
+	}
+
+	function boxHandles(b) {
+		// skip side handles on a flat side, or when the box is small on screen
+		return BOX_HANDLES.filter(function (h) {
+			if (h[1] === 0.5) return b.width * P.view.zoom > 30;
+			if (h[2] === 0.5) return b.height * P.view.zoom > 30;
+			return true;
+		});
+	}
+
+	function hitBox(point) {
+		var b = selectionBox();
+		if (!b) return null;
+		var tol = px(6), handles = boxHandles(b), i, q;
+		for (i = 0; i < handles.length; i++) {
+			q = boxPoint(b, handles[i]);
+			if (Math.abs(point.x - q.x) < tol && Math.abs(point.y - q.y) < tol) {
+				return { kind: 'scale', handle: handles[i], box: b };
+			}
+		}
+		// just outside a corner rotates
+		if (!b.expand(px(4)).contains(point)) {
+			for (i = 0; i < handles.length; i++) {
+				if (handles[i][1] === 0.5 || handles[i][2] === 0.5) continue;
+				if (boxPoint(b, handles[i]).getDistance(point) < px(22)) {
+					return { kind: 'rotate', handle: handles[i], box: b };
+				}
+			}
+		}
+		return null;
+	}
+
 	function isSmooth(s) {
 		if (s.handleIn.isZero() || s.handleOut.isZero()) return false;
 		return s.handleIn.normalize().add(s.handleOut.normalize()).length < 0.05;
 	}
+
+	function isOpenEnd(s) {
+		var p = s.path;
+		return p && !p.closed && p.segments.length > 1 && (s.isFirst() || s.isLast());
+	}
+
+	// --- drawing selection + hover
+
+	function curvePath(s) {
+		var e = s.next;
+		return new P.Path({
+			segments: [new P.Segment(s.point, null, s.handleOut), new P.Segment(e.point, e.handleIn, null)],
+			insert: false
+		});
+	}
+
+	function marker(point, layer, round) {
+		var size = px(7);
+		var m = round
+			? new P.Path.Circle({ center: point, radius: size / 2, insert: false })
+			: new P.Path.Rectangle({ point: point.subtract(size / 2), size: [size, size], insert: false });
+		m.fillColor = 'white';
+		m.strokeColor = COLORS.select;
+		m.strokeWidth = 1;
+		m.strokeScaling = false;
+		layer.addChild(m);
+		return m;
+	}
+
+	function drawSelection() {
+		selLayer.removeChildren();
+		if (!font()) return;
+		cleanCurves();
+		selCurves.forEach(function (s) {
+			var c = curvePath(s);
+			c.strokeColor = COLORS.select;
+			c.strokeWidth = 3;
+			c.strokeScaling = false;
+			selLayer.addChild(c);
+			[[s, 'handleOut'], [s.next, 'handleIn']].forEach(function (h) {
+				var seg = h[0], v = seg[h[1]];
+				if (v.isZero() || seg.selected) return;
+				line(seg.point, seg.point.add(v), COLORS.select, false, selLayer);
+				marker(seg.point.add(v), selLayer, true);
+			});
+			[s, s.next].forEach(function (seg) { if (!seg.selected) marker(seg.point, selLayer); });
+		});
+		var b = selectionBox();
+		if (b) {
+			var r = new P.Path.Rectangle({ rectangle: b, strokeColor: COLORS.select, strokeWidth: 1, insert: false });
+			r.strokeScaling = false;
+			r.dashArray = [4, 3];
+			selLayer.addChild(r);
+			boxHandles(b).forEach(function (h) { marker(boxPoint(b, h), selLayer); });
+		}
+	}
+
+	function clearHover() {
+		if (hover) { hover.remove(); hover = null; }
+	}
+
+	function showHover(point) {
+		var hit = hitGlyph(point);
+		if (!hit) return;
+		var h;
+		if (state.tool === 'select') {
+			h = hit.item.clone({ insert: false });
+			h.selected = false;
+		} else if (hit.type === 'segment') {
+			hover = marker(hit.segment.point, overlayLayer, true);
+			return;
+		} else if (state.tool === 'scissors') {
+			hover = marker(hit.location.point, overlayLayer, true);
+			return;
+		} else {
+			h = curvePath(hit.location.curve.segment1);
+		}
+		h.fillColor = null;
+		h.strokeColor = COLORS.select;
+		h.strokeWidth = 2;
+		h.strokeScaling = false;
+		h.opacity = 0.6;
+		overlayLayer.addChild(h);
+		hover = h;
+	}
+
+	// --- mouse
 
 	tool.onMouseMove = function (e) {
 		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(e.point.y, 0.1);
@@ -385,15 +620,28 @@
 			if (rubber) rubber.remove();
 			rubber = line(penPath.lastSegment.point, snap(e.point), COLORS.overlay, true, overlayLayer);
 		}
-		if (state.tool === 'select' && !drag) {
-			wrap.style.cursor = hitBearing(e.point) ? 'ew-resize' : '';
+		clearHover();
+		if (drag) return;
+		var cursor = '';
+		if (state.tool === 'select' || state.tool === 'direct') {
+			var box = hitBox(e.point);
+			if (box && box.kind === 'rotate' && hitGlyph(e.point)) box = null;
+			if (box) cursor = box.kind === 'rotate' ? 'grab' : RESIZE_CURSORS[box.handle[0]];
+			else if (!hitGlyph(e.point) && hitBearing(e.point)) cursor = 'ew-resize';
+			else showHover(e.point);
+		} else if (state.tool === 'scissors') {
+			showHover(e.point);
 		}
+		wrap.style.cursor = cursor;
 	};
 
 	tool.onMouseDown = function (e) {
 		if (panning || e.event.button !== 0) return;
+		clearHover();
 		if (state.tool === 'select') selectDown(e);
+		else if (state.tool === 'direct') directDown(e);
 		else if (state.tool === 'pen') penDown(e);
+		else if (state.tool === 'scissors') scissorsDown(e);
 		else if (state.tool === 'ellipse') drag = { mode: 'ellipse', start: snap(e.point) };
 	};
 
@@ -402,14 +650,15 @@
 		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(e.point.y, 0.1);
 		var p = snap(e.point);
 		if (drag.mode === 'points') {
-			var delta = p.subtract(drag.anchorStart);
-			drag.segments.forEach(function (s, i) { s.point = drag.starts[i].add(delta); });
+			dragPoints(e);
+		} else if (drag.mode === 'transform') {
+			applyMatrix(drag.origs, transformMatrix(drag, e));
 			commit();
 		} else if (drag.mode === 'handle') {
 			var s = drag.segment;
 			var v = p.subtract(s.point);
 			s[drag.which] = v;
-			if (drag.mirror && !e.modifiers.alt && !v.isZero()) {
+			if (drag.mirror && !mod(e, 'alt') && !v.isZero()) {
 				var other = drag.which === 'handleIn' ? 'handleOut' : 'handleIn';
 				s[other] = v.normalize(-drag.otherLength);
 			}
@@ -431,7 +680,7 @@
 			drag.segment.handleIn = h.multiply(-1);
 		} else if (drag.mode === 'ellipse') {
 			if (drag.preview) drag.preview.remove();
-			drag.preview = ellipseFrom(drag.start, p, e.modifiers.shift);
+			drag.preview = ellipseFrom(drag.start, p, mod(e, 'shift'));
 			if (drag.preview) {
 				pathStyle(drag.preview);
 				drag.preview.strokeColor = COLORS.overlay;
@@ -442,30 +691,40 @@
 
 	tool.onMouseUp = function (e) {
 		if (!drag) return;
+		if (drag.marker) drag.marker.remove();
 		if (drag.mode === 'marquee') {
 			if (drag.box) {
 				var rect = drag.box.bounds;
 				drag.box.remove();
-				editablePaths().forEach(function (path) {
-					path.segments.forEach(function (s) { if (rect.contains(s.point)) s.selected = true; });
-				});
+				if (state.tool === 'select') {
+					var rp = new P.Path.Rectangle({ rectangle: rect, insert: false });
+					editablePaths().forEach(function (path) {
+						var inside = path.segments.some(function (s) { return rect.contains(s.point); });
+						if (inside || path.getIntersections(rp).length) selectWhole(path);
+					});
+				} else {
+					editablePaths().forEach(function (path) {
+						path.segments.forEach(function (s) { if (rect.contains(s.point)) s.selected = true; });
+					});
+				}
 			}
 			updatePathStyleRow();
 		} else if (drag.mode === 'ellipse') {
 			if (drag.preview) drag.preview.remove();
-			var shape = ellipseFrom(drag.start, snap(e.point), e.modifiers.shift);
+			var shape = ellipseFrom(drag.start, snap(e.point), mod(e, 'shift'));
 			if (shape) {
 				edit(function () {
 					shape.data.style = {};
 					pathStyle(shape);
 					glyphLayer.addChild(shape);
 					deselectAll();
-					selectPath(shape);
+					autoSlice(shape);
 				});
 			}
 		} else if (drag.mode === 'pen-handle') {
 			commit();
 		} else {
+			if (drag.mode === 'transform' && drag.kind === 'rotate') setStatus('');
 			endEdit();
 		}
 		drag = null;
@@ -482,59 +741,456 @@
 		return new P.Path.Ellipse({ rectangle: new P.Rectangle(a, a.add([w, h])), insert: false });
 	}
 
+	function nearestPoint(path, point) {
+		var best = path.firstSegment;
+		path.segments.forEach(function (s) {
+			if (s.point.getDistance(point) < best.point.getDistance(point)) best = s;
+		});
+		return best.point;
+	}
+
+	// Select tool: whole paths
 	function selectDown(e) {
-		var point = e.point;
-		var shift = e.modifiers.shift;
+		var point = e.point, shift = mod(e, 'shift');
+
+		var box = hitBox(point);
+		if (box && box.kind === 'scale') { startTransform(box, point); return; }
+
+		var hit = hitGlyph(point);
+		if (!hit && box) { startTransform(box, point); return; }
+		if (!hit) {
+			var bearing = hitBearing(point);
+			if (bearing) {
+				beginEdit();
+				drag = { mode: bearing, ink: bearingLines().ink };
+				return;
+			}
+			if (!shift) deselectAll();
+			drag = { mode: 'marquee', start: point };
+			updatePathStyleRow();
+			return;
+		}
+
+		var path = hit.item;
+		if (shift && path.selected) {
+			path.selected = false;
+			updatePathStyleRow();
+			return;
+		}
+		if (!shift && !path.selected) deselectAll();
+		selectWhole(path);
+		startPointDrag(nearestPoint(path, point), mod(e, 'alt'), point);
+	}
+
+	// Direct tool: points and segments
+	function directDown(e) {
+		var point = e.point, shift = mod(e, 'shift'), alt = mod(e, 'alt');
 
 		var handle = hitHandle(point);
 		if (handle) {
 			beginEdit();
-			var s = handle.segment;
+			var hs = handle.segment;
 			var other = handle.which === 'handleIn' ? 'handleOut' : 'handleIn';
-			drag = { mode: 'handle', segment: s, which: handle.which, mirror: isSmooth(s), otherLength: s[other].length };
+			drag = { mode: 'handle', segment: hs, which: handle.which, mirror: isSmooth(hs), otherLength: hs[other].length };
 			return;
 		}
 
 		var hit = hitGlyph(point);
 		if (hit && hit.type === 'segment') {
 			var seg = hit.segment;
-			if (shift) seg.selected = !seg.selected;
-			else if (!seg.selected) { deselectAll(); seg.selected = true; }
-			startPointDrag(seg.point);
+			if (shift) {
+				toggleAnchor(seg);
+				if (!seg.selected) { updatePathStyleRow(); return; }
+			} else if (!seg.selected || allSelected(seg.path)) {
+				// clicking into a fully selected path picks just this point
+				deselectAll();
+				seg.selected = true;
+			}
+			startPointDrag(seg.point, alt, point);
 			return;
 		}
 
-		var bearing = hitBearing(point);
-		if (bearing) {
-			beginEdit();
-			drag = { mode: bearing, ink: bearingLines().ink };
+		if (!hit) {
+			var bearing = hitBearing(point);
+			if (bearing) {
+				beginEdit();
+				drag = { mode: bearing, ink: bearingLines().ink };
+				return;
+			}
+			if (!shift) deselectAll();
+			drag = { mode: 'marquee', start: point };
+			updatePathStyleRow();
 			return;
 		}
 
-		if (hit && (hit.type === 'stroke' || hit.type === 'curve')) {
-			var path = hit.item;
-			var allSelected = path.segments.every(function (x) { return x.selected; });
-			if (shift && allSelected) { path.selected = false; drag = null; return; }
-			if (!shift && !allSelected) deselectAll();
-			selectPath(path);
-			startPointDrag(path.firstSegment.point);
-			return;
+		// a segment between two points
+		var start = hit.location.curve.segment1;
+		var path = start.path;
+		var already = selCurves.has(start) ||
+			(curveSelected(path, start.index) && !allSelected(path));
+		if (shift) {
+			if (selCurves.has(start)) {
+				selCurves.delete(start);
+				updatePathStyleRow();
+				return;
+			}
+			selCurves.add(start);
+		} else if (!already) {
+			deselectAll();
+			selCurves.add(start);
 		}
+		var a = start.point, b = start.next.point;
+		startPointDrag(a.getDistance(point) < b.getDistance(point) ? a : b, alt, point);
+	}
 
-		if (!shift) deselectAll();
-		drag = { mode: 'marquee', start: point };
+	// anchor: the point that lands on the grid; click: where the mouse went down
+	function startPointDrag(anchor, alt, click) {
+		beginEdit();
+		drag = { mode: 'points', anchorStart: anchor.clone(), click: (click || anchor).clone(), alt: alt };
+		collectPointDrag();
 		updatePathStyleRow();
 	}
 
-	function startPointDrag(anchor) {
+	function collectPointDrag() {
+		var segs = movingSegments(), moving = new Set(segs);
+		drag.segments = segs;
+		drag.starts = segs.map(function (s) { return s.point.clone(); });
+		// other points to snap onto
+		drag.targets = [];
+		editablePaths().forEach(function (p) {
+			p.segments.forEach(function (s) { if (!moving.has(s)) drag.targets.push(s.point.clone()); });
+		});
+	}
+
+	function dragPoints(e) {
+		// Alt-drag drags a copy
+		if (drag.alt && !drag.copied) {
+			drag.copied = true;
+			if (duplicateSelection()) collectPointDrag();
+		}
+		var raw = e.point.subtract(drag.click);
+		var delta = snap(drag.anchorStart.add(raw)).subtract(drag.anchorStart);
+		// snap onto nearby points so pieces line up for joining
+		var best = null, tol = px(8);
+		drag.starts.forEach(function (st) {
+			var q = st.add(raw);
+			drag.targets.forEach(function (t) {
+				var d = t.getDistance(q);
+				if (d < tol && (!best || d < best.d)) best = { d: d, delta: t.subtract(st), at: t };
+			});
+		});
+		if (drag.marker) { drag.marker.remove(); drag.marker = null; }
+		if (best) {
+			delta = best.delta;
+			drag.marker = marker(best.at, overlayLayer, true);
+			drag.marker.strokeColor = COLORS.bearing;
+		}
+		drag.segments.forEach(function (s, i) { s.point = drag.starts[i].add(delta); });
+		commit();
+	}
+
+	// --- transforms
+
+	function startTransform(box, point) {
 		beginEdit();
-		var segs = selectedSegments();
 		drag = {
-			mode: 'points',
-			segments: segs,
-			starts: segs.map(function (s) { return s.point.clone(); }),
-			anchorStart: anchor.clone()
+			mode: 'transform', kind: box.kind, handle: box.handle, box: box.box.clone(), start: point,
+			origs: movingSegments().map(origOf)
 		};
+	}
+
+	function origOf(s) {
+		return { s: s, p: s.point.clone(), hi: s.handleIn.clone(), ho: s.handleOut.clone() };
+	}
+
+	function applyMatrix(origs, m) {
+		origs.forEach(function (o) {
+			var p = m.transform(o.p);
+			o.s.point = p;
+			o.s.handleIn = m.transform(o.p.add(o.hi)).subtract(p);
+			o.s.handleOut = m.transform(o.p.add(o.ho)).subtract(p);
+		});
+	}
+
+	function ratio(a, b) {
+		return Math.abs(b) < 1e-9 ? 1 : a / b;
+	}
+
+	function transformMatrix(d, e) {
+		var b = d.box, m = new P.Matrix();
+		if (d.kind === 'rotate') {
+			var c = b.center;
+			var angle = e.point.subtract(c).angle - d.start.subtract(c).angle;
+			if (mod(e, 'shift')) angle = Math.round(angle / 15) * 15;
+			setStatus('Rotate ' + round(angle, 0.1) + '°');
+			return m.rotate(angle, c);
+		}
+		var h = d.handle, p = snap(e.point);
+		var origin = mod(e, 'alt') ? b.center : boxPoint(b, [null, 1 - h[1], 1 - h[2]]);
+		var from = boxPoint(b, h);
+		var sx = h[1] === 0.5 ? 1 : ratio(p.x - origin.x, from.x - origin.x);
+		var sy = h[2] === 0.5 ? 1 : ratio(p.y - origin.y, from.y - origin.y);
+		if (mod(e, 'shift')) {
+			if (h[1] === 0.5) sx = Math.abs(sy);
+			else if (h[2] === 0.5) sy = Math.abs(sx);
+			else {
+				var s = Math.max(Math.abs(sx), Math.abs(sy));
+				sx = sx < 0 ? -s : s;
+				sy = sy < 0 ? -s : s;
+			}
+		}
+		return m.scale(sx, sy, origin);
+	}
+
+	// rotate/flip from the keyboard or toolbar, around the selection's center
+	function transformSelection(makeMatrix) {
+		var segs = movingSegments();
+		if (!segs.length) { setStatus('Select something first'); return; }
+		var center = (selectionBox() || pointBounds(segs)).center;
+		if (state.snap) center = new P.Point(round(center.x, state.grid / 2), round(center.y, state.grid / 2));
+		var origs = segs.map(origOf);
+		edit(function () { applyMatrix(origs, makeMatrix(center)); });
+	}
+
+	function rotateSelection(angle) {
+		transformSelection(function (c) { return new P.Matrix().rotate(angle, c); });
+	}
+
+	function flipSelection(vertical) {
+		transformSelection(function (c) { return new P.Matrix().scale(vertical ? 1 : -1, vertical ? -1 : 1, c); });
+	}
+
+	// --- cutting, slicing, joining
+
+	function clonePath(path) {
+		var np = path.clone({ insert: false });
+		np.selected = false;
+		np.data = { style: Object.assign({}, path.data.style) };
+		return np;
+	}
+
+	// New paths made from the runs of curves where keep(i) is true.
+	function piecesOf(path, keep) {
+		var segs = path.segments, n = segs.length, closed = path.closed;
+		var count = closed ? n : n - 1;
+		if (count <= 0) return [];
+		var i, all = true;
+		for (i = 0; i < count; i++) if (!keep(i)) { all = false; break; }
+		if (all) return [clonePath(path)];
+
+		// on a closed path, start right after a dropped curve so runs don't wrap
+		var begin = 0;
+		if (closed) {
+			for (i = 0; i < count; i++) if (!keep(i)) { begin = i + 1; break; }
+		}
+		var out = [], run = null;
+		for (var k = 0; k < count; k++) {
+			i = (begin + k) % n;
+			if (keep(i)) (run = run || []).push(i);
+			else if (run) { out.push(runPath(path, run)); run = null; }
+		}
+		if (run) out.push(runPath(path, run));
+		return out;
+	}
+
+	function runPath(path, curves) {
+		var segs = path.segments, n = segs.length;
+		var list = curves.map(function (i) { return segs[i]; })
+			.concat([segs[(curves[curves.length - 1] + 1) % n]]);
+		var np = new P.Path({
+			segments: list.map(function (s) { return new P.Segment(s.point.clone(), s.handleIn.clone(), s.handleOut.clone()); }),
+			insert: false
+		});
+		np.firstSegment.handleIn = [0, 0];
+		np.lastSegment.handleOut = [0, 0];
+		np.data = { style: Object.assign({}, path.data.style) };
+		return np;
+	}
+
+	// the selected segments, as new paths
+	function selectionPieces() {
+		var out = [];
+		selectedPaths().forEach(function (path) {
+			out = out.concat(piecesOf(path, function (i) { return curveSelected(path, i); }));
+		});
+		return out;
+	}
+
+	function duplicateSelection() {
+		var pieces = selectionPieces();
+		if (!pieces.length) return false;
+		deselectAll();
+		pieces.forEach(function (p) {
+			pathStyle(p);
+			glyphLayer.addChild(p);
+			selectPath(p);
+		});
+		return true;
+	}
+
+	// Split a path at the given offsets along it.
+	function splitAtOffsets(path, offsets) {
+		var L = path.length;
+		if (!L) return 0;
+		// cuts closer together than MIN_PIECE would leave tiny scraps
+		// (common where strokes overlap), so they count as one cut
+		var offs = offsets
+			.map(function (o) { return path.closed && o > L - MIN_PIECE ? 0 : o; })
+			.filter(function (o) { return path.closed || (o > MIN_PIECE && o < L - MIN_PIECE); })
+			.sort(function (a, b) { return a - b; })
+			.filter(function (o, i, arr) { return i === 0 || o - arr[i - 1] > MIN_PIECE; });
+		if (path.closed && offs.length > 1 && L - offs[offs.length - 1] + offs[0] < MIN_PIECE) offs.pop();
+		if (!offs.length) return 0;
+		var style = path.data.style || {}, cuts = offs.length;
+		if (path.closed) {
+			// opening a closed path moves its start to the cut
+			var last = offs.pop();
+			path.splitAt(last);
+			offs = offs.map(function (o) { return o + (L - last); });
+		}
+		for (var k = offs.length - 1; k >= 0; k--) {
+			var tail = path.splitAt(offs[k]);
+			if (tail && tail !== path) {
+				tail.selected = false;
+				tail.data = { style: Object.assign({}, style) };
+				pathStyle(tail);
+			}
+		}
+		return cuts;
+	}
+
+	// Cut paths wherever they cross (only pairs where pairOk(a, b), if given).
+	function slicePaths(paths, pairOk) {
+		var cuts = new Map();
+		paths.forEach(function (p) { cuts.set(p, []); });
+		for (var i = 0; i < paths.length; i++) {
+			for (var j = i; j < paths.length; j++) {
+				var a = paths[i], b = paths[j];
+				if (pairOk && !pairOk(a, b)) continue;
+				var locs = i === j ? a.getIntersections() : a.getIntersections(b);
+				locs.forEach(function (loc) {
+					cuts.get(a).push(loc.offset);
+					if (loc.intersection) cuts.get(b).push(loc.intersection.offset);
+				});
+			}
+		}
+		var n = 0;
+		cuts.forEach(function (offsets, path) { n += splitAtOffsets(path, offsets); });
+		return n;
+	}
+
+	function sliceSelection() {
+		var paths = selectedPaths();
+		if (!paths.length) paths = editablePaths();
+		var n = 0;
+		edit(function () {
+			n = slicePaths(paths);
+			deselectAll();
+		});
+		updatePathStyleRow();
+		setStatus(n ? 'Sliced at ' + n + ' crossing' + (n === 1 ? '' : 's') + '. Pick up the pieces with the Select tool.' : 'No crossings to slice');
+	}
+
+	// with Auto-slice on, a new stroke cuts (and is cut by) what it crosses
+	function autoSlice(path) {
+		if (!state.autoSlice || !path || !path.parent) return;
+		slicePaths(editablePaths(), function (a, b) { return a === path || b === path; });
+	}
+
+	function scissorsDown(e) {
+		var hit = hitGlyph(e.point);
+		if (!hit) return;
+		var path = hit.item, loc;
+		if (hit.type === 'segment') {
+			if (!path.closed && (hit.segment.isFirst() || hit.segment.isLast())) {
+				setStatus('That is already an end point');
+				return;
+			}
+			loc = hit.segment.location;
+		} else {
+			loc = hit.location;
+		}
+		if (!loc) return;
+		edit(function () {
+			var style = path.data.style || {};
+			var tail = path.splitAt(loc);
+			if (tail && tail !== path) {
+				tail.selected = false;
+				tail.data = { style: Object.assign({}, style) };
+				pathStyle(tail);
+			}
+			deselectAll();
+		});
+		setStatus('Cut');
+	}
+
+	function closeEnds(p) {
+		var first = p.firstSegment, last = p.lastSegment;
+		if (p.segments.length > 2 && first.point.getDistance(last.point) < EPS) {
+			first.handleIn = last.handleIn;
+			last.remove();
+		}
+		p.closed = true;
+	}
+
+	// Join end point a to end point b. Ends that touch merge into one point,
+	// otherwise a straight line connects them. Returns the joined path.
+	function joinEnds(a, b) {
+		var p1 = a.path, p2 = b.path;
+		if (p1 === p2) { if (p1.segments.length > 2) closeEnds(p1); return p1; }
+		if (a.isFirst()) p1.reverse();   // a is now p1's last point
+		if (b.isLast()) p2.reverse();    // b is now p2's first point
+		var segs = p2.segments.map(function (s) { return new P.Segment(s.point.clone(), s.handleIn.clone(), s.handleOut.clone()); });
+		var last = p1.lastSegment;
+		if (last.point.getDistance(segs[0].point) < EPS) {
+			last.handleOut = segs[0].handleOut;
+			segs.shift();
+		}
+		p1.addSegments(segs);
+		p2.remove();
+		if (p1.segments.length > 2 && p1.firstSegment.point.getDistance(p1.lastSegment.point) < EPS) closeEnds(p1);
+		return p1;
+	}
+
+	function joinSelection() {
+		var anchors = selectedSegments();
+		var ends = anchors.filter(isOpenEnd);
+		var paths = selectedPaths().filter(function (p) { return !p.closed && p.segments.length > 1; });
+		var twoEnds = anchors.length === 2 && ends.length === 2;
+		if (!twoEnds && (!paths.length || (paths.length === 1 && paths[0].segments.length < 3))) {
+			setStatus('Select open paths, or two end points, to join', true);
+			return;
+		}
+		edit(function () {
+			var result;
+			if (twoEnds) {
+				result = joinEnds(ends[0], ends[1]);
+			} else if (paths.length === 1) {
+				result = paths[0];
+				if (result.segments.length > 2) closeEnds(result);
+			} else {
+				// join the closest free ends until one path is left
+				var list = paths.slice();
+				while (list.length > 1) {
+					var best = null;
+					for (var i = 0; i < list.length; i++) {
+						for (var j = i + 1; j < list.length; j++) {
+							[list[i].firstSegment, list[i].lastSegment].forEach(function (sa) {
+								[list[j].firstSegment, list[j].lastSegment].forEach(function (sb) {
+									var d = sa.point.getDistance(sb.point);
+									if (!best || d < best.d) best = { d: d, a: sa, b: sb };
+								});
+							});
+						}
+					}
+					joinEnds(best.a, best.b);
+					list = list.filter(function (p) { return p.parent && !p.closed; });
+				}
+				result = list[0] || paths[0];
+			}
+			deselectAll();
+			if (result && result.parent) selectPath(result);
+		});
 		updatePathStyleRow();
 	}
 
@@ -547,15 +1203,13 @@
 			beginEdit();
 			// clicking the end of an open path continues it
 			var hit = hitGlyph(e.point, { stroke: false });
-			if (hit && hit.type === 'segment' && !hit.item.closed) {
+			if (hit && hit.type === 'segment' && isOpenEnd(hit.segment)) {
 				var path = hit.item, seg = hit.segment;
-				if (seg.index === 0 || seg.index === path.segments.length - 1) {
-					if (seg.index === 0 && path.segments.length > 1) path.reverse();
-					penPath = path;
-					deselectAll();
-					penPath.lastSegment.selected = true;
-					return;
-				}
+				if (seg.isFirst()) path.reverse();
+				penPath = path;
+				deselectAll();
+				penPath.lastSegment.selected = true;
+				return;
 			}
 			penPath = new P.Path({ segments: [p], insert: false });
 			penPath.data.style = {};
@@ -572,6 +1226,14 @@
 			finishPen();
 			return;
 		}
+		// clicking the end of another open path joins onto it
+		var target = hitGlyph(e.point, { stroke: false });
+		if (target && target.type === 'segment' && target.item !== penPath && isOpenEnd(target.segment)) {
+			penPath.add(target.segment.point.clone());
+			penPath = joinEnds(penPath.lastSegment, target.segment);
+			finishPen();
+			return;
+		}
 		penPath.add(p);
 		deselectAll();
 		penPath.lastSegment.selected = true;
@@ -581,18 +1243,21 @@
 	function finishPen() {
 		if (rubber) { rubber.remove(); rubber = null; }
 		if (!penPath) return;
-		if (penPath.segments.length < 2) penPath.remove();
+		var path = penPath;
 		penPath = null;
+		if (path.segments.length < 2) path.remove();
 		deselectAll();
+		autoSlice(path);
 		endEdit();
 	}
 
 	// double-click: toggle point smooth/corner, or add a point on a line
 	canvas.addEventListener('dblclick', function (e) {
-		if (state.tool !== 'select') return;
+		if (state.tool !== 'select' && state.tool !== 'direct') return;
 		var point = P.view.viewToProject(new P.Point(e.offsetX, e.offsetY));
 		var hit = hitGlyph(point);
 		if (!hit) return;
+		if (state.tool === 'select') setTool('direct');
 		if (hit.type === 'segment') {
 			edit(function () {
 				var s = hit.segment;
@@ -610,6 +1275,7 @@
 				}
 			});
 		}
+		updatePathStyleRow();
 	});
 
 	// zoom + pan
@@ -649,14 +1315,36 @@
 	// ------------------------------------------------------------ keyboard
 
 	function nudge(dx, dy) {
-		var segs = selectedSegments();
+		var segs = movingSegments();
 		if (!segs.length) return;
 		edit(function () {
 			segs.forEach(function (s) { s.point = s.point.add([dx, dy]); });
 		});
 	}
 
+	// Illustrator-style delete: selected segments go, and so do selected
+	// points along with the segments on either side of them. What's left of
+	// each path stays as separate pieces.
 	function deleteSelection() {
+		var paths = selectedPaths();
+		if (!paths.length) return;
+		edit(function () {
+			paths.forEach(function (path) {
+				var segs = path.segments, n = segs.length, whole = isWhole(path);
+				var pieces = whole ? [] : piecesOf(path, function (i) {
+					var a = segs[i], b = segs[(i + 1) % n];
+					return !(a.selected || b.selected || selCurves.has(a));
+				});
+				pieces.forEach(function (np) { pathStyle(np); np.insertBelow(path); });
+				path.remove();
+			});
+			selCurves.clear();
+		});
+		updatePathStyleRow();
+	}
+
+	// Alt+Delete: remove the selected points but keep the path connected.
+	function removeAnchors() {
 		var paths = selectedPaths();
 		if (!paths.length) return;
 		edit(function () {
@@ -669,17 +1357,23 @@
 				}
 			});
 		});
+		updatePathStyleRow();
 	}
 
 	function copySelection() {
-		var paths = selectedPaths();
-		if (!paths.length) paths = editablePaths();
-		state.clipboard = paths.map(function (p) {
+		var pieces = selectedPaths().length ? selectionPieces() : editablePaths().map(clonePath);
+		if (!pieces.length) {
+			setStatus('Select a segment (or two neighbouring points) to copy', true);
+			return false;
+		}
+		state.clipboard = pieces.map(function (p) {
 			return { d: p.getPathData(null, 3), style: Object.assign({}, p.data.style) };
 		});
-		setStatus('Copied ' + paths.length + ' path' + (paths.length === 1 ? '' : 's'));
+		setStatus('Copied ' + pieces.length + ' path' + (pieces.length === 1 ? '' : 's'));
+		return true;
 	}
 
+	// pastes in place, since glyph coordinates line up between glyphs
 	function paste() {
 		if (!state.clipboard) return;
 		edit(function () {
@@ -696,6 +1390,7 @@
 				});
 			});
 		});
+		updatePathStyleRow();
 	}
 
 	document.addEventListener('keydown', function (e) {
@@ -715,25 +1410,35 @@
 			return;
 		}
 		if (ctrl && key === 'c') { copySelection(); return; }
+		if (ctrl && key === 'x') { e.preventDefault(); if (copySelection()) deleteSelection(); return; }
 		if (ctrl && key === 'v') { paste(); return; }
+		if (ctrl && key === 'j') { e.preventDefault(); joinSelection(); return; }
 		if (ctrl) return;
 
 		var step = e.shiftKey ? state.grid : 1;
-		switch (e.key) {
-			case 'v': case 'V': setTool('select'); break;
-			case 'p': case 'P': setTool('pen'); break;
-			case 'e': case 'E': setTool('ellipse'); break;
-			case 'g': case 'G': setSnap(!state.snap); break;
-			case 'f': case 'F': fit(); break;
-			case 'Enter': finishPen(); break;
-			case 'Escape':
+		switch (key) {
+			case 'v': setTool('select'); break;
+			case 'a': setTool('direct'); break;
+			case 'p': setTool('pen'); break;
+			case 'e': setTool('ellipse'); break;
+			case 'c': setTool('scissors'); break;
+			case 'x': sliceSelection(); break;
+			case 'r': rotateSelection(e.shiftKey ? -90 : 90); break;
+			case 'h': flipSelection(e.shiftKey); break;
+			case 'g': setSnap(!state.snap); break;
+			case 'f': fit(); break;
+			case 'enter': finishPen(); break;
+			case 'escape':
 				if (penPath) finishPen(); else { deselectAll(); updatePathStyleRow(); }
 				break;
-			case 'Delete': case 'Backspace': e.preventDefault(); deleteSelection(); break;
-			case 'ArrowLeft': e.preventDefault(); nudge(-step, 0); break;
-			case 'ArrowRight': e.preventDefault(); nudge(step, 0); break;
-			case 'ArrowUp': e.preventDefault(); nudge(0, -step); break;
-			case 'ArrowDown': e.preventDefault(); nudge(0, step); break;
+			case 'delete': case 'backspace':
+				e.preventDefault();
+				if (e.altKey) removeAnchors(); else deleteSelection();
+				break;
+			case 'arrowleft': e.preventDefault(); nudge(-step, 0); break;
+			case 'arrowright': e.preventDefault(); nudge(step, 0); break;
+			case 'arrowup': e.preventDefault(); nudge(0, -step); break;
+			case 'arrowdown': e.preventDefault(); nudge(0, step); break;
 			default: return;
 		}
 	});
@@ -851,6 +1556,7 @@
 		var first = paths[0] && paths[0].data.style || {};
 		$('path-cap').value = first.strokeCap || '';
 		$('path-join').value = first.strokeJoin || '';
+		drawSelection();
 	}
 
 	function setPathStyle(key, value) {
@@ -1177,6 +1883,11 @@
 		$('undo').addEventListener('click', undo);
 		$('redo').addEventListener('click', redo);
 		$('fit').addEventListener('click', fit);
+		$('slice').addEventListener('click', sliceSelection);
+		$('join').addEventListener('click', joinSelection);
+		$('rotate').addEventListener('click', function (e) { rotateSelection(e.shiftKey ? -90 : 90); });
+		$('flip').addEventListener('click', function (e) { flipSelection(e.shiftKey); });
+		$('auto-slice').addEventListener('change', function () { state.autoSlice = this.checked; });
 
 		$('font-select').addEventListener('change', function () {
 			openEntry(state.entries[Number(this.value)]);

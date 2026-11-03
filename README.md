@@ -82,15 +82,21 @@ Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font at the
 
 | Tool / action | How |
 | --- | --- |
-| **Select** <kbd>V</kbd> | Click a point or line to select it, Shift-click to add, drag on empty space to box-select. Drag points, handles or whole paths. Alt-drag a handle to break a smooth curve into a corner. |
-| **Pen** <kbd>P</kbd> | Click for corner points, click-drag for curves. Click the first point to close the path, or press Enter/Esc to finish it open. Clicking the end of an existing open path continues it. |
+| **Select** <kbd>V</kbd> | Picks whole paths. Click a path, Shift-click to add more, or drag a box. A box appears around the selection: drag its handles to scale (Shift keeps proportions, Alt scales from the center), or drag just outside a corner to rotate (Shift for 15° steps). Drag a path to move it, Alt-drag to move a copy. |
+| **Direct** <kbd>A</kbd> | Picks points and the segments between them. Click a point, or click a line to pick just that segment (Flash-style). Shift-click to add more, or drag a box around points. Drag to move them, drag handles to reshape curves (Alt breaks a smooth point into a corner), Alt-drag to move a copy. |
+| **Pen** <kbd>P</kbd> | Click for corner points, click-drag for curves. Click the first point to close the path, or press Enter/Esc to finish it open. Click the end of an existing open path to continue it, or to join onto it while drawing. |
 | **Ellipse** <kbd>E</kbd> | Drag out an ellipse; Shift for a circle. |
+| **Cut** <kbd>C</kbd> | Click a path to cut it there. Cutting a closed shape opens it. |
+| **Slice** <kbd>X</kbd> | Cuts the selected paths (or the whole glyph if nothing is selected) wherever they cross, so every piece between crossings can be picked up on its own. With **Auto-slice** on, new pen and ellipse strokes slice whatever they cross as soon as they're drawn. |
+| **Join** <kbd>Ctrl+J</kbd> | Joins the selected open paths into one, closest ends first. Ends that touch become one point; ends that don't get a straight line. With two end points selected, joins exactly those. With one open path selected, closes it. Dragged points snap onto other points, so pieces line up exactly before joining. |
+| Rotate / flip | <kbd>R</kbd> rotates the selection 90° clockwise (Shift+R the other way); <kbd>H</kbd> flips it horizontally (Shift+H vertically). |
+| Copy / cut / paste | Ctrl+C copies the selection: whole paths, or just the selected segments when only part of a path is selected. Ctrl+X cuts. Ctrl+V pastes in place, into whichever glyph is open, so it also copies between glyphs. Nothing selected copies the whole glyph. |
+| Delete | Removes the selected paths or segments. Deleting a point also removes the segments on either side of it, like Illustrator. **Alt+Delete** removes points but keeps the path joined. |
 | Curve ↔ corner | Double-click a point. |
 | Add a point | Double-click a line. |
 | Spacing | Drag the pink dashed lines (left/right side bearings) or type the numbers in the Glyph panel. |
-| Nudge | Arrow keys move selected points 1 unit, Shift + arrows one grid step. |
+| Nudge | Arrow keys move the selection 1 unit, Shift + arrows one grid step. |
 | Snap | <kbd>G</kbd> toggles snapping to the grid; set the grid size in the toolbar. |
-| Copy between glyphs | Ctrl+C copies the selected paths (or the whole glyph), Ctrl+V pastes into the current glyph. |
 | View | Mouse wheel zooms, Space-drag or middle-drag pans, <kbd>F</kbd> fits the glyph. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
 | Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Without the dev server, the file is downloaded instead. |
