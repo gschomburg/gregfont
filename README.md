@@ -59,15 +59,15 @@ Curly quotes, the apostrophe `’` and en/em dashes fall back to the plain `"` `
 
 ## Font format
 
-Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json` (which sets the dropdown order). Glyphs are stroked paths stored as SVG path data, in cell coordinates: x grows right, y grows down, the cap line is at y=0 and the baseline at y=cell height. Descenders go below the cell.
+Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json` (which sets the dropdown order). Glyphs are stroked paths stored as SVG path data, in font units laid out like type: the origin (0,0) sits on the baseline at the left of the cell, x grows right and **y grows up**. So the cap line is a positive height and descenders go negative. The editor marks the origin with a small "0,0".
 
 ```json
 {
 	"format": "gregfont",
-	"version": 1,
+	"version": 2,
 	"name": "Sutton",
 	"cell":    { "width": 30, "height": 60 },
-	"guides":  { "cap": 0, "xHeight": 30, "baseline": 60, "descender": 80 },
+	"guides":  { "cap": 60, "xHeight": 30, "descender": -20 },
 	"style":   { "strokeCap": "round", "strokeJoin": "round", "miterLimit": 10 },
 	"spacing": { "monospaced": true, "letterSpacing": 45, "lineHeight": 90 },
 	"kerning": { "AV": -4 },
@@ -78,11 +78,14 @@ Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json
 ```
 
 - **glyphs** are keyed by the character itself. Longer keys (`"ampersandalt"`) are named extra glyphs, like alternates, which text setting doesn't use yet.
-- **lsb / rsb** (left/right side bearing) are the gaps, in font units, before and after the glyph's ink when setting proportionally. Monospaced setting ignores them and places the cell as drawn.
+- **cell** is a box sitting on the baseline, from the origin up to (width, height). It's a drawing guide: resizing it never moves a glyph. In text, a line's top is the cell height above its baseline.
+- **guides** are heights above the baseline, which is always 0.
+- **lsb / rsb** (left/right side bearing) are the gaps, in font units, before and after the glyph's ink when setting proportionally. Monospaced setting ignores them and places each glyph's origin as drawn, `letterSpacing` apart.
 - **paths** can override `strokeCap`, `strokeJoin` or `miterLimit` from `style`. Paths the editor has grouped share a `group` number; the typesetter ignores it.
 - **kerning** maps two-character pairs to an adjustment added between them (proportional only).
 - **spacing** holds the defaults the typesetter's controls reset to.
 - The file is written one glyph per line, so git diffs show which glyphs changed.
+- Version 1 files (y down, origin at the cell's top-left, an explicit baseline guide) still load; they're converted on the way in and saved as version 2.
 
 All reading, writing and importing lives in `src/js/gregfont.js`.
 
@@ -133,7 +136,7 @@ The JSON file is the font. Illustrator is for drawing, and SVG is how shapes mov
 
 ### Editing an existing font
 
-1. **File → Export SVG for Illustrator** downloads `<font>_grid.svg`. It's the whole font on one artboard, one glyph per cell in a grid. Each glyph is its own `char-<name>` layer, and grouped paths are nested groups. Two reference layers show each cell's box and label, the cap / x-height / baseline / descender guides, and pink side-bearing marks. Standard characters the font doesn't have yet get an empty labelled cell.
+1. **File → Export SVG for Illustrator** downloads `<font>_grid.svg`. It's the whole font on one artboard, one glyph per cell in a grid. Each glyph is its own `char-<name>` layer, and grouped paths are nested groups. Two reference layers show each cell's box and label, the cap / x-height / baseline / descender guides, a dot at each glyph's origin (baseline, left of the cell), and pink side-bearing marks. Standard characters the font doesn't have yet get an empty labelled cell.
 2. Edit in Illustrator and save as SVG. Moving a glyph within its cell moves it in the font. To add a glyph, make a new `char-<name>` layer and draw it in an empty cell; any empty spot on the grid works.
 3. **File → Update shapes from SVG…** reads it back into the open font. Only shapes change. Spacing, kerning and font settings stay as they are, since Illustrator would drop them. Glyphs that didn't change are left untouched, glyphs missing from the SVG are kept, and new glyphs get default spacing. One Ctrl+Z undoes the whole update.
 

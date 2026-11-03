@@ -2,14 +2,16 @@
  * gregfont.js: the gregfont font format.
  *
  * A font is one JSON file. Glyphs are stroked (single-line) paths stored as
- * SVG path data, in a "cell" coordinate space: x grows right, y grows down,
- * the cap line is usually y=0 and the baseline usually y=cell.height.
+ * SVG path data, in font units, like type: the origin (0,0) is on the
+ * baseline at the left of the cell, x grows right and y grows UP. So the
+ * cap line is a positive y and descenders go negative. (Screen drawing is
+ * y-down, so glyphItem() and the editor flip it when drawing.)
  *
  * {
- *   "format": "gregfont", "version": 1,
+ *   "format": "gregfont", "version": 2,
  *   "name": "Sutton",
  *   "cell":    { "width": 30, "height": 60 },
- *   "guides":  { "cap": 0, "xHeight": 30, "baseline": 60, "descender": 75 },
+ *   "guides":  { "cap": 60, "xHeight": 30, "descender": -15 },
  *   "style":   { "strokeCap": "round", "strokeJoin": "round", "miterLimit": 10 },
  *   "spacing": { "monospaced": true, "letterSpacing": 45, "lineHeight": 90 },
  *   "kerning": { "AV": -4 },
@@ -20,9 +22,15 @@
  *
  * - glyphs are keyed by the character itself. Longer keys ("ampersandalt")
  *   are named extra glyphs, e.g. alternates; text setting doesn't use them.
+ * - cell is a box sitting on the baseline, from the origin to (width,
+ *   height). It's a drawing guide; in text, the line's top is cell.height
+ *   above the baseline.
+ * - guides are heights above the baseline (the baseline itself is 0).
  * - lsb / rsb (left/right side bearing) are gaps in font units between the
  *   glyph's ink and its neighbours, used when text is set proportionally.
- *   Monospaced setting ignores them and places the cell as drawn.
+ *   Monospaced setting ignores them and places the origin as drawn.
+ * - Version 1 files (y down, origin at the cell's top-left) are converted
+ *   when they're loaded.
  * - a path may override strokeCap / strokeJoin / miterLimit from font.style.
  * - kerning keys are two-character pairs; values are added to the advance.
  * - paths with the same `group` number were grouped in the editor.
@@ -39,7 +47,7 @@
 	'use strict';
 
 	var FORMAT = 'gregfont';
-	var VERSION = 1;
+	var VERSION = 2;
 
 	// Names used for SVG layer ids (`char-<name>`), for characters that can't
 	// appear in an id. Letters and digits use themselves.
@@ -78,12 +86,72 @@
 		return NAME_TO_CHAR[m[1]] || m[1];
 	}
 
+	/*
+	 * Flip SVG path data vertically: y becomes `axis` - y (relative moves just
+	 * change sign). With axis 0 this converts between y-up font units and
+	 * y-down screen coordinates, both ways.
+	 */
+	var PATH_ARGS = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
+	function flipPathData(d, axis) {
+		axis = axis || 0;
+		var tokens = String(d).match(/[a-zA-Z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g) || [];
+		var out = [], i = 0;
+		function num(n) {
+			var r = Math.round(n * 1000) / 1000;
+			return String(r === 0 ? 0 : r);
+		}
+		while (i < tokens.length) {
+			var cmd = tokens[i++];
+			if (!/[a-zA-Z]/.test(cmd)) throw new Error('Bad path data: ' + d);
+			var lower = cmd.toLowerCase(), rel = cmd === lower, n = PATH_ARGS[lower];
+			if (n === undefined) throw new Error('Unknown path command ' + cmd);
+			var groups = [];
+			do {
+				if (n === 0) break;
+				var a = tokens.slice(i, i + n).map(Number);
+				i += n;
+				var fy = function (y) { return rel ? -y : axis - y; };
+				if (lower === 'v') a[0] = fy(a[0]);
+				else if (lower === 'h') { /* x only */ }
+				else if (lower === 'a') { a[2] = -a[2]; a[4] = a[4] ? 0 : 1; a[6] = fy(a[6]); }
+				else for (var k = 1; k < n; k += 2) a[k] = fy(a[k]);
+				var parts = [];
+				for (var j = 0; j < a.length; j += (lower === 'a' ? 7 : 2)) {
+					parts.push(lower === 'a' ? a.map(num).join(',') : a.slice(j, j + 2).map(num).join(','));
+				}
+				groups.push(parts.join(' '));
+			} while (i < tokens.length && !/[a-zA-Z]/.test(tokens[i]));
+			out.push(cmd + groups.join(' '));
+		}
+		return out.join('');
+	}
+
+	// Version 1 fonts: y down, origin at the cell's top-left, baseline at
+	// guides.baseline. Move them to baseline-origin, y-up font units.
+	function migrateV1(font) {
+		var cell = font.cell || { width: 60, height: 60 };
+		var g = font.guides || {};
+		var base = g.baseline !== undefined && g.baseline !== null ? g.baseline : cell.height;
+		function up(y) { return y === null || y === undefined ? null : Math.round((base - y) * 1000) / 1000; }
+		font.guides = {
+			cap: up(g.cap !== undefined ? g.cap : 0),
+			xHeight: up(g.xHeight),
+			descender: up(g.descender !== undefined ? g.descender : base)
+		};
+		Object.keys(font.glyphs || {}).forEach(function (ch) {
+			(font.glyphs[ch].paths || []).forEach(function (p) { p.d = flipPathData(p.d, base); });
+		});
+		font.version = VERSION;
+	}
+
 	// Fill in defaults so the rest of the code can rely on every field.
 	function normalize(font) {
 		if (!font || font.format !== FORMAT) throw new Error('Not a gregfont file');
 		if (font.version > VERSION) throw new Error('Font version ' + font.version + ' is newer than this app supports');
+		if (!font.version || font.version < 2) migrateV1(font);
 		var cell = font.cell = font.cell || { width: 60, height: 60 };
-		font.guides = Object.assign({ cap: 0, xHeight: null, baseline: cell.height, descender: cell.height }, font.guides);
+		font.guides = Object.assign({ cap: cell.height, xHeight: null, descender: 0 }, font.guides);
+		delete font.guides.baseline;   // always 0 now
 		font.style = Object.assign({ strokeCap: 'butt', strokeJoin: 'miter', miterLimit: 10 }, font.style);
 		font.spacing = Object.assign({ monospaced: false, letterSpacing: cell.width, lineHeight: cell.height * 1.5 }, font.spacing);
 		font.kerning = font.kerning || {};
@@ -189,6 +257,8 @@
 			});
 			group.addChild(path);
 		});
+		// font units are y-up; Paper draws y-down. The origin stays on the baseline.
+		group.scale(1, -1, new ps.Point(0, 0));
 		cache[ch] = group;
 		return group;
 	}
@@ -201,6 +271,8 @@
 	}
 
 	// Bounds of a glyph's ink (ignoring stroke width), or null if it's empty.
+	// In screen orientation: origin on the baseline, y down (so ink above the
+	// baseline has a negative top).
 	function inkBounds(ps, font, ch) {
 		var item = glyphItem(ps, font, ch);
 		return item && item.children.length ? item.bounds : null;
@@ -208,8 +280,10 @@
 
 	/*
 	 * Lay out text. Returns { glyphs: [{ char, x, y, word }], missing: [chars] }
-	 * where (x, y) is where the glyph's cell origin goes and `word` numbers
-	 * the words. `char` is the glyph actually drawn (after fallbacks).
+	 * where (x, y) is where the glyph's origin goes (y is the line's
+	 * baseline, in screen orientation: lines go down) and `word` numbers the
+	 * words. `char` is the glyph actually drawn (after fallbacks). The first
+	 * baseline is cell.height below the top margin.
 	 *
 	 * opts: { monospace, letterSpacing, lineHeight, tracking, wordWrap,
 	 *         wrapWidth, margin }
@@ -220,7 +294,7 @@
 	 */
 	function layout(ps, font, text, opts) {
 		var margin = opts.margin || 0;
-		var x = margin, y = margin;
+		var x = margin, y = margin + font.cell.height;
 		var word = 0, inWord = false, prev = null;
 		var out = [], missing = [];
 
@@ -284,18 +358,21 @@
 	function encodeNum(n) { return String(round(n)).replace('.', 'p').replace('-', 'm'); }
 	function decodeNum(s) { return parseFloat(s.replace('p', '.').replace('m', '-')); }
 
+	// "grid2": ox / oy point at each cell's baseline origin. The older
+	// "grid" names pointed at the cell's top-left corner.
 	function gridLayerName(g) {
-		return 'gregfont-grid-c' + g.cols + '-w' + encodeNum(g.w) + '-h' + encodeNum(g.h) +
+		return 'gregfont-grid2-c' + g.cols + '-w' + encodeNum(g.w) + '-h' + encodeNum(g.h) +
 			'-px' + encodeNum(g.px) + '-py' + encodeNum(g.py) + '-ox' + encodeNum(g.ox) + '-oy' + encodeNum(g.oy);
 	}
 
 	function parseGridLayerName(name) {
 		var n = '([0-9pm]+)';
-		var m = new RegExp('^gregfont-grid-c(\\d+)-w' + n + '-h' + n + '-px' + n + '-py' + n + '-ox' + n + '-oy' + n).exec(name || '');
+		var m = new RegExp('^gregfont-grid(2?)-c(\\d+)-w' + n + '-h' + n + '-px' + n + '-py' + n + '-ox' + n + '-oy' + n).exec(name || '');
 		if (!m) return null;
 		return {
-			cols: parseInt(m[1], 10), w: decodeNum(m[2]), h: decodeNum(m[3]),
-			px: decodeNum(m[4]), py: decodeNum(m[5]), ox: decodeNum(m[6]), oy: decodeNum(m[7])
+			version: m[1] ? 2 : 1,
+			cols: parseInt(m[2], 10), w: decodeNum(m[3]), h: decodeNum(m[4]),
+			px: decodeNum(m[5]), py: decodeNum(m[6]), ox: decodeNum(m[7]), oy: decodeNum(m[8])
 		};
 	}
 
@@ -321,9 +398,10 @@
 			return STANDARD_ORDER.indexOf(ch) < 0;
 		}));
 
-		// one slot size that fits every glyph, its bearings and the guides
+		// one slot size that fits every glyph, its bearings and the guides.
+		// Worked out in screen orientation around the baseline (y down).
 		var left = 0, right = cell.width;
-		var top = Math.min(0, guides.cap || 0), bottom = Math.max(cell.height, guides.descender || 0);
+		var top = Math.min(-cell.height, -(guides.cap || 0)), bottom = Math.max(0, -(guides.descender || 0));
 		var inks = {};
 		order.forEach(function (ch) {
 			var ink = font.glyphs[ch] ? inkBounds(ps, font, ch) : null;
@@ -348,19 +426,21 @@
 		var cells = [], guideLines = [], layers = [];
 		var fontSize = round(labelRoom * 0.6);
 		var guideColors = { cap: '#2f8cff', xHeight: '#20a37a', baseline: '#e07b00', descender: '#9b59b6' };
+		var guideY = { cap: guides.cap, xHeight: guides.xHeight, baseline: 0, descender: guides.descender };
 
 		order.forEach(function (ch, i) {
 			var col = i % grid.cols, row = Math.floor(i / grid.cols);
 			var sx = col * grid.px, sy = row * grid.py;          // slot corner
-			var cx = sx + grid.ox, cy = sy + grid.oy;           // cell origin
-			cells.push('<rect x="' + round(cx) + '" y="' + round(cy) + '" width="' + cell.width + '" height="' + cell.height +
+			var cx = sx + grid.ox, cy = sy + grid.oy;           // origin, on the baseline
+			cells.push('<rect x="' + round(cx) + '" y="' + round(cy - cell.height) + '" width="' + cell.width + '" height="' + cell.height +
 				'" fill="none" stroke="#bbbbbb" stroke-width="0.5"/>');
 			cells.push('<text x="' + round(sx + grid.px / 2) + '" y="' + round(sy + grid.py - labelRoom * 0.35) +
 				'" font-family="sans-serif" font-size="' + fontSize + '" fill="#999999" text-anchor="middle">' +
 				xmlEscape(GLYPH_NAMES[ch] ? ch + '  ' + GLYPH_NAMES[ch] : ch) + '</text>');
+			cells.push('<circle cx="' + round(cx) + '" cy="' + round(cy) + '" r="' + round(Math.max(cell.width, cell.height) * 0.015) + '" fill="#e07b00"/>');
 			Object.keys(guideColors).forEach(function (k) {
-				if (guides[k] === null || guides[k] === undefined) return;
-				var y = round(cy + guides[k]);
+				if (guideY[k] === null || guideY[k] === undefined) return;
+				var y = round(cy - guideY[k]);
 				guideLines.push('<line x1="' + round(sx) + '" y1="' + y + '" x2="' + round(sx + grid.px) + '" y2="' + y +
 					'" stroke="' + guideColors[k] + '" stroke-width="0.3"/>');
 			});
@@ -377,7 +457,7 @@
 			// paths, moved into the cell; grouped paths go in a nested group
 			var loose = [], groups = {}, groupOrder = [];
 			glyph.paths.forEach(function (entry) {
-				var item = ps.PathItem.create(entry.d);
+				var item = ps.PathItem.create(flipPathData(entry.d, 0));   // to y-down
 				item.remove();
 				item.translate(new ps.Point(cx, cy));
 				var el = '<path d="' + item.getPathData(null, 3) + '" fill="none" stroke="#000000" stroke-width="' + sw + '"' +
@@ -466,10 +546,12 @@
 			var ink = null;
 			paths.forEach(function (p) { ink = ink ? ink.unite(p.bounds) : p.bounds.clone(); });
 
-			// in a grid, move the glyph out of whichever cell it sits in
+			// in a grid, move the glyph out of whichever cell it sits in, to
+			// cell-top-left coordinates (version 1 of the format; normalize()
+			// then moves it onto the baseline)
 			if (grid && ink) {
 				var col = Math.floor(ink.center.x / grid.px), row = Math.floor(ink.center.y / grid.py);
-				var offset = new ps.Point(col * grid.px + grid.ox, row * grid.py + grid.oy);
+				var offset = new ps.Point(col * grid.px + grid.ox, row * grid.py + grid.oy - (grid.version === 2 ? cell.height : 0));
 				paths.forEach(function (p) { p.translate(offset.negate()); });
 				ink = ink.clone();
 				ink.x -= offset.x;
@@ -519,9 +601,11 @@
 			if (ink[ch]) descender = Math.max(descender, round(ink[ch].bottom));
 		});
 
+		// built in version 1 coordinates (y down from the cell's top-left), which
+		// normalize() converts
 		var font = normalize({
 			format: FORMAT,
-			version: VERSION,
+			version: 1,
 			name: options.name || 'Untitled',
 			cell: cell,
 			guides: { cap: 0, xHeight: xTop, baseline: cell.height, descender: descender },
@@ -567,6 +651,7 @@
 		layout: layout,
 		fromSVG: fromSVG,
 		toSVG: toSVG,
+		flipPathData: flipPathData,
 		saveToServer: saveToServer
 	};
 })(window);

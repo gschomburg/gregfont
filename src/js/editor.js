@@ -157,7 +157,8 @@
 				['strokeCap', 'strokeJoin', 'miterLimit'].forEach(function (k) {
 					if (entry[k] !== undefined) style[k] = entry[k];
 				});
-				var item = P.PathItem.create(entry.d);
+				// font units are y-up; the canvas is y-down with the origin on the baseline
+				var item = P.PathItem.create(GregFont.flipPathData(entry.d, 0));
 				var parts = item instanceof P.CompoundPath ? item.removeChildren() : [item];
 				item.remove();
 				parts.forEach(function (path) {
@@ -183,7 +184,7 @@
 			glyph = f.glyphs[state.ch] = { lsb: defaultBearing(), rsb: defaultBearing(), paths: [] };
 		}
 		glyph.paths = paths.map(function (p) {
-			var entry = { d: p.getPathData(null, 3) };
+			var entry = { d: GregFont.flipPathData(p.getPathData(null, 3), 0) };   // back to y-up
 			var style = p.data.style || {};
 			Object.keys(style).forEach(function (k) { if (style[k] !== undefined && style[k] !== '') entry[k] = style[k]; });
 			if (p.data.group) entry.group = p.data.group;
@@ -301,20 +302,26 @@
 			line([vb.left, y], [vb.right, y], Math.abs(y % major) < 1e-6 ? COLORS.gridMajor : COLORS.grid);
 		}
 
-		// cell box
-		// the cell: a light fill, under the grid lines
-		var cell = new P.Path.Rectangle({ point: [0, 0], size: [f.cell.width, f.cell.height], fillColor: COLORS.cell, insert: false });
+		// the cell: a light fill sitting on the baseline, under the grid lines.
+		// (The canvas is y-down, so heights above the baseline are negative here.)
+		var cell = new P.Path.Rectangle({ point: [0, -f.cell.height], size: [f.cell.width, f.cell.height], fillColor: COLORS.cell, insert: false });
 		guidesLayer.addChild(cell);
 		cell.sendToBack();
 
-		// font guides
+		// font guides, labelled with their height
 		Object.keys(COLORS.guide).forEach(function (key) {
-			var gy = f.guides[key];
-			if (gy === null || gy === undefined) return;
+			var h = key === 'baseline' ? 0 : f.guides[key];
+			if (h === null || h === undefined) return;
+			var gy = -h;
 			line([vb.left, gy], [vb.right, gy], COLORS.guide[key]);
 			// past the tool tab
-			label(key === 'xHeight' ? 'x-height' : key, [vb.left + px(58), gy - px(4)], COLORS.guide[key]);
+			label((key === 'xHeight' ? 'x-height' : key) + ' ' + h, [vb.left + px(58), gy - px(4)], COLORS.guide[key]);
 		});
+
+		// the origin
+		var dot = new P.Path.Circle({ center: [0, 0], radius: px(3.5), fillColor: COLORS.guide.baseline, insert: false });
+		guidesLayer.addChild(dot);
+		label('0,0', [-px(6), px(14)], COLORS.guide.baseline, 'right');
 
 		// side bearings
 		var glyph = f.glyphs[state.ch];
@@ -342,8 +349,8 @@
 		var ink = inkBounds();
 		var left = Math.min(0, ink ? ink.left : 0);
 		var right = Math.max(f.cell.width, ink ? ink.right : 0);
-		var top = Math.min(f.guides.cap, 0, ink ? ink.top : 0);
-		var bottom = Math.max(f.guides.descender || 0, f.cell.height, ink ? ink.bottom : 0);
+		var top = Math.min(-f.guides.cap, -f.cell.height, ink ? ink.top : 0);
+		var bottom = Math.max(-(f.guides.descender || 0), 0, ink ? ink.bottom : 0);
 		var w = right - left, h = bottom - top;
 		var region = new P.Rectangle(left - w * 0.6, top - h * 0.15, w * 2.2, h * 1.3);
 		var vs = P.view.viewSize;
@@ -743,7 +750,7 @@
 	// --- mouse
 
 	tool.onMouseMove = function (e) {
-		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(e.point.y, 0.1);
+		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(-e.point.y, 0.1);
 		if (state.tool === 'pen' && penPath) {
 			if (rubber) rubber.remove();
 			rubber = line(penPath.lastSegment.point, snap(e.point), COLORS.overlay, true, overlayLayer);
@@ -776,7 +783,7 @@
 
 	tool.onMouseDrag = function (e) {
 		if (panning || !drag) return;
-		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(e.point.y, 0.1);
+		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(-e.point.y, 0.1);
 		var p = snap(e.point);
 		if (drag.mode === 'points') {
 			dragPoints(e);
@@ -1715,8 +1722,8 @@
 			var step = parseFloat(input.step) || 1, min = parseFloat(input.min), scrubbing = false;
 			try { field.setPointerCapture(e.pointerId); } catch (err) { /* not a live pointer */ }
 			function move(ev) {
-				// down moves a guide down, which is a bigger y in font units
-				var d = vertical ? ev.clientY - y0 : ev.clientX - x0;
+				// up raises a guide: heights grow upward
+				var d = vertical ? y0 - ev.clientY : ev.clientX - x0;
 				if (!scrubbing && Math.abs(d) < 3) return;
 				if (!scrubbing) {
 					scrubbing = true;
@@ -1913,7 +1920,7 @@
 
 	// <g> with a glyph's paths, styled like the font.
 	function glyphGroup(f, ch, strokeWidth, nonScaling) {
-		var g = svgEl('g');
+		var g = svgEl('g', { transform: 'scale(1 -1)' });   // font units are y-up
 		var glyph = f.glyphs[ch];
 		if (!glyph) return g;
 		glyph.paths.forEach(function (p) {
@@ -1971,8 +1978,8 @@
 	function glyphSvg(f, ch, strokeWidth) {
 		var ink = GregFont.inkBounds(P, f, ch);
 		var left = Math.min(0, ink ? ink.left : 0), right = Math.max(f.cell.width, ink ? ink.right : 0);
-		var top = Math.min(f.guides.cap, ink ? ink.top : 0);
-		var bottom = Math.max(f.guides.descender || f.cell.height, ink ? ink.bottom : 0);
+		var top = Math.min(-f.guides.cap, -f.cell.height, ink ? ink.top : 0);
+		var bottom = Math.max(-(f.guides.descender || 0), 0, ink ? ink.bottom : 0);
 		var pad = (bottom - top) * 0.05;
 		var svg = svgEl('svg', { viewBox: [left - pad, top - pad, right - left + pad * 2, bottom - top + pad * 2].join(' '), 'aria-hidden': 'true' });
 		svg.appendChild(glyphGroup(f, ch, strokeWidth, true));
@@ -2055,7 +2062,7 @@
 		updateFontMeta();
 		$('cell-width').value = f.cell.width;
 		$('cell-height').value = f.cell.height;
-		['cap', 'xHeight', 'baseline', 'descender'].forEach(function (k) {
+		['cap', 'xHeight', 'descender'].forEach(function (k) {
 			$('guide-' + k).value = f.guides[k] === null ? '' : f.guides[k];
 		});
 		$('style-strokeCap').value = f.style.strokeCap;
@@ -2097,7 +2104,7 @@
 				if (v > 0) { font().cell[pair[1]] = v; drawGuides(); }
 			});
 		});
-		['cap', 'xHeight', 'baseline', 'descender'].forEach(function (k) {
+		['cap', 'xHeight', 'descender'].forEach(function (k) {
 			$('guide-' + k).addEventListener('change', function () {
 				var v = parseFloat(this.value);
 				font().guides[k] = isNaN(v) ? null : v;
@@ -2194,13 +2201,15 @@
 			tracking: 0,
 			margin: 0
 		});
-		var top = Math.min(f.guides.cap, 0) - state.strokeWidth;
-		var bottom = Math.max(f.guides.descender || 0, f.cell.height) + state.strokeWidth;
+		// heights around each glyph's baseline, in screen orientation
+		var top = -Math.max(f.guides.cap, f.cell.height) - state.strokeWidth;
+		var bottom = Math.max(-(f.guides.descender || 0), 0) + state.strokeWidth;
+		var baseline = result.glyphs.length ? result.glyphs[0].y : f.cell.height;
 		var right = 0, left = 0;
 		var svg = svgEl('svg');
 		result.glyphs.forEach(function (placed) {
-			var g = glyphGroup(f, placed.char, state.strokeWidth, false);
-			g.setAttribute('transform', 'translate(' + placed.x + ' ' + placed.y + ')');
+			var g = svgEl('g', { transform: 'translate(' + placed.x + ' ' + placed.y + ')' });
+			g.appendChild(glyphGroup(f, placed.char, state.strokeWidth, false));
 			g.dataset.ch = placed.char;
 			if (placed.char === state.ch) g.classList.add('current');
 			if (state.kernPick === placed.char) g.classList.add('kern-pick');
@@ -2217,7 +2226,7 @@
 			left = Math.min(left, placed.x + (ink ? ink.left : 0));
 		});
 		var pad = state.strokeWidth * 2;
-		svg.setAttribute('viewBox', [left - pad, top, Math.max(right - left + pad * 2, 1), bottom - top].join(' '));
+		svg.setAttribute('viewBox', [left - pad, baseline + top, Math.max(right - left + pad * 2, 1), bottom - top].join(' '));
 		box.appendChild(svg);
 		box.title = 'Click a letter to edit it. Shift-click two letters to set up a kerning pair.';
 	}
@@ -2301,7 +2310,7 @@
 			version: GregFont.VERSION,
 			name: 'Untitled',
 			cell: { width: 40, height: 60 },
-			guides: { cap: 0, xHeight: 30, baseline: 60, descender: 80 },
+			guides: { cap: 60, xHeight: 30, descender: -20 },
 			style: { strokeCap: 'round', strokeJoin: 'round', miterLimit: 10 },
 			spacing: { monospaced: false, letterSpacing: 45, lineHeight: 90 },
 			kerning: {},
