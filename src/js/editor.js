@@ -31,6 +31,26 @@
 		overlay: '#2f8cff'
 	};
 
+	// Canvas colours come from the theme's tokens in editor.css, so the
+	// canvas follows the light / dark switch.
+	function readColors() {
+		var cs = getComputedStyle(document.documentElement);
+		function v(name, fallback) { return cs.getPropertyValue(name).trim() || fallback; }
+		COLORS.ink = v('--ink', COLORS.ink);
+		COLORS.grid = v('--canvas-grid', COLORS.grid);
+		COLORS.gridMajor = v('--canvas-grid-major', COLORS.gridMajor);
+		COLORS.cell = v('--canvas-cell', COLORS.cell);
+		COLORS.guide = {
+			cap: v('--guide-cap', COLORS.guide.cap),
+			xHeight: v('--guide-xh', COLORS.guide.xHeight),
+			baseline: v('--guide-base', COLORS.guide.baseline),
+			descender: v('--guide-desc', COLORS.guide.descender)
+		};
+		COLORS.bearing = v('--bearing', COLORS.bearing);
+		COLORS.select = COLORS.overlay = v('--select', COLORS.select);
+	}
+	readColors();
+
 	var state = {
 		entries: [],      // [{ file, font, dirty }] in dropdown order; file is null until first save
 		entry: null,
@@ -150,6 +170,7 @@
 		}
 		drawGuides();
 		updateGlyphPanel();
+		renderKerning();
 	}
 
 	// Write the canvas back into the font.
@@ -258,7 +279,7 @@
 	function label(text, point, color, justification) {
 		var t = new P.PointText({
 			point: point, content: text, fillColor: color, fontSize: px(11),
-			fontFamily: 'Raleway, sans-serif', justification: justification || 'left', insert: false
+			fontFamily: "'IBM Plex Mono', monospace", justification: justification || 'left', insert: false
 		});
 		guidesLayer.addChild(t);
 	}
@@ -290,7 +311,8 @@
 			var gy = f.guides[key];
 			if (gy === null || gy === undefined) return;
 			line([vb.left, gy], [vb.right, gy], COLORS.guide[key]);
-			label(key === 'xHeight' ? 'x-height' : key, [vb.left + px(6), gy - px(4)], COLORS.guide[key]);
+			// past the tool tab
+			label(key === 'xHeight' ? 'x-height' : key, [vb.left + px(58), gy - px(4)], COLORS.guide[key]);
 		});
 
 		// side bearings
@@ -1658,6 +1680,80 @@
 		$('snap').checked = on;
 	}
 
+	function currentTheme() {
+		return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+	}
+
+	function setTheme(theme) {
+		document.documentElement.dataset.theme = theme;
+		try { localStorage.setItem('gregfont-editor-theme', theme); } catch (e) { /* ignore */ }
+		readColors();
+		glyphLayer.selectedColor = COLORS.select;
+		editablePaths().forEach(pathStyle);
+		drawGuides();
+	}
+
+	function toggleTheme() {
+		setTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+	}
+
+	// Number fields marked data-scrub="x" (sideways) or "y" (up / down) can be
+	// dragged to change them; a click without dragging still lets you type.
+	// While dragging, the input gets 'scrubstart' and 'scrub' events, then one
+	// 'change' when the mouse is released. Shift drags in bigger steps, Alt in
+	// smaller ones.
+	function bindScrub(field) {
+		var input = field.querySelector('input');
+		if (!input || field.dataset.scrubBound) return;
+		field.dataset.scrubBound = '1';
+		var vertical = field.dataset.scrub === 'y';
+		field.addEventListener('pointerdown', function (e) {
+			if (e.button !== 0 || input.disabled || document.activeElement === input) return;
+			e.preventDefault();
+			var x0 = e.clientX, y0 = e.clientY, start = parseFloat(input.value) || 0;
+			var step = parseFloat(input.step) || 1, min = parseFloat(input.min), scrubbing = false;
+			field.setPointerCapture(e.pointerId);
+			function move(ev) {
+				// down moves a guide down, which is a bigger y in font units
+				var d = vertical ? ev.clientY - y0 : ev.clientX - x0;
+				if (!scrubbing && Math.abs(d) < 3) return;
+				if (!scrubbing) {
+					scrubbing = true;
+					field.classList.add('scrubbing');
+					input.dispatchEvent(new Event('scrubstart'));
+				}
+				var mult = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
+				var v = start + Math.round(d / 3) * step * mult;
+				if (!isNaN(min)) v = Math.max(min, v);
+				v = Math.round(v * 1000) / 1000;
+				if (String(v) !== input.value) {
+					input.value = v;
+					input.dispatchEvent(new Event('scrub'));
+				}
+			}
+			function up() {
+				field.removeEventListener('pointermove', move);
+				field.removeEventListener('pointerup', up);
+				field.removeEventListener('pointercancel', up);
+				field.classList.remove('scrubbing');
+				if (scrubbing) {
+					field.dataset.justScrubbed = '1';
+					input.dispatchEvent(new Event('change'));
+				} else {
+					input.focus();
+					input.select();
+				}
+			}
+			field.addEventListener('pointermove', move);
+			field.addEventListener('pointerup', up);
+			field.addEventListener('pointercancel', up);
+		});
+		// the label's own click would focus the input after a drag
+		field.addEventListener('click', function (e) {
+			if (field.dataset.justScrubbed) { e.preventDefault(); delete field.dataset.justScrubbed; }
+		});
+	}
+
 	function setAutoSlice(on) {
 		state.autoSlice = on;
 		$('auto-slice').checked = on;
@@ -1725,7 +1821,9 @@
 		{ title: 'View', items: [
 			{ label: 'Fit glyph', key: 'F', run: fit },
 			'-',
-			{ label: 'Snap to grid', key: 'G', run: function () { setSnap(!state.snap); }, checked: function () { return state.snap; } }
+			{ label: 'Snap to grid', key: 'G', run: function () { setSnap(!state.snap); }, checked: function () { return state.snap; } },
+			'-',
+			{ label: 'Light mode', run: toggleTheme, checked: function () { return currentTheme() === 'light'; } }
 		] }
 	];
 
@@ -1819,7 +1917,7 @@
 		if (!glyph) return g;
 		glyph.paths.forEach(function (p) {
 			var attrs = {
-				d: p.d, fill: 'none', stroke: COLORS.ink, 'stroke-width': strokeWidth,
+				d: p.d, fill: 'none', stroke: 'currentColor', 'stroke-width': strokeWidth,
 				'stroke-linecap': p.strokeCap || f.style.strokeCap,
 				'stroke-linejoin': p.strokeJoin || f.style.strokeJoin,
 				'stroke-miterlimit': p.miterLimit || f.style.miterLimit
@@ -1864,17 +1962,20 @@
 		var lbl = document.createElement('span');
 		lbl.className = 'label';
 		lbl.textContent = glyph ? ch : ch + ' +';
-		if (glyph) {
-			var ink = GregFont.inkBounds(P, f, ch);
-			var left = Math.min(0, ink ? ink.left : 0), right = Math.max(f.cell.width, ink ? ink.right : 0);
-			var top = Math.min(f.guides.cap, ink ? ink.top : 0);
-			var bottom = Math.max(f.guides.descender || f.cell.height, ink ? ink.bottom : 0);
-			var pad = (bottom - top) * 0.05;
-			var svg = svgEl('svg', { viewBox: [left - pad, top - pad, right - left + pad * 2, bottom - top + pad * 2].join(' ') });
-			svg.appendChild(glyphGroup(f, ch, 1.5, true));
-			btn.appendChild(svg);
-		}
+		if (glyph) btn.appendChild(glyphSvg(f, ch, 1.5));
 		btn.appendChild(lbl);
+	}
+
+	// A small <svg> of a glyph, framed by its cell and guides.
+	function glyphSvg(f, ch, strokeWidth) {
+		var ink = GregFont.inkBounds(P, f, ch);
+		var left = Math.min(0, ink ? ink.left : 0), right = Math.max(f.cell.width, ink ? ink.right : 0);
+		var top = Math.min(f.guides.cap, ink ? ink.top : 0);
+		var bottom = Math.max(f.guides.descender || f.cell.height, ink ? ink.bottom : 0);
+		var pad = (bottom - top) * 0.05;
+		var svg = svgEl('svg', { viewBox: [left - pad, top - pad, right - left + pad * 2, bottom - top + pad * 2].join(' '), 'aria-hidden': 'true' });
+		svg.appendChild(glyphGroup(f, ch, strokeWidth, true));
+		return svg;
 	}
 
 	function selectGlyph(ch) {
@@ -1893,23 +1994,40 @@
 	// ---------------------------------------------------------- inspector
 
 	function updateGlyphPanel() {
-		var f = font(), glyph = f.glyphs[state.ch];
-		$('glyph-title').textContent = glyphLabel(state.ch) + (glyph ? '' : ' (empty)');
+		var f = font(), ch = state.ch, glyph = f.glyphs[ch];
+		$('glyph-title').textContent = ch;
+		var code = Array.from(ch).length === 1
+			? 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + ' \u00b7 '
+			: '';
+		$('glyph-layer-name').textContent = code + 'char-' + GregFont.charToName(ch);
+		var n = glyph ? glyph.paths.length : 0;
+		$('glyph-info').textContent = glyph ? n + ' path' + (n === 1 ? '' : 's') : 'Empty: draw on the canvas';
+		var big = $('glyph-big');
+		big.innerHTML = '';
+		if (glyph) big.appendChild(glyphSvg(f, ch, 2));
 		$('glyph-lsb').value = glyph ? glyph.lsb : '';
 		$('glyph-rsb').value = glyph ? glyph.rsb : '';
 		$('glyph-lsb').disabled = $('glyph-rsb').disabled = !glyph;
-		$('glyph-layer-name').textContent = 'Illustrator layer: char-' + GregFont.charToName(state.ch);
+		updateFontMeta();
 		updatePathStyleRow();
 	}
 
 	function updatePathStyleRow() {
 		var paths = selectedPaths();
 		$('path-style-row').classList.toggle('disabled', !paths.length);
-		$('path-cap').disabled = $('path-join').disabled = !paths.length;
 		var first = paths[0] && paths[0].data.style || {};
-		$('path-cap').value = first.strokeCap || '';
-		$('path-join').value = first.strokeJoin || '';
+		[['path-cap', first.strokeCap], ['path-join', first.strokeJoin]].forEach(function (pair) {
+			$(pair[0]).querySelectorAll('button').forEach(function (b) {
+				b.disabled = !paths.length;
+				b.classList.toggle('active', b.dataset.value === (pair[1] || ''));
+			});
+		});
 		drawSelection();
+	}
+
+	function updateFontMeta() {
+		var n = Object.keys(font().glyphs).length;
+		$('font-meta').textContent = (state.entry.file || 'not saved yet') + ' \u00b7 ' + n + ' glyph' + (n === 1 ? '' : 's');
 	}
 
 	function setPathStyle(key, value) {
@@ -1933,7 +2051,7 @@
 	function updateFontPanel() {
 		var f = font();
 		$('font-name').value = f.name;
-		$('font-file').textContent = state.entry.file ? 'fonts/' + state.entry.file : 'not saved yet';
+		updateFontMeta();
 		$('cell-width').value = f.cell.width;
 		$('cell-height').value = f.cell.height;
 		['cap', 'xHeight', 'baseline', 'descender'].forEach(function (k) {
@@ -1979,6 +2097,11 @@
 				font().guides[k] = isNaN(v) ? null : v;
 				fontChanged(true);
 			});
+			// while dragging, only move the line; the thumbnails catch up on release
+			$('guide-' + k).addEventListener('scrub', function () {
+				var v = parseFloat(this.value);
+				if (!isNaN(v)) { font().guides[k] = v; drawGuides(); }
+			});
 		});
 		['strokeCap', 'strokeJoin'].forEach(function (k) {
 			$('style-' + k).addEventListener('change', function () {
@@ -1992,32 +2115,48 @@
 			fontChanged(false);
 		});
 		['letterSpacing', 'lineHeight'].forEach(function (k) {
-			$('spacing-' + k).addEventListener('change', function () {
+			function set() {
 				var v = parseFloat(this.value);
 				if (!isNaN(v)) { font().spacing[k] = v; fontChanged(false); }
-			});
+			}
+			$('spacing-' + k).addEventListener('change', set);
+			$('spacing-' + k).addEventListener('scrub', set);
 		});
 	}
 
 	// kerning
 
+	// The pairs that include the current glyph.
 	function renderKerning() {
-		var f = font(), list = $('kerning-list');
+		var f = font(), list = $('kerning-list'), ch = state.ch;
+		$('kern-title').textContent = 'Kerning with ' + ch;
+		$('kern-pair').placeholder = Array.from(ch).length === 1 ? ch + (ch === 'o' ? 'n' : 'o') : 'AV';
 		list.innerHTML = '';
-		Object.keys(f.kerning).sort().forEach(function (pair) {
+		Object.keys(f.kerning).filter(function (pair) {
+			return Array.from(pair).indexOf(ch) >= 0;
+		}).sort().forEach(function (pair) {
 			var row = document.createElement('div');
 			row.className = 'kern-row';
 			var name = document.createElement('span');
 			name.className = 'pair';
 			name.textContent = pair;
+			var field = document.createElement('label');
+			field.className = 'field';
+			field.dataset.scrub = 'x';
+			field.title = 'Drag sideways or type';
 			var input = document.createElement('input');
 			input.type = 'number';
 			input.step = '0.5';
 			input.value = f.kerning[pair];
-			input.addEventListener('change', function () {
+			input.setAttribute('aria-label', 'Kerning for ' + pair);
+			field.appendChild(input);
+			bindScrub(field);
+			function set() {
 				var v = parseFloat(input.value);
 				if (!isNaN(v)) { f.kerning[pair] = v; markDirty(); renderPreview(); }
-			});
+			}
+			input.addEventListener('change', set);
+			input.addEventListener('scrub', set);
 			var del = document.createElement('button');
 			del.type = 'button';
 			del.textContent = '×';
@@ -2029,7 +2168,7 @@
 				renderPreview();
 			});
 			row.appendChild(name);
-			row.appendChild(input);
+			row.appendChild(field);
 			row.appendChild(del);
 			list.appendChild(row);
 		});
@@ -2429,6 +2568,8 @@
 	function bindUI() {
 		document.querySelectorAll('.tool').forEach(function (b) {
 			b.addEventListener('click', function () { setTool(b.dataset.tool); });
+			// keep keyboard focus on the canvas, so Enter/Space don't press the button
+			b.addEventListener('mousedown', function (e) { e.preventDefault(); });
 		});
 		buildMenus();
 		$('snap').addEventListener('change', function () { state.snap = this.checked; });
@@ -2437,19 +2578,28 @@
 			b.classList.toggle('active', b.dataset.shape === state.shapeKind);
 			b.addEventListener('click', function () { useShape(b.dataset.shape); });
 		});
-		// remember whether the guides section is open
-		var guides = $('guides-section');
-		try { guides.open = localStorage.getItem('gregfont-editor-guides-open') === '1'; } catch (e) { /* ignore */ }
-		guides.addEventListener('toggle', function () {
-			try { localStorage.setItem('gregfont-editor-guides-open', guides.open ? '1' : '0'); } catch (e) { /* ignore */ }
+		// remember which foldable sections are open
+		document.querySelectorAll('details[data-remember]').forEach(function (d) {
+			var key = 'gregfont-editor-open-' + d.dataset.remember;
+			try {
+				var saved = localStorage.getItem(key);
+				if (saved !== null) d.open = saved === '1';
+			} catch (e) { /* ignore */ }
+			d.addEventListener('toggle', function () {
+				try { localStorage.setItem(key, d.open ? '1' : '0'); } catch (e) { /* ignore */ }
+			});
 		});
-		$('grid-size').addEventListener('change', function () {
+		function setGrid() {
 			var v = parseFloat(this.value);
 			if (v > 0) { state.grid = v; drawGuides(); }
-		});
-		$('stroke-width').addEventListener('change', function () {
+		}
+		function setStrokeWidth() {
 			var v = parseFloat(this.value);
 			if (v > 0) { state.strokeWidth = v; editablePaths().forEach(pathStyle); renderPreview(); }
+		}
+		['change', 'scrub'].forEach(function (type) {
+			$('grid-size').addEventListener(type, setGrid);
+			$('stroke-width').addEventListener(type, setStrokeWidth);
 		});
 
 		$('font-select').addEventListener('change', function () {
@@ -2463,8 +2613,25 @@
 
 		$('glyph-lsb').addEventListener('change', function () { setBearing('lsb', parseFloat(this.value)); });
 		$('glyph-rsb').addEventListener('change', function () { setBearing('rsb', parseFloat(this.value)); });
-		$('path-cap').addEventListener('change', function () { setPathStyle('strokeCap', this.value); });
-		$('path-join').addEventListener('change', function () { setPathStyle('strokeJoin', this.value); });
+		[['path-cap', 'strokeCap'], ['path-join', 'strokeJoin']].forEach(function (pair) {
+			$(pair[0]).querySelectorAll('button').forEach(function (b) {
+				b.addEventListener('click', function () { setPathStyle(pair[1], b.dataset.value); updatePathStyleRow(); });
+			});
+		});
+		// bearings: one undo step for a whole drag
+		['lsb', 'rsb'].forEach(function (key) {
+			var input = $('glyph-' + key);
+			input.addEventListener('scrubstart', function () { beginEdit(); });
+			input.addEventListener('scrub', function () {
+				var glyph = font().glyphs[state.ch], v = parseFloat(this.value);
+				if (!glyph || isNaN(v)) return;
+				glyph[key] = v;
+				drawGuides();
+				renderPreview();
+			});
+		});
+		$('theme-toggle').addEventListener('click', toggleTheme);
+		document.querySelectorAll('.field[data-scrub]').forEach(bindScrub);
 		$('clear-glyph').addEventListener('click', function () {
 			if (!editablePaths().length) return;
 			edit(function () { glyphLayer.removeChildren(); });

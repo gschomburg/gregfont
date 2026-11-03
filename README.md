@@ -88,13 +88,17 @@ All reading, writing and importing lives in `src/js/gregfont.js`.
 
 ## Editor
 
-Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font at the top, pick a glyph on the left, and draw on the canvas. The canvas works in font units, the same numbers stored in the font file.
+Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font and a glyph on the left, and draw on the canvas. The canvas works in font units, the same numbers stored in the font file.
 
 The layout follows desktop drawing apps:
 
-- **Tools** are in the palette down the left of the canvas: Select, Direct select, Pen, Anchor point, Shapes and Cut. A hint line at the bottom of the canvas explains the current tool.
-- **Commands** are in the menus at the top: **File** (new, import and export SVG, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) and **View** (fit, snap). Each menu item shows its keyboard shortcut.
+- **The left panel is the font**: the font picker, the font's settings (name, cell size, guides, typesetter defaults, default stroke ends and corners) and the glyph grid. Font settings and Guides fold away, and remember whether they were left open.
+- **The right panel is the selected glyph**: a preview with its code point and Illustrator layer name, its side bearings, end caps and corners for the selected paths, and the kerning pairs it's part of. Clear and Delete are at the bottom.
+- **Tools** are in the tab on the left edge of the canvas: Select, Direct select, Pen, Anchor point, Shapes and Cut. A hint line at the bottom of the canvas explains the current tool.
+- **Commands** are in the menus at the top: **File** (new, import and export SVG, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) and **View** (fit, snap, light mode). Each menu item shows its keyboard shortcut.
 - **Options** for drawing (snap, grid size, on-screen stroke width, auto-slice, and which shape the Shapes tool draws) are in the bar above the canvas.
+- **Number fields can be dragged**: sideways for most, up and down for the guides (the line moves the way you drag). Shift drags in bigger steps, Alt in smaller ones. Click a field to type instead. A whole drag on a side bearing is one undo step.
+- **Light / dark**: the sun/moon button in the top bar (or View → Light mode). Dark mode puts dark panels around a light canvas; light mode puts light panels around a dark canvas with white strokes. The choice is remembered.
 
 | Tool / command | How |
 | --- | --- |
