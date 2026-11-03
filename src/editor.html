@@ -158,6 +158,17 @@
 				</div>
 			</section>
 
+			<section id="stroke-order">
+				<div class="panel-heading">Stroke order</div>
+				<span id="stroke-info" class="meta" title="Pen-up travel counts from 0,0 to the first stroke, then between strokes"></span>
+				<div class="button-row">
+					<button type="button" id="play-strokes" title="Draw the glyph stroke by stroke, the way a plotter would">&#9654; Play</button>
+					<button type="button" id="optimize-strokes" title="Reorder and flip strokes to shorten pen-up travel">Optimize</button>
+					<button type="button" id="reverse-strokes" title="Reverse the direction of the selected strokes">Reverse</button>
+				</div>
+				<label class="switch-label" title="Show where each stroke starts, its direction, and the pen-up moves (O)"><input type="checkbox" class="switch" id="show-order"> Show start points &amp; order</label>
+			</section>
+
 			<section>
 				<div class="panel-heading" id="kern-title">Kerning</div>
 				<div id="kerning-list"></div>

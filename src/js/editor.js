@@ -48,6 +48,9 @@
 		};
 		COLORS.bearing = v('--bearing', COLORS.bearing);
 		COLORS.select = COLORS.overlay = v('--select', COLORS.select);
+		COLORS.orderStart = v('--order-start', '#15803d');
+		COLORS.orderEnd = v('--order-end', '#be123c');
+		COLORS.travel = v('--order-travel', '#8a8c93');
 	}
 	readColors();
 
@@ -66,7 +69,7 @@
 		autoSlice: false,  // new strokes cut what they cross
 		added: [],         // glyphs added from the sidebar but not drawn yet
 		shapeKind: 'ellipse', // what the shape tool draws: ellipse, rect or line
-		show: { grid: true, guides: true, cell: true }   // View menu toggles
+		show: { grid: true, guides: true, cell: true, order: false }   // View menu toggles
 	};
 
 	// ---------------------------------------------------------------- setup
@@ -78,6 +81,8 @@
 
 	var guidesLayer = P.project.activeLayer;
 	var glyphLayer = new P.Layer();
+	var orderLayer = new P.Layer();     // stroke order: start points, direction, travel
+	var playLayer = new P.Layer();      // the Play animation
 	var selLayer = new P.Layer();       // selection highlights and transform box
 	var overlayLayer = new P.Layer();   // hover, marquee, previews
 	glyphLayer.selectedColor = COLORS.select;
@@ -148,6 +153,7 @@
 
 	// Put the current glyph on the canvas, as separate editable paths.
 	function loadGlyph() {
+		stopPlay();
 		finishPen();
 		selCurves.clear();
 		glyphLayer.removeChildren();
@@ -340,6 +346,7 @@
 			label('lsb ' + glyph.lsb, [lx - px(4), vb.top + px(16)], COLORS.bearing, 'right');
 			label('rsb ' + glyph.rsb, [rx + px(4), vb.top + px(16)], COLORS.bearing);
 		}
+		drawOrder();
 		drawSelection();
 	}
 
@@ -779,6 +786,7 @@
 
 	tool.onMouseDown = function (e) {
 		if (panning || e.event.button !== 0) return;
+		stopPlay();
 		clearHover();
 		if (state.tool === 'select') selectDown(e);
 		else if (state.tool === 'direct') directDown(e);
@@ -1659,6 +1667,8 @@
 		if (ctrl && key === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); return; }
 		if (ctrl && key === "'") { e.preventDefault(); toggleShow('grid'); return; }
 		if (ctrl && key === ';') { e.preventDefault(); toggleShow('guides'); return; }
+		if (ctrl && key === '[') { e.preventDefault(); moveInOrder(-1); return; }
+		if (ctrl && key === ']') { e.preventDefault(); moveInOrder(1); return; }
 		if (ctrl) return;
 
 		var step = e.shiftKey ? state.grid : 1;
@@ -1674,6 +1684,7 @@
 			case 'r': rotateSelection(e.shiftKey ? -90 : 90); break;
 			case 'h': flipSelection(e.shiftKey); break;
 			case 'g': setSnap(!state.snap); break;
+			case 'o': setShowOrder(!state.show.order); break;
 			case 'f': fit(); break;
 			case 'enter': finishPen(); break;
 			case 'escape': deselect(); break;
@@ -1695,6 +1706,258 @@
 	function setSnap(on) {
 		state.snap = on;
 		$('snap').checked = on;
+	}
+
+	// ------------------------------------------------------- stroke order
+	//
+	// For pen plotters. A glyph's paths are drawn in list order (the order of
+	// glyphLayer's children), each from its first point to its last; a closed
+	// path starts and ends at its first point. Moving between strokes is a
+	// pen-up "travel" move.
+
+	var play = null;    // the running Play animation, if any
+
+	function strokePaths() {
+		return editablePaths().filter(function (p) { return p.segments.length > 1; });
+	}
+
+	function strokeStart(p) { return p.firstSegment.point; }
+	function strokeEnd(p) { return p.closed ? p.firstSegment.point : p.lastSegment.point; }
+
+	// Pen-up distance: from the origin to the first stroke, then between strokes.
+	function travelOf(paths) {
+		var pos = new P.Point(0, 0), total = 0;
+		paths.forEach(function (p) {
+			total += pos.getDistance(strokeStart(p));
+			pos = strokeEnd(p);
+		});
+		return total;
+	}
+
+	function updateStrokeInfo() {
+		var paths = strokePaths();
+		$('stroke-info').textContent = paths.length
+			? paths.length + ' stroke' + (paths.length === 1 ? '' : 's') + ' · pen-up travel ' + round(travelOf(paths), 0.1)
+			: 'No strokes yet';
+		$('show-order').checked = state.show.order;
+	}
+
+	function chevron(point, tangent, color) {
+		var t = tangent.normalize(px(5)), n = t.rotate(90).multiply(0.8);
+		var c = new P.Path({ segments: [point.subtract(t).add(n), point, point.subtract(t).subtract(n)], insert: false });
+		c.strokeColor = color;
+		c.strokeWidth = 1.5;
+		c.strokeScaling = false;
+		orderLayer.addChild(c);
+	}
+
+	function drawOrder() {
+		orderLayer.removeChildren();
+		if (!state.show.order || play || !font()) return;
+		var prev = null;
+		strokePaths().forEach(function (p, i) {
+			var a = strokeStart(p), b = strokeEnd(p);
+			if (prev && prev.getDistance(a) > EPS) {
+				var t = line(prev, a, COLORS.travel, true, orderLayer);
+				t.dashArray = [2, 4];
+			}
+			// direction: a chevron every ~80 screen pixels
+			var len = p.length, count = Math.max(1, Math.round(len / px(80)));
+			for (var k = 1; k <= count; k++) {
+				var loc = p.getLocationAt(len * k / (count + 1));
+				if (loc) chevron(loc.point, loc.tangent, COLORS.orderStart);
+			}
+			if (!p.closed) {
+				var end = new P.Path.Rectangle({ point: b.subtract(px(3.5)), size: [px(7), px(7)], insert: false });
+				end.fillColor = COLORS.orderEnd;
+				orderLayer.addChild(end);
+			}
+			var dot = new P.Path.Circle({ center: a, radius: px(7.5), fillColor: COLORS.orderStart, insert: false });
+			orderLayer.addChild(dot);
+			orderLayer.addChild(new P.PointText({
+				point: a.add([0, px(3.5)]), content: String(i + 1), fillColor: '#ffffff', fontSize: px(10),
+				fontFamily: "'IBM Plex Mono', monospace", fontWeight: 'bold', justification: 'center', insert: false
+			}));
+			prev = b;
+		});
+	}
+
+	function setShowOrder(on) {
+		state.show.order = on;
+		try { localStorage.setItem('gregfont-editor-show', JSON.stringify(state.show)); } catch (e) { /* ignore */ }
+		$('show-order').checked = on;
+		drawOrder();
+	}
+
+	// --- editing direction and order
+
+	function rotateClosedStart(path, index) {
+		if (!index) return;
+		var segs = path.segments.map(function (s) {
+			return new P.Segment(s.point.clone(), s.handleIn.clone(), s.handleOut.clone());
+		});
+		path.removeSegments();
+		path.addSegments(segs.slice(index).concat(segs.slice(0, index)));
+		path.closed = true;
+	}
+
+	function reverseSelection() {
+		var paths = selectedPaths();
+		if (!paths.length) paths = strokePaths().length === 1 ? strokePaths() : [];
+		if (!paths.length) { setStatus('Select the strokes to reverse'); return; }
+		edit(function () { paths.forEach(function (p) { p.reverse(); }); });
+		setStatus('Reversed ' + paths.length + ' stroke' + (paths.length === 1 ? '' : 's'));
+	}
+
+	// Make the selected point where its stroke starts.
+	function setStartPoint() {
+		var segs = selectedSegments();
+		if (segs.length !== 1) { setStatus('Select one point (Direct tool) to start the stroke from', true); return; }
+		var s = segs[0], path = s.path;
+		if (!path.closed && !s.isFirst() && !s.isLast()) {
+			setStatus('An open stroke can only start at one of its ends', true);
+			return;
+		}
+		edit(function () {
+			if (path.closed) rotateClosedStart(path, s.index);
+			else if (s.isLast()) path.reverse();
+			deselectAll();
+		});
+		setStatus('Start point set');
+	}
+
+	// Move the selected strokes earlier (-1) or later (+1) in the drawing order.
+	function moveInOrder(dir) {
+		var all = glyphLayer.children.filter(function (it) { return it instanceof P.Path; });
+		var sel = selectedPaths();
+		if (!sel.length) { setStatus('Select the strokes to move in the order'); return; }
+		edit(function () {
+			var list = dir < 0 ? all : all.slice().reverse();
+			list.forEach(function (p, i) {
+				if (sel.indexOf(p) < 0 || i === 0) return;
+				var neighbour = list[i - 1];
+				if (sel.indexOf(neighbour) >= 0) return;
+				if (dir < 0) p.insertBelow(neighbour); else p.insertAbove(neighbour);
+				list[i - 1] = p;
+				list[i] = neighbour;
+			});
+		});
+	}
+
+	// Greedy nearest-neighbour: from 0,0, keep drawing whichever stroke has an
+	// end (or, for a closed shape, any point) nearest the pen, flipping it if
+	// needed. Only applied if it shortens the pen-up travel.
+	function optimizeStrokes() {
+		var paths = strokePaths();
+		if (paths.length === 0) { setStatus('Nothing to optimize'); return; }
+		var before = travelOf(paths);
+		var pos = new P.Point(0, 0), left = paths.slice(), plan = [], after = 0;
+		while (left.length) {
+			var best = null;
+			left.forEach(function (p) {
+				if (p.closed) {
+					p.segments.forEach(function (s, i) {
+						var d = pos.getDistance(s.point);
+						if (!best || d < best.d - EPS) best = { d: d, path: p, start: i, reverse: false, end: s.point };
+					});
+				} else {
+					var d1 = pos.getDistance(p.firstSegment.point), d2 = pos.getDistance(p.lastSegment.point);
+					if (!best || d1 < best.d - EPS) best = { d: d1, path: p, reverse: false, end: p.lastSegment.point };
+					if (d2 < best.d - EPS) best = { d: d2, path: p, reverse: true, end: p.firstSegment.point };
+				}
+			});
+			plan.push(best);
+			after += best.d;
+			pos = best.end;
+			left.splice(left.indexOf(best.path), 1);
+		}
+		if (after >= before - 0.05) {
+			setStatus('Already as short as this gets (pen-up travel ' + round(before, 0.1) + ')');
+			return;
+		}
+		edit(function () {
+			plan.forEach(function (step) {
+				if (step.start) rotateClosedStart(step.path, step.start);
+				if (step.reverse) step.path.reverse();
+				glyphLayer.addChild(step.path);   // re-adding moves it to the end
+			});
+			deselectAll();
+		});
+		setStatus('Pen-up travel ' + round(before, 0.1) + ' → ' + round(after, 0.1));
+	}
+
+	// --- Play: draw the glyph stroke by stroke
+
+	function playStrokes() {
+		if (play) { stopPlay(); return; }
+		finishPen();
+		var paths = strokePaths();
+		if (!paths.length) { setStatus('Nothing to play: the glyph is empty'); return; }
+		var speed = Math.max(font().cell.height, 30) * 1.4;   // font units per second
+		var steps = [], pos = null, total = 0;
+		paths.forEach(function (p) {
+			var a = strokeStart(p);
+			if (pos && pos.getDistance(a) > EPS) {
+				var tl = pos.getDistance(a);
+				steps.push({ from: pos, to: a, dur: tl / (speed * 3) });
+				total += tl / (speed * 3);
+			}
+			steps.push({ path: p, dur: Math.max(p.length / speed, 0.05) });
+			total += Math.max(p.length / speed, 0.05);
+			pos = strokeEnd(p);
+		});
+		glyphLayer.visible = false;
+		selLayer.visible = false;
+		orderLayer.removeChildren();
+		play = { steps: steps, total: total, t0: performance.now(), raf: 0 };
+		$('play-strokes').textContent = '■ Stop';
+		playFrame();
+	}
+
+	function playFrame() {
+		if (!play) return;
+		var t = (performance.now() - play.t0) / 1000;
+		playLayer.removeChildren();
+		var pen = null;
+		for (var i = 0; i < play.steps.length; i++) {
+			var st = play.steps[i], f = Math.min(1, t / st.dur);
+			if (t <= 0) break;
+			if (st.path) {
+				var c = st.path.clone({ insert: false });
+				c.selected = false;
+				pathStyle(c);
+				if (f < 1) {
+					if (c.closed) c.splitAt(0);   // open it at its start
+					var tail = c.splitAt(c.length * f);
+					if (tail && tail !== c) tail.remove();
+				}
+				playLayer.addChild(c);
+				pen = f < 1 ? c.lastSegment.point : strokeEnd(st.path);
+			} else {
+				var to = st.from.add(st.to.subtract(st.from).multiply(f));
+				var tr = line(st.from, to, COLORS.travel, true, playLayer);
+				tr.dashArray = [2, 4];
+				pen = to;
+			}
+			t -= st.dur;
+		}
+		if (pen) {
+			var dot = new P.Path.Circle({ center: pen, radius: px(4), fillColor: COLORS.orderStart, insert: false });
+			playLayer.addChild(dot);
+		}
+		if ((performance.now() - play.t0) / 1000 > play.total + 0.8) { stopPlay(); return; }
+		play.raf = requestAnimationFrame(playFrame);
+	}
+
+	function stopPlay() {
+		if (!play) return;
+		cancelAnimationFrame(play.raf);
+		play = null;
+		playLayer.removeChildren();
+		glyphLayer.visible = true;
+		selLayer.visible = true;
+		$('play-strokes').textContent = '▶ Play';
+		drawOrder();
 	}
 
 	// View > Show grid / guides / cell. Remembered between visits.
@@ -1847,6 +2110,12 @@
 			{ label: 'Make points smooth', run: function () { setPointsSmooth(true); }, enabled: function () { return selectedSegments().length > 0; } },
 			{ label: 'Make points corners', run: function () { setPointsSmooth(false); }, enabled: function () { return selectedSegments().length > 0; } },
 			'-',
+			{ label: 'Reverse stroke direction', run: reverseSelection, enabled: function () { return hasSelection() || strokePaths().length === 1; } },
+			{ label: 'Set start point', run: setStartPoint, enabled: function () { return selectedSegments().length === 1; } },
+			{ label: 'Draw earlier', key: 'Ctrl+[', run: function () { moveInOrder(-1); }, enabled: hasSelection },
+			{ label: 'Draw later', key: 'Ctrl+]', run: function () { moveInOrder(1); }, enabled: hasSelection },
+			{ label: 'Optimize stroke order', run: optimizeStrokes },
+			'-',
 			{ label: 'Auto-slice new strokes', run: function () { setAutoSlice(!state.autoSlice); }, checked: function () { return state.autoSlice; } }
 		] },
 		{ title: 'View', items: [
@@ -1857,6 +2126,8 @@
 			{ label: 'Show grid', key: "Ctrl+'", run: function () { toggleShow('grid'); }, checked: function () { return state.show.grid; } },
 			{ label: 'Show guides', key: 'Ctrl+;', run: function () { toggleShow('guides'); }, checked: function () { return state.show.guides; } },
 			{ label: 'Show cell', run: function () { toggleShow('cell'); }, checked: function () { return state.show.cell; } },
+			{ label: 'Show stroke order', key: 'O', run: function () { setShowOrder(!state.show.order); }, checked: function () { return state.show.order; } },
+			{ label: 'Play strokes', run: playStrokes },
 			'-',
 			{ label: 'Light mode', run: toggleTheme, checked: function () { return currentTheme() === 'light'; } }
 		] }
@@ -2044,6 +2315,7 @@
 		$('glyph-rsb').value = glyph ? glyph.rsb : '';
 		$('glyph-lsb').disabled = $('glyph-rsb').disabled = !glyph;
 		updateFontMeta();
+		updateStrokeInfo();
 		updatePathStyleRow();
 	}
 
@@ -2694,6 +2966,10 @@
 			});
 		});
 		$('theme-toggle').addEventListener('click', toggleTheme);
+		$('play-strokes').addEventListener('click', playStrokes);
+		$('optimize-strokes').addEventListener('click', optimizeStrokes);
+		$('reverse-strokes').addEventListener('click', reverseSelection);
+		$('show-order').addEventListener('change', function () { setShowOrder(this.checked); });
 		document.querySelectorAll('.field[data-scrub]').forEach(bindScrub);
 		$('clear-glyph').addEventListener('click', function () {
 			if (!editablePaths().length) return;
