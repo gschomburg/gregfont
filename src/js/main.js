@@ -105,6 +105,8 @@ XXXXXXauto update on change?
 var FONTS_PATH="fonts/";
 var FONT_PATHS=["sutton.js", "nassau.js", "kosciuszko.js", "troutman.js"];
 var FONT_DATA=[];
+var fontsLoaded = 0;
+var fontsReady = false;
 
 
 var CURRENT_FONT_ID=0;
@@ -118,7 +120,6 @@ var specimen =  "abcdefghij\n"+
 				"~!?.,<>:;'\"\n"+
 				"[]{}\\/|+=-*_-";
 
-CURRENT_FONT_ID=3;
 // specimen = textSamples.sk2017;
 
 
@@ -140,8 +141,8 @@ $( "#build" ).click(function() {
 });
 
 $( "#font-select" ).change(function() {
-  	CURRENT_FONT_ID = $( this ).val();
-  	resetRenderSettings();
+  	CURRENT_FONT_ID = Number($( this ).val());
+  	if(fontsReady) resetRenderSettings();
 });
 
 $( "#font-scale" ).change(function() {
@@ -164,7 +165,6 @@ $(".build-on-change").change(function(){
 
 
 $(window).bind('keydown', function(event) {
-	console.log('key');
 	if (event.ctrlKey) {
 		switch (String.fromCharCode(event.which).toLowerCase()) {
 			case 'd':
@@ -221,11 +221,10 @@ function renderType(stringText){
 	var scale = clamp(renderSettings.fontSize, .33, 2);
 	for(var i=0; i<stringText.length; i++){
 		if(stringText[i] == " "){
-			if(monospace){
-				xPos += renderSettings.letterSpacing;
-			}else{
-				xPos += renderSettings.letterSpacing + (fontSpacingBase*2);
-			}
+			// Space width is Letter Spacing in both modes. (This used to read an
+			// undeclared `monospace` var, which always resolved to the checkbox
+			// element, so this is the width spaces have always had.)
+			xPos += renderSettings.letterSpacing;
 			wordGroup = null;
 
 			if(renderSettings.wordWrap && xPos > renderSettings.wordWrapWidth/scale){
@@ -238,12 +237,8 @@ function renderType(stringText){
 			yPos += renderSettings.lineHeight;
 			wordGroup = null;
 		}else if(stringText[i] == "\t"){
-			//tab is equal to 4 spaces?
-			if(monospace){
-				xPos += renderSettings.letterSpacing*4;
-			}else{
-				xPos += (renderSettings.letterSpacing*4) + (fontSpacingBase*2);
-			}
+			//tab is equal to 4 spaces
+			xPos += renderSettings.letterSpacing*4;
 			wordGroup = null;
 
 		}else{
@@ -260,7 +255,6 @@ function renderType(stringText){
 			var offset = charLayer.bounds.center;
 			var copy = charLayer.clone();
 			copy.visible=true;
-			console.log(renderSettings.strokeCap);
 			if(renderSettings.strokeCap != 'default'){
 				copy.strokeCap = renderSettings.strokeCap;
 			}
@@ -321,7 +315,7 @@ function reset(){
 }
 
 function buildText(){
-	console.log("buildText");
+	if(!fontsReady) return;
 	reset();
 	renderType($('#text-field').val());
 }
@@ -331,7 +325,6 @@ function buildText(){
 function loadFontData(id){
 	//if (typeof someObject == 'undefined') 
 	$.loadScript(FONTS_PATH + FONT_PATHS[id], function(){	
-		console.log('font data loaded');
 		FONT_DATA[id] = data;
 		loadFontSVG(id);
 	});
@@ -341,8 +334,12 @@ function loadFontSVG(id){
 	//get the font file param
 	var options={
 		onLoad:function(item){
-			console.log('svg loaded');
 			FONT_DATA[id].paperSymbols = item;
+			fontsLoaded++;
+			if(fontsLoaded == FONT_PATHS.length){
+				fontsReady = true;
+				initRun();
+			}
 		},
 		insert:false,
 		expandShapes:true,
@@ -480,14 +477,14 @@ function init(){
 
 //wait until everything is loaded
 function initRun(){
-	// console.log('go', FONT_DATA[0].paperSymbols);
+	// match whatever the dropdown shows (browsers can restore form state on reload)
+	CURRENT_FONT_ID = Number($('#font-select').val());
 	reset();
 	resetRenderSettings();
 	buildText();
 }
 
-init();
-setTimeout(initRun, 1000);
+init(); // initRun() is called once every font has loaded
 
 var characterMap = {
     "a":{name:"a", layer:null},
