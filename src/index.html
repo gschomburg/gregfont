@@ -5,8 +5,8 @@
 		<title>gregfont typesetter</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.1.1">
-		<link rel="stylesheet" type="text/css" href="style/typesetter.css?v=2.1.1">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.2.0">
+		<link rel="stylesheet" type="text/css" href="style/typesetter.css?v=2.2.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -56,6 +56,7 @@
 						<label class="colour-pick" title="Any colour"><input type="color" id="t-colour" aria-label="Pen colour"></label>
 					</div>
 				</div>
+				<label class="switch-label" title="For heavy strokes: stems that end on the baseline, x-height, cap height or descender reach as far past the line as round letters do. Only changes how this text is drawn and saved, not the font."><input type="checkbox" class="switch" id="t-extend"> Extend ends to guides</label>
 			</details>
 
 			<details class="fold" data-remember="spacing" open>
@@ -159,11 +160,11 @@
 			</details>
 		</aside>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.1.1"></script>
-		<script src="fonts/fonts.js?v=2.1.1"></script>
-		<script src="js/gregfont.js?v=2.1.1"></script>
-		<script src="js/version.js?v=2.1.1"></script>
-		<script src="js/ui.js?v=2.1.1"></script>
-		<script src="js/typesetter.js?v=2.1.1"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.2.0"></script>
+		<script src="fonts/fonts.js?v=2.2.0"></script>
+		<script src="js/gregfont.js?v=2.2.0"></script>
+		<script src="js/version.js?v=2.2.0"></script>
+		<script src="js/ui.js?v=2.2.0"></script>
+		<script src="js/typesetter.js?v=2.2.0"></script>
 	</body>
 </html>

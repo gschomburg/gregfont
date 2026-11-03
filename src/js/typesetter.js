@@ -115,11 +115,11 @@
 		return {
 			font: fontEntry(file).file, size: 60, pen: 2, cap: 'font', colour: PEN_COLOURS[0],
 			letterSpacing: f.spacing.letterSpacing, tracking: 0, lineHeight: f.spacing.lineHeight,
-			mono: !!f.spacing.monospaced, align: 'left', textCase: 'none', rotation: 0
+			mono: !!f.spacing.monospaced, align: 'left', textCase: 'none', rotation: 0, extendEnds: false
 		};
 	}
 
-	var BOX_SETTINGS = ['font', 'size', 'pen', 'cap', 'colour', 'letterSpacing', 'tracking', 'lineHeight', 'mono', 'align', 'textCase'];
+	var BOX_SETTINGS = ['font', 'size', 'pen', 'cap', 'colour', 'letterSpacing', 'tracking', 'lineHeight', 'mono', 'align', 'textCase', 'extendEnds'];
 
 	function newBox(x, y, width, text) {
 		var b = { id: doc.nextId++, text: text || '', x: x, y: y, width: width || null, rotation: 0 };
@@ -195,7 +195,9 @@
 			if (!glyph) return;
 			var gm = m.clone().translate(g.x, g.y).scale(1, -1);   // font units are y-up
 			glyph.paths.forEach(function (entry) {
-				var item = P.PathItem.create(entry.d);
+				var cap = b.cap === 'font' ? entry.strokeCap || f.style.strokeCap : b.cap;
+				var d = b.extendEnds ? GregFont.extendEnds(P, f, entry.d, b.pen / s, cap) : entry.d;
+				var item = P.PathItem.create(d);
 				item.remove();
 				item.transform(gm);
 				var parts = item instanceof P.CompoundPath ? item.children.slice() : [item];
@@ -925,6 +927,7 @@
 		setField('t-track', round(b.tracking * s));
 		setField('t-line', round(b.lineHeight * s));
 		$('t-mono').checked = !!b.mono;
+		$('t-extend').checked = !!b.extendEnds;
 		setSegmented('t-align', b.align);
 		setSegmented('t-case', b.textCase);
 		var preset = false;
@@ -1034,6 +1037,10 @@
 		$('t-mono').addEventListener('change', function () {
 			var on = this.checked;
 			changeSetting(function (b) { b.mono = on; });
+		});
+		$('t-extend').addEventListener('change', function () {
+			var on = this.checked;
+			changeSetting(function (b) { b.extendEnds = on; });
 		});
 		[['t-cap', 'cap'], ['t-align', 'align'], ['t-case', 'textCase']].forEach(function (pair) {
 			$(pair[0]).querySelectorAll('button').forEach(function (btn) {
@@ -1170,7 +1177,8 @@
 			{ label: 'UPPER CASE', run: function () { changeCase('upper'); }, checked: function () { return current().textCase === 'upper'; } },
 			{ label: 'lower case', run: function () { changeCase('lower'); }, checked: function () { return current().textCase === 'lower'; } },
 			'-',
-			{ label: 'Monospaced', run: function () { changeSetting(function (b) { b.mono = !b.mono; }); }, checked: function () { return !!current().mono; } }
+			{ label: 'Monospaced', run: function () { changeSetting(function (b) { b.mono = !b.mono; }); }, checked: function () { return !!current().mono; } },
+			{ label: 'Extend ends to guides', run: function () { changeSetting(function (b) { b.extendEnds = !b.extendEnds; }); }, checked: function () { return !!current().extendEnds; } }
 		] },
 		{ title: 'View', items: [
 			{ label: 'Zoom in', key: 'Ctrl+=', run: function () { zoomBy(1.25); } },

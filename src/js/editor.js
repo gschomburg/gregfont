@@ -2311,14 +2311,16 @@
 	}
 
 	// <g> with a glyph's paths, styled like the font.
-	function glyphGroup(f, ch, strokeWidth, nonScaling) {
+	function glyphGroup(f, ch, strokeWidth, nonScaling, extend) {
 		var g = svgEl('g', { transform: 'scale(1 -1)' });   // font units are y-up
 		var glyph = f.glyphs[ch];
 		if (!glyph) return g;
 		glyph.paths.forEach(function (p) {
+			var cap = p.strokeCap || f.style.strokeCap;
 			var attrs = {
-				d: p.d, fill: 'none', stroke: 'currentColor', 'stroke-width': strokeWidth,
-				'stroke-linecap': p.strokeCap || f.style.strokeCap,
+				d: extend ? GregFont.extendEnds(P, f, p.d, strokeWidth, cap) : p.d,
+				fill: 'none', stroke: 'currentColor', 'stroke-width': strokeWidth,
+				'stroke-linecap': cap,
 				'stroke-linejoin': p.strokeJoin || f.style.strokeJoin,
 				'stroke-miterlimit': p.miterLimit || f.style.miterLimit
 			};
@@ -2723,10 +2725,11 @@
 	// The preview's own stroke weight (font units, remembered), and the
 	// specimen's camera: zoom (screen pixels per font unit), pan (pixels),
 	// and the width the text wraps at (font units), set when it opens.
-	var previewView = { stroke: 2, zoom: 1, panX: 0, panY: 0, wrap: null, w: 0, h: 0 };
+	var previewView = { stroke: 2, extend: false, zoom: 1, panX: 0, panY: 0, wrap: null, w: 0, h: 0 };
 	try {
 		var savedView = JSON.parse(localStorage.getItem('gregfont-editor-preview') || 'null');
 		if (savedView && savedView.stroke > 0) previewView.stroke = savedView.stroke;
+		if (savedView) previewView.extend = !!savedView.extend;
 	} catch (e) { /* ignore */ }
 
 	// Space around the preview text, in font units. Fixed, so a thicker
@@ -2734,7 +2737,7 @@
 	function previewMargin(f) { return Math.max(f.cell.height * 0.08, 2); }
 
 	function savePreviewView() {
-		try { localStorage.setItem('gregfont-editor-preview', JSON.stringify({ stroke: previewView.stroke })); } catch (e) { /* ignore */ }
+		try { localStorage.setItem('gregfont-editor-preview', JSON.stringify({ stroke: previewView.stroke, extend: previewView.extend })); } catch (e) { /* ignore */ }
 	}
 
 	var SPEC_PAD_X = 22, SPEC_PAD_Y = 18;   // screen pixels around the text
@@ -2783,7 +2786,7 @@
 			monospace: mono, letterSpacing: f.spacing.letterSpacing, lineHeight: f.spacing.lineHeight,
 			width: v.wrap
 		});
-		v.w = Math.max(result.width, 1) + pad * 2;
+		v.w = Math.max(result.inkWidth, 1) + pad * 2;   // the text, not the wrap width
 		v.h = result.height + pad * 2;
 		var svg = svgEl('svg');
 		var g = svgEl('g', { class: 'spec-view' });
@@ -2801,7 +2804,7 @@
 		var top = -Math.max(f.guides.cap, f.cell.height) - previewMargin(f);
 		var bottom = Math.max(-(f.guides.descender || 0), 0) + previewMargin(f);
 		var g = svgEl('g', { transform: 'translate(' + placed.x + ' ' + placed.y + ')' });
-		g.appendChild(glyphGroup(f, placed.char, previewView.stroke, false));
+		g.appendChild(glyphGroup(f, placed.char, previewView.stroke, false, previewView.extend));
 		g.dataset.ch = placed.char;
 		if (placed.char === state.ch) g.classList.add('current');
 		if (state.kernPick === placed.char) g.classList.add('kern-pick');
@@ -3345,6 +3348,12 @@
 			renderPreview();
 		});
 		$('preview-stroke').value = previewView.stroke;
+		$('preview-extend').checked = previewView.extend;
+		$('preview-extend').addEventListener('change', function () {
+			previewView.extend = this.checked;
+			savePreviewView();
+			renderPreview();
+		});
 		['change', 'scrub'].forEach(function (type) {
 			$('preview-stroke').addEventListener(type, function () {
 				var v = parseFloat(this.value);

@@ -279,6 +279,59 @@
 	}
 
 	/*
+	 * "Extend ends to guides": a drawing option for heavy strokes. Closed
+	 * shapes and corners grow outward by half the stroke, but a flat stroke
+	 * end stops where it was drawn, so stems look short next to round
+	 * letters. This lengthens each open end that finishes on (or within a
+	 * hair of) a guide line, running roughly up or down, so its edge lands
+	 * half a stroke past the guide, the same as the rest of the ink.
+	 * Round and square ends already reach that far, so those just snap onto
+	 * the guide. Ends away from the guides (tails, diagonals) are left alone.
+	 *
+	 * d is one path's data in font units (y up); width is the stroke width
+	 * in font units; cap is the end style used to draw it. Returns new path
+	 * data; the glyph itself never changes.
+	 */
+	function extendEnds(ps, font, d, width, cap) {
+		var g = font.guides || {};
+		var guides = [0, g.xHeight, g.cap, g.descender].filter(function (v) { return typeof v === 'number' && isFinite(v); });
+		var tol = Math.max(font.cell.height * 0.03, 1);
+		var reach = cap === 'butt' ? width / 2 : 0;   // how far past the guide the end point goes
+		var item = ps.PathItem.create(d);
+		item.remove();
+		var parts = item instanceof ps.CompoundPath ? item.children.slice() : [item];
+		var changed = false;
+		parts.forEach(function (path) {
+			if (path.closed || path.segments.length < 2 || !path.length) return;
+			[0, 1].forEach(function (atEnd) {
+				var pt = atEnd ? path.lastSegment.point : path.firstSegment.point;
+				// the direction the stroke leaves in, at this end
+				var t = atEnd ? path.getTangentAt(path.length) : path.getTangentAt(0).negate();
+				if (!t || Math.abs(t.y) < 0.85) return;       // only ends running up or down
+				var near = null;
+				guides.forEach(function (y) {
+					if (Math.abs(pt.y - y) <= tol && (near === null || Math.abs(pt.y - y) < Math.abs(pt.y - near))) near = y;
+				});
+				if (near === null) return;
+				var target = near + (t.y > 0 ? reach : -reach);
+				var len = (target - pt.y) / t.y;
+				if (Math.abs(len) < 1e-3 || len < -tol) return;
+				var to = pt.add(t.multiply(len));
+				if (len < 0) {
+					// a hair past the guide: move the end back onto it
+					(atEnd ? path.lastSegment : path.firstSegment).point = to;
+				} else if (atEnd) {
+					path.add(to);
+				} else {
+					path.insert(0, to);
+				}
+				changed = true;
+			});
+		});
+		return changed ? item.getPathData(null, 3) : d;
+	}
+
+	/*
 	 * Lay out text. Returns { glyphs: [{ char, x, y, word }], missing: [chars] }
 	 * where (x, y) is where the glyph's origin goes (y is the line's
 	 * baseline, in screen orientation: lines go down) and `word` numbers the
@@ -464,7 +517,7 @@
 		var depth = Math.max(0, -(font.guides.descender || 0));
 		return {
 			glyphs: glyphs, carets: carets, lines: lines.length,
-			width: boxWidth, height: cellH + (lines.length - 1) * lh + depth,
+			width: boxWidth, inkWidth: widest, height: cellH + (lines.length - 1) * lh + depth,
 			missing: missing
 		};
 	}
@@ -773,6 +826,7 @@
 		glyphItem: glyphItem,
 		clearCache: clearCache,
 		inkBounds: inkBounds,
+		extendEnds: extendEnds,
 		layout: layout,
 		layoutBlock: layoutBlock,
 		fromSVG: fromSVG,
