@@ -73,15 +73,21 @@ body {
 #preview g.kern-pick path { stroke: var(--bearing); }
 #preview-sample { max-width: 190px; font-size: 12px; padding: 3px 6px; }
 .specimen-only { display: none !important; }
-#preview-expand .icon-collapse { display: none; }
+#preview-expand { display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; white-space: nowrap; }
+#preview-expand svg { width: 14px; height: 14px; flex: none; }
+#preview-expand .icon-collapse, #preview-expand .label-collapse { display: none; }
 
 /* specimen view: the preview grows up over the canvas */
 body.specimen #preview-bar { grid-row: 2 / 5; grid-column: 2; z-index: 5; }
 body.specimen .specimen-only { display: flex !important; }
 body.specimen #preview { overflow: auto; padding: 18px 22px; }
 body.specimen #preview svg { height: auto; max-width: none; }
-body.specimen #preview-expand .icon-expand { display: none; }
+body.specimen #preview-expand .icon-expand, body.specimen #preview-expand .label-expand { display: none; }
 body.specimen #preview-expand .icon-collapse { display: block; }
+body.specimen #preview-expand .label-collapse { display: inline; }
+body.specimen #preview-expand { border-color: var(--accent); color: var(--accent); }
+body.sliding { overflow: hidden; }
+body.sliding #preview-bar { box-shadow: 0 -8px 24px var(--shadow); }
 
 /* right: glyph panel */
 #glyph-panel { grid-area: glyph; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; background: var(--panel); }

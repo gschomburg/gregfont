@@ -2664,11 +2664,42 @@
 		return sample ? sample.text : $('preview-text').value;
 	}
 
+	// The specimen slides up over the canvas like a sheet, and back down.
+	var slide = null;
+
 	function setSpecimen(on) {
-		document.body.classList.toggle('specimen', on);
+		var bar = $('preview-bar'), body = document.body;
+		if (slide) { slide.cancel(); slide = null; }
+		body.classList.remove('sliding');
 		$('preview-expand').setAttribute('aria-label', on ? 'Close the specimen view' : 'Expand the preview into a specimen view');
 		$('preview-expand').title = on ? 'Back to the glyph (Esc)' : 'Expand into a specimen view (Esc closes it)';
-		renderPreview();
+		var still = !bar.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (on === isSpecimen() || still) {
+			body.classList.toggle('specimen', on);
+			renderPreview();
+			return;
+		}
+		var easing = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+		body.classList.add('sliding');
+		if (on) {
+			var before = bar.getBoundingClientRect().top;
+			bar.closedHeight = bar.getBoundingClientRect().height;
+			body.classList.add('specimen');
+			renderPreview();
+			var rise = before - bar.getBoundingClientRect().top;
+			slide = bar.animate([{ transform: 'translateY(' + rise + 'px)' }, { transform: 'none' }], { duration: 320, easing: easing });
+			slide.onfinish = function () { slide = null; body.classList.remove('sliding'); };
+		} else {
+			// slide down until just the bar's normal height is showing, then swap back
+			var drop = bar.getBoundingClientRect().height - (bar.closedHeight || 150);
+			slide = bar.animate([{ transform: 'none' }, { transform: 'translateY(' + drop + 'px)' }], { duration: 260, easing: easing, fill: 'forwards' });
+			slide.onfinish = function () {
+				slide.cancel();
+				slide = null;
+				body.classList.remove('sliding', 'specimen');
+				renderPreview();
+			};
+		}
 	}
 
 	function isSpecimen() { return document.body.classList.contains('specimen'); }

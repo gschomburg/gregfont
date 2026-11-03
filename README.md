@@ -136,7 +136,7 @@ The **Font** panel sets the name, cell size, guide lines, default stroke caps an
 
 The **preview** strip at the bottom sets a line of text with the font as you edit. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
 
-The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The expand button (or picking a sample) grows the preview into a **specimen view** over the glyph canvas, wrapping the text to the view's width. Set its size in the bar, or Ctrl+wheel to zoom. Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
+The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The **Specimen** button at the right of the preview bar (or picking a sample) slides the preview up into a **specimen view** over the glyph canvas, wrapping the text to the view's width. Set its size in the bar, or Ctrl+wheel to zoom. Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
 
 ## Working in Illustrator
 
