@@ -384,6 +384,8 @@
 		direct: 'Click points, or a line to pick one segment \u00b7 Shift adds \u00b7 drag handles to reshape (Alt makes a corner) \u00b7 double-click a point for curve/corner, a line to add a point',
 		pen: 'Click for corners, drag for curves \u00b7 click the first point to close, or the end of another path to join \u00b7 Enter or Esc finishes',
 		ellipse: 'Drag out an ellipse \u00b7 Shift for a circle',
+		rect: 'Drag out a rectangle \u00b7 Shift for a square',
+		line: 'Drag a straight line \u00b7 Shift for 45\u00b0 steps',
 		anchor: 'Drag from a point to pull out curve handles \u00b7 click a point to make it a corner \u00b7 drag a handle to move it on its own',
 		scissors: 'Click a path to cut it there \u00b7 drag a line across paths to cut everything it crosses (Shift: 45\u00b0 steps)'
 	};
@@ -723,7 +725,7 @@
 		else if (state.tool === 'pen') penDown(e);
 		else if (state.tool === 'scissors') drag = { mode: 'knife', start: e.point };
 		else if (state.tool === 'anchor') anchorDown(e);
-		else if (state.tool === 'ellipse') drag = { mode: 'ellipse', start: snap(e.point) };
+		else if (SHAPE_TOOLS.indexOf(state.tool) >= 0) drag = { mode: 'shape', kind: state.tool, start: snap(e.point) };
 	};
 
 	tool.onMouseDrag = function (e) {
@@ -775,9 +777,9 @@
 			var h = p.subtract(drag.segment.point);
 			drag.segment.handleOut = h;
 			drag.segment.handleIn = h.multiply(-1);
-		} else if (drag.mode === 'ellipse') {
+		} else if (drag.mode === 'shape') {
 			if (drag.preview) drag.preview.remove();
-			drag.preview = ellipseFrom(drag.start, p, mod(e, 'shift'));
+			drag.preview = shapeFrom(drag.kind, drag.start, p, mod(e, 'shift'));
 			if (drag.preview) {
 				pathStyle(drag.preview);
 				drag.preview.strokeColor = COLORS.overlay;
@@ -806,9 +808,9 @@
 				}
 			}
 			updatePathStyleRow();
-		} else if (drag.mode === 'ellipse') {
+		} else if (drag.mode === 'shape') {
 			if (drag.preview) drag.preview.remove();
-			var shape = ellipseFrom(drag.start, snap(e.point), mod(e, 'shift'));
+			var shape = shapeFrom(drag.kind, drag.start, snap(e.point), mod(e, 'shift'));
 			if (shape) {
 				edit(function () {
 					shape.data.style = {};
@@ -838,15 +840,27 @@
 		drag = null;
 	};
 
-	function ellipseFrom(a, b, square) {
+	var SHAPE_TOOLS = ['ellipse', 'rect', 'line'];
+
+	// A shape dragged from a to b. Shift makes a circle or square, or keeps a
+	// line to 45 degree steps. Returns null if it's too small to keep.
+	function shapeFrom(kind, a, b, constrained) {
+		if (kind === 'line') {
+			var end = constrain(a, b, constrained);
+			if (end.getDistance(a) < 0.01) return null;
+			return new P.Path.Line({ from: a, to: end, insert: false });
+		}
 		var w = b.x - a.x, h = b.y - a.y;
-		if (square) {
+		if (constrained) {
 			var size = Math.max(Math.abs(w), Math.abs(h));
 			w = w < 0 ? -size : size;
 			h = h < 0 ? -size : size;
 		}
 		if (Math.abs(w) < 0.01 || Math.abs(h) < 0.01) return null;
-		return new P.Path.Ellipse({ rectangle: new P.Rectangle(a, a.add([w, h])), insert: false });
+		var rect = new P.Rectangle(a, a.add([w, h]));
+		return kind === 'rect'
+			? new P.Path.Rectangle({ rectangle: rect, insert: false })
+			: new P.Path.Ellipse({ rectangle: rect, insert: false });
 	}
 
 	function nearestPoint(path, point) {
@@ -1593,6 +1607,8 @@
 			case 'a': setTool('direct'); break;
 			case 'p': setTool('pen'); break;
 			case 'e': setTool('ellipse'); break;
+			case 'm': setTool('rect'); break;
+			case '\\': setTool('line'); break;
 			case 'c': setTool(e.shiftKey ? 'anchor' : 'scissors'); break;
 			case 'x': sliceSelection(); break;
 			case 'r': rotateSelection(e.shiftKey ? -90 : 90); break;

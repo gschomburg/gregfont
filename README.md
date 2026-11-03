@@ -92,7 +92,7 @@ Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font at the
 
 The layout follows desktop drawing apps:
 
-- **Tools** are in the palette down the left of the canvas: Select, Direct select, Pen, Anchor point, Ellipse and Cut. A hint line at the bottom of the canvas explains the current tool.
+- **Tools** are in the palette down the left of the canvas: Select, Direct select, Pen, Anchor point, Ellipse, Rectangle, Line and Cut. A hint line at the bottom of the canvas explains the current tool.
 - **Commands** are in the menus at the top: **File** (new, import and export SVG, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) and **View** (fit, snap). Each menu item shows its keyboard shortcut.
 - **Options** for drawing (snap, grid size, on-screen stroke width, auto-slice) are in the bar above the canvas.
 
@@ -103,8 +103,10 @@ The layout follows desktop drawing apps:
 | **Pen** <kbd>P</kbd> | Click for corner points, click-drag for curves. Click the first point to close the path, or press Enter/Esc to finish it open. Click the end of an existing open path to continue it, or to join onto it while drawing. |
 | **Anchor point** <kbd>Shift+C</kbd> | Like Illustrator's: drag out from a point to pull out curve handles, click a point to make it a sharp corner, drag a handle to move it on its own. **Object → Make points smooth / corners** does the same for every selected point at once. |
 | **Ellipse** <kbd>E</kbd> | Drag out an ellipse; Shift for a circle. |
+| **Rectangle** <kbd>M</kbd> | Drag out a rectangle; Shift for a square. |
+| **Line** <kbd>\</kbd> | Drag a straight line; Shift keeps it to 45° steps. |
 | **Cut** <kbd>C</kbd> | Click a path to cut it there, or drag a line across paths to cut everything it crosses; the line itself isn't kept. Shift keeps the line to 45° steps. Cutting a closed shape opens it. |
-| **Slice** <kbd>X</kbd> | Cuts the selected paths (or the whole glyph if nothing is selected) wherever they cross, so every piece between crossings can be picked up on its own. With **Auto-slice** on, new pen and ellipse strokes slice whatever they cross as soon as they're drawn. |
+| **Slice** <kbd>X</kbd> | Cuts the selected paths (or the whole glyph if nothing is selected) wherever they cross, so every piece between crossings can be picked up on its own. With **Auto-slice** on, new pen and shape strokes slice whatever they cross as soon as they're drawn. |
 | **Group** <kbd>Ctrl+G</kbd> | Groups the selected paths so the Select tool picks them up, moves and transforms them together. <kbd>Ctrl+Shift+G</kbd> ungroups. The Direct tool still edits single points inside a group. Pieces cut from a grouped path stay in the group; pasted or Alt-dragged copies become a new group. |
 | **Join** <kbd>Ctrl+J</kbd> | Joins the selected open paths into one, closest ends first. Ends that touch become one point; ends that don't get a straight line. With two end points selected, joins exactly those. With one open path selected, closes it. Dragged points snap onto other points, so pieces line up exactly before joining. |
 | Rotate / flip | <kbd>R</kbd> rotates the selection 90° clockwise (Shift+R the other way); <kbd>H</kbd> flips it horizontally (Shift+H vertically). |
