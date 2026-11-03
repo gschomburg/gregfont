@@ -1163,10 +1163,16 @@
 			if (duplicateSelection()) collectPointDrag();
 		}
 		var raw = e.point.subtract(drag.click);
+		// Shift keeps the move straight across or straight up and down
+		var lock = mod(e, 'shift') ? (Math.abs(raw.x) >= Math.abs(raw.y) ? 'x' : 'y') : null;
+		if (lock === 'x') raw = new P.Point(raw.x, 0);
+		else if (lock === 'y') raw = new P.Point(0, raw.y);
 		var delta = snap(drag.anchorStart.add(raw)).subtract(drag.anchorStart);
+		if (lock === 'x') delta = new P.Point(delta.x, 0);
+		else if (lock === 'y') delta = new P.Point(0, delta.y);
 		// snap onto nearby points (so pieces line up for joining), else onto lines
 		var best = null, tol = px(8);
-		if (state.snapPath) {
+		if (state.snapPath && !lock) {
 			drag.starts.forEach(function (st) {
 				var q = st.add(raw);
 				drag.targets.forEach(function (t) {
@@ -2402,6 +2408,9 @@
 			{ label: 'Flip horizontal', key: 'H', run: function () { flipSelection(false); }, enabled: hasSelection },
 			{ label: 'Flip vertical', key: 'Shift+H', run: function () { flipSelection(true); }, enabled: hasSelection },
 			'-',
+			{ label: 'Align left edge to 0', run: function () { align('left', true); }, enabled: function () { return movingSegments().length > 0; } },
+			{ label: 'Align bottom to baseline', run: function () { align('bottom', true); }, enabled: function () { return movingSegments().length > 0; } },
+			'-',
 			{ label: 'Make points smooth', run: function () { setPointsSmooth(true); }, enabled: function () { return selectedSegments().length > 0; } },
 			{ label: 'Make points corners', run: function () { setPointsSmooth(false); }, enabled: function () { return selectedSegments().length > 0; } },
 			'-',
@@ -2601,6 +2610,78 @@
 			if (document.activeElement === input || input.closest('.scrubbing')) return;
 			input.value = vals[k];
 		});
+	}
+
+	// --- align
+	//
+	// To each other (Selection) or to the cell: left 0, right the cell width,
+	// bottom the baseline, top the cell height. Whole paths move as units (a
+	// group moves together); with points picked, each point is a unit.
+	// Aligning to the cell moves the whole selection as one block.
+
+	var alignTo = 'selection';
+	try { alignTo = localStorage.getItem('gregfont-editor-align-to') === 'cell' ? 'cell' : 'selection'; } catch (e) { /* ignore */ }
+
+	function alignUnits() {
+		var g = selectionGeometry();
+		if (!g) return null;
+		if (g.single || !g.whole) {
+			return movingSegments().map(function (s) {
+				return { box: new P.Rectangle(s.point, s.point), move: function (d) { s.point = s.point.add(d); } };
+			});
+		}
+		var byGroup = {}, units = [];
+		selectedPaths().forEach(function (p) {
+			var key = p.data.group ? 'g' + p.data.group : null;
+			var u = key && byGroup[key];
+			if (!u) {
+				u = { paths: [], box: null, move: null };
+				u.move = function (d) { u.paths.forEach(function (q) { q.translate(d); }); };
+				if (key) byGroup[key] = u;
+				units.push(u);
+			}
+			u.paths.push(p);
+			u.box = u.box ? u.box.unite(p.bounds) : p.bounds.clone();
+		});
+		return units;
+	}
+
+	function edgeDelta(edge, box, frame) {
+		switch (edge) {
+			case 'left': return new P.Point(frame.left - box.left, 0);
+			case 'center': return new P.Point(frame.center.x - box.center.x, 0);
+			case 'right': return new P.Point(frame.right - box.right, 0);
+			case 'top': return new P.Point(0, frame.top - box.top);
+			case 'middle': return new P.Point(0, frame.center.y - box.center.y);
+			default: return new P.Point(0, frame.bottom - box.bottom);
+		}
+	}
+
+	function align(edge, toCell) {
+		var units = alignUnits();
+		if (!units || !units.length) { setStatus('Select something to align'); return; }
+		var all = units.reduce(function (b, u) { return b ? b.unite(u.box) : u.box.clone(); }, null);
+		var cell = toCell || alignTo === 'cell' || units.length < 2;
+		var f = font();
+		var frame = cell ? new P.Rectangle(new P.Point(0, -f.cell.height), new P.Point(f.cell.width, 0)) : all;
+		edit(function () {
+			if (cell) {
+				var d = edgeDelta(edge, all, frame);
+				units.forEach(function (u) { u.move(d); });
+			} else {
+				units.forEach(function (u) { u.move(edgeDelta(edge, u.box, frame)); });
+			}
+		});
+		var names = { left: 'left edges', center: 'centres', right: 'right edges', top: 'tops', middle: 'middles', bottom: 'bottoms' };
+		var toCellText = { left: 'Left edge moved to 0', center: 'Centred across the cell', right: 'Right edge moved to the cell width',
+			top: 'Top moved to the cell height', middle: 'Centred up and down in the cell', bottom: 'Bottom moved to the baseline' };
+		setStatus(cell ? toCellText[edge] : 'Lined up ' + units.length + ' ' + (units[0].paths ? 'paths' : 'points') + ' by their ' + names[edge]);
+	}
+
+	function setAlignTo(v) {
+		alignTo = v;
+		try { localStorage.setItem('gregfont-editor-align-to', v); } catch (e) { /* ignore */ }
+		$('align-to').querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b.dataset.value === v); });
 	}
 
 	// Move (x, y) or scale around the center (w, h) to the given value.
@@ -3452,6 +3533,15 @@
 		});
 		// bearings: one undo step for a whole drag
 		bindPositionFields();
+		$('align-buttons').querySelectorAll('button').forEach(function (b) {
+			b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+			b.addEventListener('click', function () { align(b.dataset.align); });
+		});
+		$('align-to').querySelectorAll('button').forEach(function (b) {
+			b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+			b.addEventListener('click', function () { setAlignTo(b.dataset.value); });
+		});
+		setAlignTo(alignTo);
 		['lsb', 'rsb'].forEach(function (key) {
 			var input = $('glyph-' + key);
 			input.addEventListener('scrubstart', function () { beginEdit(); });

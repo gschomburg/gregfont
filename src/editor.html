@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.6.0">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.6.0">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.7.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.7.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -172,6 +172,22 @@
 					<label class="field" data-scrub="x" title="Width: drag sideways or type (scales around the center)"><span class="field-label">W</span><input type="number" id="pos-w" step="0.5" min="0.5"></label>
 					<label class="field" data-scrub="x" title="Height: drag sideways or type (scales around the center)"><span class="field-label">H</span><input type="number" id="pos-h" step="0.5" min="0.5"></label>
 				</div>
+				<div class="style-grid align-grid">
+					<span class="field-label">Align</span>
+					<div class="segmented icons" id="align-buttons" role="group" aria-label="Align">
+						<button type="button" data-align="left" title="Align left edges" aria-label="Align left edges"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 1v14" stroke="currentColor" stroke-width="1.3"/><rect x="4" y="3" width="9" height="3.5" fill="currentColor"/><rect x="4" y="9.5" width="5.5" height="3.5" fill="currentColor"/></svg></button>
+						<button type="button" data-align="center" title="Align centres across" aria-label="Align centres across"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v14" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="3" width="10" height="3.5" fill="currentColor" opacity="0.85"/><rect x="5" y="9.5" width="6" height="3.5" fill="currentColor" opacity="0.85"/></svg></button>
+						<button type="button" data-align="right" title="Align right edges" aria-label="Align right edges"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1v14" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="3" width="9" height="3.5" fill="currentColor"/><rect x="6.5" y="9.5" width="5.5" height="3.5" fill="currentColor"/></svg></button>
+						<button type="button" data-align="top" title="Align tops" aria-label="Align tops"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 2.5h14" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="4" width="3.5" height="9" fill="currentColor"/><rect x="9.5" y="4" width="3.5" height="5.5" fill="currentColor"/></svg></button>
+						<button type="button" data-align="middle" title="Align middles up and down" aria-label="Align middles up and down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8h14" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="3" width="3.5" height="10" fill="currentColor" opacity="0.85"/><rect x="9.5" y="5" width="3.5" height="6" fill="currentColor" opacity="0.85"/></svg></button>
+						<button type="button" data-align="bottom" title="Align bottoms" aria-label="Align bottoms"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 13.5h14" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="3" width="3.5" height="9" fill="currentColor"/><rect x="9.5" y="6.5" width="3.5" height="5.5" fill="currentColor"/></svg></button>
+					</div>
+					<span class="field-label">To</span>
+					<div class="segmented" id="align-to" role="group" aria-label="Align to">
+						<button type="button" data-value="selection" title="Line the selected paths (or points) up with each other. With just one thing selected, it lines up with the cell.">Selection</button>
+						<button type="button" data-value="cell" title="Line the selection up with the cell: left is 0, bottom is the baseline, top is the cell height">Cell</button>
+					</div>
+				</div>
 			</details>
 
 			<details id="path-style-row" class="fold" data-remember="path" open>
@@ -278,13 +294,13 @@
 			</div>
 		</div>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.6.0"></script>
-		<script src="fonts/fonts.js?v=2.6.0"></script>
-		<script src="js/gregfont.js?v=2.6.0"></script>
-		<script src="js/version.js?v=2.6.0"></script>
-		<script src="js/ui.js?v=2.6.0"></script>
-		<script src="js/samples.js?v=2.6.0"></script>
-		<script src="js/shapeimport.js?v=2.6.0"></script>
-		<script src="js/editor.js?v=2.6.0"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.7.0"></script>
+		<script src="fonts/fonts.js?v=2.7.0"></script>
+		<script src="js/gregfont.js?v=2.7.0"></script>
+		<script src="js/version.js?v=2.7.0"></script>
+		<script src="js/ui.js?v=2.7.0"></script>
+		<script src="js/samples.js?v=2.7.0"></script>
+		<script src="js/shapeimport.js?v=2.7.0"></script>
+		<script src="js/editor.js?v=2.7.0"></script>
 	</body>
 </html>

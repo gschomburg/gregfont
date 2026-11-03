@@ -135,7 +135,8 @@ The layout follows desktop drawing apps:
 | Curve ↔ corner | Double-click a point. |
 | Add a point | Double-click a line. |
 | Spacing | Drag the pink dashed lines (left/right side bearings) or type the numbers in the Glyph panel. |
-| Nudge | Arrow keys move the selection 1 unit, Shift + arrows one grid step. |
+| Nudge | Arrow keys move the selection 1 unit, Shift + arrows one grid step. Shift while dragging keeps a move straight across or straight up and down. |
+| Align | The **Align** buttons in the glyph panel's Info section line things up by their left edges, centres, right edges, tops, middles or bottoms. **To: Selection** lines the selected paths up with each other (a group moves as one; with points picked, each point lines up). **To: Cell** moves the whole selection to the cell: left to 0, right to the cell width, bottom to the baseline, top to the cell height, or centred. With one thing selected it always uses the cell. Object → **Align left edge to 0** and **Align bottom to baseline** do the two most common ones. |
 | Snap | Two switches in the bar above the canvas. **Grid** (<kbd>G</kbd>) snaps to the grid; set its size next to it. **Paths** (<kbd>Shift+G</kbd>) snaps onto other paths' points, or failing that onto their lines, when dragging points or handles, placing pen points (and pulling their handles) and drawing shapes; a pink ring shows where. A handle never snaps onto its own point. A nearby path wins over the grid; with both off, points go exactly where you put them. |
 | View | Mouse wheel zooms, Space-drag or middle-drag pans. The − / % / + / **Fit** buttons at the right of the bar above the canvas zoom out, go back to 100% (one font unit per pixel), zoom in, and fit the glyph; so do Ctrl+− / Ctrl+= / Ctrl+0, and <kbd>F</kbd> fits too. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
