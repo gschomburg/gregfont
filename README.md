@@ -122,7 +122,7 @@ The layout follows desktop drawing apps:
 | Add a point | Double-click a line. |
 | Spacing | Drag the pink dashed lines (left/right side bearings) or type the numbers in the Glyph panel. |
 | Nudge | Arrow keys move the selection 1 unit, Shift + arrows one grid step. |
-| Snap | Two switches in the bar above the canvas. **Grid** (<kbd>G</kbd>) snaps to the grid; set its size next to it. **Paths** (<kbd>Shift+G</kbd>) snaps onto other paths' points, or failing that onto their lines, when dragging points, placing pen points and drawing shapes; a pink ring shows where. A nearby path wins over the grid; with both off, points go exactly where you put them. |
+| Snap | Two switches in the bar above the canvas. **Grid** (<kbd>G</kbd>) snaps to the grid; set its size next to it. **Paths** (<kbd>Shift+G</kbd>) snaps onto other paths' points, or failing that onto their lines, when dragging points or handles, placing pen points (and pulling their handles) and drawing shapes; a pink ring shows where. A handle never snaps onto its own point. A nearby path wins over the grid; with both off, points go exactly where you put them. |
 | View | Mouse wheel zooms, Space-drag or middle-drag pans, <kbd>F</kbd> fits the glyph. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
 | Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `src/fonts` folder. Browsers without folder access download the file instead. |

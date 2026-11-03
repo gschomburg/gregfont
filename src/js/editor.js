@@ -810,7 +810,7 @@
 			commit();
 		} else if (drag.mode === 'handle') {
 			var s = drag.segment;
-			var v = p.subtract(s.point);
+			var v = snapHandleTip(e, s).subtract(s.point);
 			s[drag.which] = v;
 			if (drag.mirror && !mod(e, 'alt') && !v.isZero()) {
 				var other = drag.which === 'handleIn' ? 'handleOut' : 'handleIn';
@@ -837,7 +837,7 @@
 		} else if (drag.mode === 'convert') {
 			// pull handles out of the point, mirrored, as with Illustrator's Anchor Point tool
 			var cs = drag.segment;
-			var out = p.subtract(cs.point);
+			var out = snapHandleTip(e, cs).subtract(cs.point);
 			if (out.getDistance(new P.Point(0, 0)) > px(2)) {
 				drag.moved = true;
 				cs.handleOut = out;
@@ -845,7 +845,7 @@
 				commit();
 			}
 		} else if (drag.mode === 'pen-handle') {
-			var h = p.subtract(drag.segment.point);
+			var h = snapHandleTip(e, drag.segment).subtract(drag.segment.point);
 			drag.segment.handleOut = h;
 			drag.segment.handleIn = h.multiply(-1);
 		} else if (drag.mode === 'shape') {
@@ -1775,12 +1775,15 @@
 	// line when Snap to paths is on and one is close, otherwise the grid (when
 	// Snap to grid is on). `exclude` lists paths to ignore. Returns
 	// { point, kind } with kind 'point', 'path', 'grid' or null.
-	function snapTarget(raw, exclude) {
+	// For a handle, pass its own segment as `handleOf`: the handle won't snap
+	// onto its own point (that would flatten it) or its own path's line.
+	function snapTarget(raw, exclude, handleOf) {
 		if (state.snapPath) {
 			var best = null, tol = px(8);
 			editablePaths().forEach(function (p) {
 				if (exclude && exclude.indexOf(p) >= 0) return;
 				p.segments.forEach(function (s) {
+					if (s === handleOf) return;
 					var d = s.point.getDistance(raw);
 					if (d < tol && (!best || d < best.d)) best = { d: d, point: s.point.clone(), kind: 'point' };
 				});
@@ -1789,12 +1792,21 @@
 			var ctol = px(6);
 			editablePaths().forEach(function (p) {
 				if (exclude && exclude.indexOf(p) >= 0 || p.segments.length < 2) return;
+				if (handleOf && p === handleOf.path) return;
 				var loc = p.getNearestLocation(raw);
 				if (loc && loc.distance < ctol && (!best || loc.distance < best.d)) best = { d: loc.distance, point: loc.point.clone(), kind: 'path' };
 			});
 			if (best) return best;
 		}
 		return { point: snap(raw), kind: state.snap ? 'grid' : null };
+	}
+
+	// Where a dragged handle's tip should go (snapped), with the ring updated.
+	function snapHandleTip(e, segment) {
+		if (drag.marker) { drag.marker.remove(); drag.marker = null; }
+		var t = snapTarget(e.point, null, segment);
+		drag.marker = snapMarker(t);
+		return t.point;
 	}
 
 	// a ring showing where a point will snap onto a path
