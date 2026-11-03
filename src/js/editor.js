@@ -1147,6 +1147,9 @@
 		var segs = movingSegments(), moving = new Set(segs);
 		drag.segments = segs;
 		drag.starts = segs.map(function (s) { return s.point.clone(); });
+		// moving whole paths: their outline's edges snap too (see snapMove)
+		var g = selectionGeometry();
+		drag.box = g && !g.single && g.whole ? g.box.clone() : null;
 		// other points, and lines of paths that aren't moving, to snap onto
 		drag.targets = [];
 		drag.staticPaths = [];
@@ -1167,7 +1170,7 @@
 		var lock = mod(e, 'shift') ? (Math.abs(raw.x) >= Math.abs(raw.y) ? 'x' : 'y') : null;
 		if (lock === 'x') raw = new P.Point(raw.x, 0);
 		else if (lock === 'y') raw = new P.Point(0, raw.y);
-		var delta = snap(drag.anchorStart.add(raw)).subtract(drag.anchorStart);
+		var delta = drag.box ? snapMove(raw) : snap(drag.anchorStart.add(raw)).subtract(drag.anchorStart);
 		if (lock === 'x') delta = new P.Point(delta.x, 0);
 		else if (lock === 'y') delta = new P.Point(0, delta.y);
 		// snap onto nearby points (so pieces line up for joining), else onto lines
@@ -1202,6 +1205,37 @@
 		}
 		drag.segments.forEach(function (s, i) { s.point = drag.starts[i].add(delta); });
 		commit();
+	}
+
+	// Moving whole paths: the grabbed point and the outline's left, centre and
+	// right (top, middle and bottom) can each snap. Guides (0, the cell
+	// edges, baseline, x-height, cap, descender) win when one is close;
+	// otherwise, with grid snap on, whichever needs the smallest nudge lands on
+	// the grid. Each direction is snapped on its own.
+	function snapMove(raw) {
+		var f = font(), b = drag.box, a = drag.anchorStart, tol = px(8);
+		function axis(cands, guides, move) {
+			var guide = null, grid = null;
+			cands.forEach(function (c) {
+				var at = c + move;
+				guides.forEach(function (g) {
+					var d = g - at;
+					if (Math.abs(d) < tol && (!guide || Math.abs(d) < Math.abs(guide))) guide = d;
+				});
+				if (state.snap) {
+					var d = round(at, state.grid) - at;
+					if (grid === null || Math.abs(d) < Math.abs(grid)) grid = d;
+				}
+			});
+			if (guide !== null) return move + guide;
+			if (grid !== null) return move + grid;
+			return round(move, 0.1);
+		}
+		var gy = [0, -f.cell.height, -f.guides.cap, -f.guides.xHeight, -f.guides.descender].filter(function (v) { return typeof v === 'number' && isFinite(v); });
+		return new P.Point(
+			axis([a.x, b.left, b.center.x, b.right], [0, f.cell.width], raw.x),
+			axis([a.y, b.top, b.center.y, b.bottom], gy, raw.y)
+		);
 	}
 
 	// --- transforms
@@ -2598,12 +2632,12 @@
 		$('pos-size').hidden = !!(g && g.single);
 		var kind = !g ? 'nothing selected'
 			: g.single ? 'point'
-			: g.whole ? g.paths + ' path' + (g.paths === 1 ? '' : 's') + ' · center'
-			: g.count + ' points · center';
+			: g.whole ? g.paths + ' path' + (g.paths === 1 ? '' : 's') + ' \u00b7 bottom left'
+			: g.count + ' points \u00b7 bottom left';
 		$('position-kind').textContent = kind;
 		var vals = !g ? { x: '', y: '', w: '', h: '' }
 			: g.single ? { x: round(g.point.x, 0.01), y: round(-g.point.y, 0.01), w: '', h: '' }
-			: { x: round(g.box.center.x, 0.01), y: round(-g.box.center.y, 0.01), w: round(g.box.width, 0.01), h: round(g.box.height, 0.01) };
+			: { x: round(g.box.left, 0.01), y: round(-g.box.bottom, 0.01), w: round(g.box.width, 0.01), h: round(g.box.height, 0.01) };
 		Object.keys(fields).forEach(function (k) {
 			var input = fields[k];
 			// don't fight the field being typed in or dragged
@@ -2693,17 +2727,18 @@
 	function applyPosition(key, value, base) {
 		if (!base || isNaN(value)) return;
 		var g = base.g, m = new P.Matrix();
-		var cx = g.single ? g.point.x : g.box.center.x;
-		var cy = g.single ? g.point.y : g.box.center.y;   // canvas y (down)
+		// a point, or the selection's bottom-left corner
+		var cx = g.single ? g.point.x : g.box.left;
+		var cy = g.single ? g.point.y : g.box.bottom;   // canvas y (down)
 		if (key === 'x') m.translate(value - cx, 0);
 		else if (key === 'y') m.translate(0, -value - cy);
 		else if (g.single) return;
 		else if (key === 'w') {
 			if (g.box.width < EPS || value <= 0) { setStatus('Can’t scale something with no width', true); return; }
-			m.scale(value / g.box.width, 1, g.box.center);
+			m.scale(value / g.box.width, 1, g.box.bottomLeft);
 		} else if (key === 'h') {
 			if (g.box.height < EPS || value <= 0) { setStatus('Can’t scale something with no height', true); return; }
-			m.scale(1, value / g.box.height, g.box.center);
+			m.scale(1, value / g.box.height, g.box.bottomLeft);
 		}
 		applyMatrix(base.origs, m);
 		commit();

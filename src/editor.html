@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.7.0">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.7.0">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.8.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.8.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -169,8 +169,8 @@
 					<label class="field" data-scrub="y" title="Up from the baseline, in font units: drag up or down, or type"><span class="field-label">Y</span><input type="number" id="pos-y" step="0.5"></label>
 				</div>
 				<div class="field-pair" id="pos-size">
-					<label class="field" data-scrub="x" title="Width: drag sideways or type (scales around the center)"><span class="field-label">W</span><input type="number" id="pos-w" step="0.5" min="0.5"></label>
-					<label class="field" data-scrub="x" title="Height: drag sideways or type (scales around the center)"><span class="field-label">H</span><input type="number" id="pos-h" step="0.5" min="0.5"></label>
+					<label class="field" data-scrub="x" title="Width: drag sideways or type (scales from the bottom-left corner)"><span class="field-label">W</span><input type="number" id="pos-w" step="0.5" min="0.5"></label>
+					<label class="field" data-scrub="x" title="Height: drag sideways or type (scales from the bottom-left corner)"><span class="field-label">H</span><input type="number" id="pos-h" step="0.5" min="0.5"></label>
 				</div>
 				<div class="style-grid align-grid">
 					<span class="field-label">Align</span>
@@ -294,13 +294,13 @@
 			</div>
 		</div>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.7.0"></script>
-		<script src="fonts/fonts.js?v=2.7.0"></script>
-		<script src="js/gregfont.js?v=2.7.0"></script>
-		<script src="js/version.js?v=2.7.0"></script>
-		<script src="js/ui.js?v=2.7.0"></script>
-		<script src="js/samples.js?v=2.7.0"></script>
-		<script src="js/shapeimport.js?v=2.7.0"></script>
-		<script src="js/editor.js?v=2.7.0"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.8.0"></script>
+		<script src="fonts/fonts.js?v=2.8.0"></script>
+		<script src="js/gregfont.js?v=2.8.0"></script>
+		<script src="js/version.js?v=2.8.0"></script>
+		<script src="js/ui.js?v=2.8.0"></script>
+		<script src="js/samples.js?v=2.8.0"></script>
+		<script src="js/shapeimport.js?v=2.8.0"></script>
+		<script src="js/editor.js?v=2.8.0"></script>
 	</body>
 </html>
