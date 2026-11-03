@@ -344,6 +344,131 @@
 		return { glyphs: out, missing: missing };
 	}
 
+	/*
+	 * Lay out a block of text the way a text box does: wrap at spaces to fit
+	 * `width` (font units; omit for no wrapping), align each line, and report
+	 * where every character sits so an editor can draw a caret.
+	 *
+	 * opts: { monospace, letterSpacing, lineHeight, tracking, width, align }
+	 *       align is 'left' (default), 'center' or 'right'.
+	 * Returns {
+	 *   glyphs: [{ char, x, y, i }]   where to put each glyph's origin (y is
+	 *                                 the line's baseline, screen orientation),
+	 *                                 i = its index in `text`
+	 *   carets: [{ x, y, line }]      one per index 0..text.length: the pen
+	 *                                 position before that character
+	 *   lines, width, height, missing
+	 * }
+	 * Line n's baseline is cell.height + n * lineHeight. `height` runs from
+	 * the top of the first line to the descender of the last.
+	 */
+	function layoutBlock(ps, font, text, opts) {
+		opts = opts || {};
+		var ls = opts.letterSpacing !== undefined ? opts.letterSpacing : font.spacing.letterSpacing;
+		var lh = opts.lineHeight !== undefined ? opts.lineHeight : font.spacing.lineHeight;
+		var tracking = opts.tracking || 0;
+		var wrapAt = opts.width > 0 ? opts.width : Infinity;
+		var missing = [];
+
+		// One character's placement relative to the pen, and how far the pen moves.
+		function measure(ch, prev) {
+			var found = lookup(font, ch);
+			if (!found) {
+				if (missing.indexOf(ch) < 0) missing.push(ch);
+				return null;
+			}
+			if (opts.monospace) {
+				var mInk = inkBounds(ps, font, found.char);
+				return { char: found.char, place: 0, advance: ls, right: mInk ? mInk.right : 0 };
+			}
+			var ink = inkBounds(ps, font, found.char);
+			var inkLeft = ink ? ink.left : 0, inkWidth = ink ? ink.width : 0;
+			var kern = prev ? font.kerning[prev + found.char] || 0 : 0;
+			var place = kern + found.glyph.lsb - inkLeft;
+			return {
+				char: found.char, place: place,
+				advance: kern + found.glyph.lsb + inkWidth + found.glyph.rsb + tracking,
+				right: place + inkLeft + inkWidth
+			};
+		}
+
+		// Split into lines of tokens: words (runs of non-spaces) and single spaces.
+		var lines = [];   // [{ items: [{ i, x, m }], end }] where m is a measure or null
+		var paragraphs = text.split('\n');
+		var index = 0;
+		paragraphs.forEach(function (para, pi) {
+			var line = { items: [], start: index };
+			var x = 0;
+			var tokens = para.match(/ |[^ ]+/g) || [];
+			tokens.forEach(function (tok) {
+				if (tok === ' ') {
+					line.items.push({ i: index, x: x, m: null, space: true });
+					x += ls;
+					index += 1;
+					return;
+				}
+				// lay the word out from 0, then see whether it fits
+				var chars = Array.from(tok), wx = 0, prev = null, placed = [], wordRight = 0;
+				chars.forEach(function (ch) {
+					var m = measure(ch, prev);
+					placed.push({ i: index, x: wx, m: m });
+					if (m) {
+						wordRight = Math.max(wordRight, wx + m.right);
+						wx += m.advance;
+						prev = m.char;
+					}
+					index += ch.length;
+				});
+				if (x > 0 && x + wordRight > wrapAt && line.items.some(function (it) { return !it.space; })) {
+					line.end = placed[0].i;
+					lines.push(line);
+					line = { items: [], start: placed[0].i };
+					x = 0;
+				}
+				placed.forEach(function (p) { p.x += x; line.items.push(p); });
+				x += wx;
+			});
+			line.end = index;
+			line.penEnd = x;
+			lines.push(line);
+			if (pi < paragraphs.length - 1) index += 1;   // the '\n'
+		});
+
+		// Measure, align, and build glyphs + carets.
+		var cellH = font.cell.height;
+		var glyphs = [], carets = new Array(text.length + 1), widest = 0;
+		var lineInfo = lines.map(function (line) {
+			var right = 0;
+			line.items.forEach(function (it) { if (it.m) right = Math.max(right, it.x + it.m.right); });
+			widest = Math.max(widest, right);
+			return right;
+		});
+		var boxWidth = isFinite(wrapAt) ? wrapAt : widest;
+		lines.forEach(function (line, n) {
+			var y = cellH + n * lh;
+			var shift = 0;
+			if (opts.align === 'center') shift = (boxWidth - lineInfo[n]) / 2;
+			else if (opts.align === 'right') shift = boxWidth - lineInfo[n];
+			line.items.forEach(function (it) {
+				carets[it.i] = { x: it.x + shift, y: y, line: n };
+				if (it.m) glyphs.push({ char: it.m.char, x: it.x + it.m.place + shift, y: y, i: it.i });
+			});
+			// The end of a paragraph (its '\n', or the end of the text) gets a
+			// caret after the line. A wrapped line's end is the next line's start.
+			if (line.penEnd !== undefined) carets[line.end] = { x: line.penEnd + shift, y: y, line: n };
+		});
+		// anything left unset (e.g. characters with no glyph) takes the next known spot
+		for (var k = carets.length - 1, next = carets[carets.length - 1]; k >= 0; k--) {
+			if (!carets[k]) carets[k] = next; else next = carets[k];
+		}
+		var depth = Math.max(0, -(font.guides.descender || 0));
+		return {
+			glyphs: glyphs, carets: carets, lines: lines.length,
+			width: boxWidth, height: cellH + (lines.length - 1) * lh + depth,
+			missing: missing
+		};
+	}
+
 	// --- Illustrator grid
 
 	var GRID_COLUMNS = 10;
@@ -649,6 +774,7 @@
 		clearCache: clearCache,
 		inkBounds: inkBounds,
 		layout: layout,
+		layoutBlock: layoutBlock,
 		fromSVG: fromSVG,
 		toSVG: toSVG,
 		flipPathData: flipPathData,

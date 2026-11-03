@@ -1,0 +1,73 @@
+/*
+ * The typesetter's layout. The shared look (tokens, controls, menus, tool
+ * tab) is in base.css.
+ */
+body {
+	display: grid;
+	grid-template-columns: 284px minmax(0, 1fr) 264px;
+	grid-template-rows: 44px 40px minmax(0, 1fr);
+	grid-template-areas:
+		"top top top"
+		"type opts doc"
+		"type canvas doc";
+}
+
+#topbar .product { color: var(--muted); margin: 0 8px 0 -4px; }
+
+/* left: type settings */
+#type-panel { grid-area: type; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; background: var(--panel); }
+.type-head { display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 10px; border-bottom: 1px solid var(--line); }
+.type-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+#type-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#font-select { width: 100%; font-weight: 600; font-size: 14px; padding: 6px 8px; }
+.field-unit { font-size: 11px; color: var(--muted); }
+.field-triple { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.field-quad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.field-triple .field, .field-quad .field { padding: 0 6px; gap: 4px; }
+.style-grid { display: grid; grid-template-columns: 66px minmax(0, 1fr); align-items: center; gap: 8px; }
+.colour-row { display: flex; align-items: center; gap: 6px; }
+.colour-row .swatch-button { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid var(--line-2); }
+.colour-row .swatch-button.active { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+.colour-pick { position: relative; width: 22px; height: 22px; border-radius: 50%; border: 1px dashed var(--muted); overflow: hidden; cursor: pointer; }
+.colour-pick input { position: absolute; inset: -6px; width: 34px; height: 34px; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.colour-pick::after { content: '+'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; pointer-events: none; }
+#type-panel .switch-label { font-size: 12px; }
+
+/* options bar */
+#optionsbar {
+	grid-area: opts; display: flex; align-items: center; gap: 16px; padding: 0 14px; min-width: 0;
+	background: var(--panel-2); color: var(--muted); overflow: hidden;
+}
+#optionsbar .icon-button { width: 26px; height: 24px; font-size: 15px; line-height: 1; }
+.zoom-label { min-width: 54px; padding: 2px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+#cursor-pos { font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: nowrap; min-width: 140px; text-align: right; }
+
+/* canvas */
+#canvas-wrap { grid-area: canvas; outline: none; position: relative; min-width: 0; min-height: 0; background: var(--canvas); overflow: hidden; }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#canvas-wrap.tool-text #stage { cursor: text; }
+#canvas-wrap.tool-hand #stage, #canvas-wrap.panning #stage { cursor: grab; }
+#canvas-wrap.over-box #stage { cursor: move; }
+#canvas-wrap.over-handle #stage { cursor: ew-resize; }
+#text-input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; resize: none; pointer-events: none; }
+.caret { animation: blink 1.06s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* right: document */
+#doc-panel { grid-area: doc; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; background: var(--panel); }
+#doc-panel details.fold { padding: 12px 14px 14px; }
+.text-button { margin-left: auto; padding: 0; background: none; border: 0; color: var(--accent); font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.text-button:hover { text-decoration: underline; }
+#text-list { display: flex; flex-direction: column; gap: 4px; }
+.text-item { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 6px 30px 6px 9px; text-align: left; }
+.text-item .name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.text-item .meta { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.text-item.active { border-color: var(--accent); background: var(--accent-soft); }
+.text-item .remove { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; border: 0; background: none; color: var(--muted); }
+.text-item .remove:hover { color: var(--danger); }
+.page-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.page-row select { min-width: 0; font-size: 12px; }
+#page-orient button { width: 30px; }
+#page-orient svg { width: 14px; height: 14px; }
+#doc-panel .hint { margin: 0; line-height: 1.5; }
+.button-row.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }

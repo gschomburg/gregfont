@@ -460,42 +460,19 @@
 		'X slices crossing strokes into pieces you can pick up one at a time',
 		'+ New font is at the bottom of the font list'
 	];
-	var tips = { list: [], i: 0, timer: 0, on: true };
+	var tips = null;   // a GregUI.Tips, made in bindUI
 
 	// The current tool's tips first, then the general ones.
 	function setTips(toolName) {
+		if (!tips) return;
 		var own = (toolName === 'shape' ? SHAPE_HELP[state.shapeKind] : TOOL_HELP[toolName]) || '';
-		tips.list = own.split(' · ').filter(Boolean).map(function (t) {
+		tips.setList(own.split(' \u00b7 ').filter(Boolean).map(function (t) {
 			return t.charAt(0).toUpperCase() + t.slice(1);
-		}).concat(GENERAL_TIPS);
-		tips.i = 0;
-		showTip(false);
+		}).concat(GENERAL_TIPS));
 	}
 
-	function showTip(fade) {
-		clearTimeout(tips.timer);
-		var el = $('tip');
-		if (!tips.on || !tips.list.length) { el.textContent = ''; el.classList.add('off'); return; }
-		el.classList.remove('off');
-		var text = tips.list[tips.i % tips.list.length];
-		function put() {
-			el.textContent = text;
-			el.classList.remove('fading');
-		}
-		if (fade) { el.classList.add('fading'); setTimeout(put, 250); } else put();
-		tips.timer = setTimeout(function () { tips.i++; showTip(true); }, 8000);
-	}
-
-	function nextTip() {
-		tips.i++;
-		showTip(true);
-	}
-
-	function setTipsOn(on) {
-		tips.on = on;
-		try { localStorage.setItem('gregfont-editor-tips', on ? '1' : '0'); } catch (e) { /* ignore */ }
-		showTip(false);
-	}
+	function nextTip() { tips.next(); }
+	function setTipsOn(on) { tips.setOn(on); }
 
 	var TOOL_HELP = {
 		select: 'Click or drag a box to pick whole paths \u00b7 drag to move, Alt-drag to copy \u00b7 box handles scale, just outside a corner rotates \u00b7 pink lines set spacing',
@@ -1793,7 +1770,7 @@
 			case 'o': setShowOrder(!state.show.order); break;
 			case 'f': fit(); break;
 			case 'enter': finishPen(); break;
-			case 'escape': deselect(); break;
+			case 'escape': if (isSpecimen()) setSpecimen(false); else deselect(); break;
 			case 'delete': case 'backspace':
 				e.preventDefault();
 				if (e.altKey) removeAnchors(); else deleteSelection();
@@ -2204,13 +2181,10 @@
 		} catch (e) { /* ignore */ }
 	}
 
-	function currentTheme() {
-		return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
-	}
+	function currentTheme() { return GregUI.currentTheme(); }
 
 	function setTheme(theme) {
-		document.documentElement.dataset.theme = theme;
-		try { localStorage.setItem('gregfont-editor-theme', theme); } catch (e) { /* ignore */ }
+		GregUI.setTheme(theme);
 		readColors();
 		glyphLayer.selectedColor = COLORS.select;
 		editablePaths().forEach(pathStyle);
@@ -2221,62 +2195,7 @@
 		setTheme(currentTheme() === 'dark' ? 'light' : 'dark');
 	}
 
-	// Number fields marked data-scrub="x" (sideways) or "y" (up / down) can be
-	// dragged to change them; a click without dragging still lets you type.
-	// While dragging, the input gets 'scrubstart' and 'scrub' events, then one
-	// 'change' when the mouse is released. Shift drags in bigger steps, Alt in
-	// smaller ones.
-	function bindScrub(field) {
-		var input = field.querySelector('input');
-		if (!input || field.dataset.scrubBound) return;
-		field.dataset.scrubBound = '1';
-		var vertical = field.dataset.scrub === 'y';
-		field.addEventListener('pointerdown', function (e) {
-			if (e.button !== 0 || input.disabled || document.activeElement === input) return;
-			e.preventDefault();
-			var x0 = e.clientX, y0 = e.clientY, start = parseFloat(input.value) || 0;
-			var step = parseFloat(input.step) || 1, min = parseFloat(input.min), scrubbing = false;
-			try { field.setPointerCapture(e.pointerId); } catch (err) { /* not a live pointer */ }
-			function move(ev) {
-				// up raises a guide: heights grow upward
-				var d = vertical ? y0 - ev.clientY : ev.clientX - x0;
-				if (!scrubbing && Math.abs(d) < 3) return;
-				if (!scrubbing) {
-					scrubbing = true;
-					field.classList.add('scrubbing');
-					input.dispatchEvent(new Event('scrubstart'));
-				}
-				var mult = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
-				var v = start + Math.round(d / 3) * step * mult;
-				if (!isNaN(min)) v = Math.max(min, v);
-				v = Math.round(v * 1000) / 1000;
-				if (String(v) !== input.value) {
-					input.value = v;
-					input.dispatchEvent(new Event('scrub'));
-				}
-			}
-			function up() {
-				field.removeEventListener('pointermove', move);
-				field.removeEventListener('pointerup', up);
-				field.removeEventListener('pointercancel', up);
-				field.classList.remove('scrubbing');
-				if (scrubbing) {
-					field.dataset.justScrubbed = '1';
-					input.dispatchEvent(new Event('change'));
-				} else {
-					input.focus();
-					input.select();
-				}
-			}
-			field.addEventListener('pointermove', move);
-			field.addEventListener('pointerup', up);
-			field.addEventListener('pointercancel', up);
-		});
-		// the label's own click would focus the input after a drag
-		field.addEventListener('click', function (e) {
-			if (field.dataset.justScrubbed) { e.preventDefault(); delete field.dataset.justScrubbed; }
-		});
-	}
+	function bindScrub(field) { GregUI.bindScrub(field); }
 
 	function setAutoSlice(on) {
 		state.autoSlice = on;
@@ -2369,78 +2288,7 @@
 	];
 
 	function buildMenus() {
-		var bar = $('menubar'), openMenu = null;
-
-		function close() {
-			if (openMenu) openMenu.classList.remove('open');
-			openMenu = null;
-		}
-
-		function open(m) {
-			close();
-			m.querySelectorAll('.menu-item').forEach(function (b) {
-				var item = b.item;
-				b.disabled = item.enabled ? !item.enabled() : false;
-				b.classList.toggle('checked', !!(item.checked && item.checked()));
-			});
-			m.classList.add('open');
-			openMenu = m;
-		}
-
-		MENUS.forEach(function (menu) {
-			var m = document.createElement('div');
-			m.className = 'menu';
-			var title = document.createElement('button');
-			title.type = 'button';
-			title.className = 'menu-title';
-			title.textContent = menu.title;
-			// mousedown (with preventDefault) so keyboard focus stays on the canvas
-			title.addEventListener('mousedown', function (e) {
-				e.preventDefault();
-				if (openMenu === m) close(); else open(m);
-			});
-			title.addEventListener('mouseenter', function () {
-				if (openMenu && openMenu !== m) open(m);
-			});
-			var list = document.createElement('div');
-			list.className = 'menu-items';
-			menu.items.forEach(function (item) {
-				if (item === '-') {
-					var sep = document.createElement('div');
-					sep.className = 'menu-sep';
-					list.appendChild(sep);
-					return;
-				}
-				var b = document.createElement('button');
-				b.type = 'button';
-				b.className = 'menu-item';
-				b.item = item;
-				var label = document.createElement('span');
-				label.textContent = item.label;
-				var key = document.createElement('span');
-				key.className = 'shortcut';
-				key.textContent = item.key || '';
-				b.appendChild(label);
-				b.appendChild(key);
-				b.addEventListener('mousedown', function (e) { e.preventDefault(); });
-				b.addEventListener('click', function () {
-					close();
-					wrap.focus({ preventScroll: true });
-					item.run();
-				});
-				list.appendChild(b);
-			});
-			m.appendChild(title);
-			m.appendChild(list);
-			bar.appendChild(m);
-		});
-
-		document.addEventListener('mousedown', function (e) {
-			if (openMenu && !bar.contains(e.target)) close();
-		}, true);
-		document.addEventListener('keydown', function (e) {
-			if (openMenu && e.key === 'Escape') { close(); e.stopPropagation(); }
-		}, true);
+		GregUI.buildMenus($('menubar'), MENUS, wrap);
 	}
 
 	// --------------------------------------------------------- glyph grid
@@ -2808,12 +2656,70 @@
 
 	// ------------------------------------------------------------ preview
 
+	// --- preview strip / specimen view
+
+	function previewText() {
+		var id = $('preview-sample').value;
+		var sample = (window.GREGFONT_SAMPLES || []).find(function (s) { return s.id === id; });
+		return sample ? sample.text : $('preview-text').value;
+	}
+
+	function setSpecimen(on) {
+		document.body.classList.toggle('specimen', on);
+		$('preview-expand').setAttribute('aria-label', on ? 'Close the specimen view' : 'Expand the preview into a specimen view');
+		$('preview-expand').title = on ? 'Back to the glyph (Esc)' : 'Expand into a specimen view (Esc closes it)';
+		renderPreview();
+	}
+
+	function isSpecimen() { return document.body.classList.contains('specimen'); }
+
+	// The expanded specimen: the text wrapped to the view's width, at a chosen size.
+	function renderSpecimen(f, box, mono) {
+		var size = Math.max(parseFloat($('specimen-size').value) || 60, 4);
+		var scale = size / f.cell.height;
+		var avail = Math.max(box.clientWidth - 44, 100);
+		var result = GregFont.layoutBlock(P, f, previewText(), {
+			monospace: mono, letterSpacing: f.spacing.letterSpacing, lineHeight: f.spacing.lineHeight,
+			width: avail / scale
+		});
+		var pad = state.strokeWidth * 2;
+		var svg = svgEl('svg', {
+			width: avail, height: Math.ceil((result.height + pad * 2) * scale),
+			viewBox: [-pad, -pad, avail / scale, result.height + pad * 2].join(' ')
+		});
+		result.glyphs.forEach(function (placed) { svg.appendChild(previewGlyph(f, placed)); });
+		box.appendChild(svg);
+		box.title = 'Click a letter to edit it. Shift-click two letters to set up a kerning pair.';
+	}
+
+	// One clickable glyph for the preview or specimen.
+	function previewGlyph(f, placed) {
+		var top = -Math.max(f.guides.cap, f.cell.height) - state.strokeWidth;
+		var bottom = Math.max(-(f.guides.descender || 0), 0) + state.strokeWidth;
+		var g = svgEl('g', { transform: 'translate(' + placed.x + ' ' + placed.y + ')' });
+		g.appendChild(glyphGroup(f, placed.char, state.strokeWidth, false));
+		g.dataset.ch = placed.char;
+		if (placed.char === state.ch) g.classList.add('current');
+		if (state.kernPick === placed.char) g.classList.add('kern-pick');
+		// a transparent box makes the whole letter clickable
+		var ink = GregFont.inkBounds(P, f, placed.char);
+		var bx = ink ? ink.left : 0, bw = ink ? ink.width : f.cell.width;
+		g.insertBefore(svgEl('rect', { x: bx, y: top, width: Math.max(bw, 4), height: bottom - top, fill: 'transparent' }), g.firstChild);
+		g.addEventListener('click', function (e) {
+			if (e.shiftKey || e.altKey) { pickKernLetter(placed.char); return; }
+			if (isSpecimen()) setSpecimen(false);
+			selectGlyph(placed.char);
+		});
+		return g;
+	}
+
 	function renderPreview() {
 		var f = font(), box = $('preview');
 		box.innerHTML = '';
 		if (!f) return;
 		var mono = $('preview-mono').checked;
-		var result = GregFont.layout(P, f, $('preview-text').value, {
+		if (isSpecimen()) { renderSpecimen(f, box, mono); return; }
+		var result = GregFont.layout(P, f, previewText().replace(/\s*\n\s*/g, ' '), {
 			monospace: mono,
 			letterSpacing: f.spacing.letterSpacing,
 			lineHeight: f.spacing.lineHeight,
@@ -3229,16 +3135,7 @@
 			b.addEventListener('click', function () { useShape(b.dataset.shape); });
 		});
 		// remember which foldable sections are open
-		document.querySelectorAll('details[data-remember]').forEach(function (d) {
-			var key = 'gregfont-editor-open-' + d.dataset.remember;
-			try {
-				var saved = localStorage.getItem(key);
-				if (saved !== null) d.open = saved === '1';
-			} catch (e) { /* ignore */ }
-			d.addEventListener('toggle', function () {
-				try { localStorage.setItem(key, d.open ? '1' : '0'); } catch (e) { /* ignore */ }
-			});
-		});
+		GregUI.rememberFolds(document, 'gregfont-editor-open-');
 		function setGrid() {
 			var v = parseFloat(this.value);
 			if (v > 0) { state.grid = v; drawGuides(); }
@@ -3288,9 +3185,7 @@
 			});
 		});
 		$('theme-toggle').addEventListener('click', toggleTheme);
-		try { tips.on = localStorage.getItem('gregfont-editor-tips') !== '0'; } catch (e) { /* ignore */ }
-		$('tip').addEventListener('click', nextTip);
-		$('tip').addEventListener('mousedown', function (e) { e.preventDefault(); });
+		tips = new GregUI.Tips($('tip'), 'gregfont-editor-tips');
 		$('play-strokes').addEventListener('click', playStrokes);
 		$('optimize-strokes').addEventListener('click', optimizeStrokes);
 		$('reverse-strokes').addEventListener('click', reverseSelection);
@@ -3347,8 +3242,32 @@
 			renderPreview();
 		});
 
-		$('preview-text').addEventListener('input', renderPreview);
+		$('preview-text').addEventListener('input', function () {
+			$('preview-sample').value = '';   // typing means your own text again
+			renderPreview();
+		});
 		$('preview-mono').addEventListener('change', renderPreview);
+		(window.GREGFONT_SAMPLES || []).forEach(function (s) {
+			var opt = document.createElement('option');
+			opt.value = s.id;
+			opt.textContent = s.name;
+			$('preview-sample').appendChild(opt);
+		});
+		$('preview-sample').addEventListener('change', function () {
+			if (this.value && !isSpecimen()) setSpecimen(true);   // samples are long: show them big
+			else renderPreview();
+		});
+		$('preview-expand').addEventListener('click', function () { setSpecimen(!isSpecimen()); });
+		['change', 'scrub'].forEach(function (type) { $('specimen-size').addEventListener(type, renderPreview); });
+		$('preview').addEventListener('wheel', function (e) {
+			if (!isSpecimen() || !e.ctrlKey) return;
+			e.preventDefault();
+			var input = $('specimen-size');
+			var v = Math.min(Math.max((parseFloat(input.value) || 60) * Math.pow(1.0015, -e.deltaY), 10), 600);
+			input.value = Math.round(v);
+			renderPreview();
+		}, { passive: false });
+		new ResizeObserver(function () { if (isSpecimen()) renderPreview(); }).observe($('preview'));
 		bindFontInputs();
 
 		window.addEventListener('beforeunload', function (e) {

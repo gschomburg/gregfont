@@ -2,7 +2,7 @@
 
 Browser tools for making and using custom single-line (stroke-based) fonts:
 
-- **Typesetter** (`index.html`): set text in any of the fonts and export it as SVG.
+- **Typesetter** (`index.html`): lay out text boxes on a page in any of the fonts and save it as SVG for a plotter.
 - **Editor** (`editor.html`): draw glyphs with a bezier pen, set spacing and kerning, and import fonts drawn in Illustrator.
 
 Glyphs are stroked paths rendered with [Paper.js](http://paperjs.org/). Because the letters are strokes rather than filled outlines, you can change stroke weight and end-cap style on the fly, which makes the output useful for plotters, laser/CNC engraving and other line-based work.
@@ -29,22 +29,17 @@ python tools/build_fonts.py
 
 ## Typesetter
 
-Type into the text box at the bottom-left; the canvas re-renders as you type. For text over 600 characters, live updates stop and a ↻ button appears to rebuild manually.
+Open `index.html`. It sets text on a page, ready for a plotter. Everything is measured in pixels at 96 per inch (A4 landscape is 1123 × 794), which is how SVG sizes things; plotter software converts to millimetres.
 
-| Control | What it does |
-| --- | --- |
-| **Font** | Fonts listed in `src/fonts/fonts.json`. Switching font resets spacing to that font's defaults. |
-| **Letter Spacing** | Advance per character (monospace) and width of a space. |
-| **Line Height** | Distance between lines. |
-| **Monospace** | Fixed-width cells vs. proportional spacing using each glyph's side bearings and kerning. |
-| **Tracking** | Extra space after each letter when *not* monospaced (can be negative). |
-| **End Caps** | Keep the font's caps, or force butt / round / square. |
-| **Stroke Weight** | Stroke width of every glyph. |
-| **Font Scale** | Overall scale, clamped to 0.333–2. |
-| **Word Wrap / Wrap Width** | Wrap at spaces once a line passes the given width. |
-| **EXPORT SVG** | Downloads the canvas as an SVG, named from the first 12 characters of the text. |
+The layout matches the editor: menus and tips in the top bar, the selected text's **type settings on the left**, the page in the middle, and the **document on the right** (the list of texts, page size, and plot options).
 
-**Ctrl+D** shows a hidden *Samples* menu with test texts (initial caps, lowercase, kerning pairs, readability paragraphs) for checking spacing.
+- **Text boxes**, like Illustrator's type tool. With the Text tool (<kbd>T</kbd>), click the page to start a line of text (its baseline sits where you clicked), or drag to make a box that wraps at its width. A page can hold any number of texts, each with its own font and settings. Click a text with the Text tool, or double-click it with Select, to edit; Esc stops editing. An emptied text is removed.
+- **Select** (<kbd>V</kbd>): click a text to select it, drag to move it (Shift keeps it level or plumb), and drag its side handles to set where it wraps. Arrow keys nudge it (Shift for 10 px). Ctrl+D duplicates, Delete removes.
+- **Left panel** (the selected text, or the settings the next new text gets when nothing is selected): font, size (the font's cell height in px), pen width, stroke ends, pen colour, letter spacing / tracking / line height (in px), monospaced, alignment, case (as typed, UPPER, lower), and the box's X, Y, wrap width and rotation. Changing font resets spacing to that font's defaults. Number fields can be dragged sideways.
+- **Right panel**: the texts on the page (click to select, double-click to edit), the page size (presets, portrait / landscape, or your own size, plus a margin guide), and **Plot**: the stroke count and pen-up travel, **Order strokes to cut pen-up travel** (reorders and flips strokes across the whole page when saving and playing), **Play** (draws the page stroke by stroke) and **Copy SVG**.
+- **Plot preview** (in the bar above the page) dashes the pen-up moves.
+- **Save SVG** (<kbd>Ctrl+S</kbd>) writes the page as plain stroked paths, one group per text (or one group in plotting order). The layout is stored inside the SVG too, in a `<metadata>` block, so **File → Open SVG…** (<kbd>Ctrl+O</kbd>) brings it back for editing. Fonts are referenced by file name. In Chrome and Edge, Save writes back to the same file after the first time; Save as… picks a new one. Other browsers download it.
+- The page also keeps itself in the browser between visits. Wheel zooms, Space-drag or the Hand tool pans, Ctrl+0 fits the page.
 
 ## Fonts
 
@@ -91,7 +86,7 @@ All reading, writing and importing lives in `src/js/gregfont.js`.
 
 ## Editor
 
-Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font and a glyph on the left, and draw on the canvas. The canvas works in font units, the same numbers stored in the font file.
+Open `editor.html` (or **Editor ↗** in the typesetter). Pick a font and a glyph on the left, and draw on the canvas. The canvas works in font units, the same numbers stored in the font file.
 
 The layout follows desktop drawing apps:
 
@@ -131,6 +126,8 @@ The **Font** panel sets the name, cell size, guide lines, default stroke caps an
 
 The **preview** strip at the bottom sets a line of text with the font as you edit. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
 
+The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The expand button (or picking a sample) grows the preview into a **specimen view** over the glyph canvas, wrapping the text to the view's width. Set its size in the bar, or Ctrl+wheel to zoom. Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
+
 ## Working in Illustrator
 
 The JSON file is the font. Illustrator is for drawing, and SVG is how shapes move between the two.
@@ -155,13 +152,16 @@ Import only reads the `char-` layers, so the reference layers can be edited, hid
 
 ```
 src/
-  index.html          Typesetter UI: canvas + settings panel
+  index.html          Typesetter UI
   editor.html         Editor UI
-  js/main.js          Typesetter: rendering, export, sample texts
-  js/editor.js        Editor: tools, glyph grid, inspector, preview, saving
+  js/typesetter.js    Typesetter: text boxes, page, plot, save/open SVG
+  js/editor.js        Editor: tools, glyph grid, inspector, preview, specimen, saving
   js/gregfont.js      Font format: load/save, text layout, Paper.js glyphs, SVG import
-  style/main.css, style/editor.css
-  libs/               jQuery 3.1.1 (typesetter), Paper.js 0.12.18 core (vendored)
+  js/ui.js            Shared UI: menus, draggable number fields, tips, theme, folds
+  js/samples.js       Sample texts for the editor's specimen view
+  style/base.css      Shared look: colour tokens (both themes), controls, menus
+  style/editor.css, style/typesetter.css
+  libs/               Paper.js 0.12.18 core (vendored)
   fonts/
     fonts.json        Which fonts to load, in dropdown order
     fonts.js          Generated copy of all fonts, for pages opened from disk
@@ -177,18 +177,13 @@ textSample*.txt       Scratch character sets for testing
 
 Editor:
 
-- Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/editor.css`.
-- Restyle the typesetter page to match the editor.
+- Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/base.css`.
 
 Fonts:
 
 - Troutman's guides are off (x-height 20.1, descender −40.2). They were guessed from the letter shapes on import. Set them by hand in Font settings → Guides and save.
 
-From the notes in `main.js`:
+Typesetter:
 
-- Copy SVG to clipboard
-- Text alignment (left / right / center)
-- Force upper or lower case
-- Color
-- Effects. There's a stub `effects()` hook with experiments that draw segment points and curve normals.
-- Move effects and sample texts into a separate dev panel
+- Effects (the old typesetter had a stub for drawing segment points and curve normals).
+- Text on a path, and named alternate glyphs in text.
