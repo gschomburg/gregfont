@@ -44,7 +44,8 @@
 		clipboard: null,
 		kernPick: null,
 		autoSlice: false,  // new strokes cut what they cross
-		added: []          // glyphs added from the sidebar but not drawn yet
+		added: [],         // glyphs added from the sidebar but not drawn yet
+		shapeKind: 'ellipse' // what the shape tool draws: ellipse, rect or line
 	};
 
 	// ---------------------------------------------------------------- setup
@@ -374,18 +375,40 @@
 			b.classList.toggle('active', b.dataset.tool === name);
 		});
 		wrap.className = 'tool-' + name;
-		$('help').textContent = TOOL_HELP[name] + ' \u00b7 wheel zooms \u00b7 Space-drag pans';
+		$('shape-options').hidden = name !== 'shape';
+		var help = name === 'shape' ? SHAPE_HELP[state.shapeKind] : TOOL_HELP[name];
+		$('help').textContent = help + ' \u00b7 wheel zooms \u00b7 Space-drag pans';
 		clearHover();
 		updatePathStyleRow();
+	}
+
+	var SHAPE_HELP = {
+		ellipse: 'Drag out an ellipse \u00b7 Shift for a circle',
+		rect: 'Drag out a rectangle \u00b7 Shift for a square',
+		line: 'Drag a straight line \u00b7 Shift for 45\u00b0 steps'
+	};
+
+	var SHAPE_ICONS = {
+		ellipse: '<svg viewBox="0 0 20 20"><ellipse cx="10" cy="10" rx="6.5" ry="6" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>',
+		rect: '<svg viewBox="0 0 20 20"><rect x="3.5" y="4.5" width="13" height="11" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>',
+		line: '<svg viewBox="0 0 20 20"><path d="M4 16 16 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+	};
+
+	// Pick what the shape tool draws, and switch to it.
+	function useShape(kind) {
+		state.shapeKind = kind;
+		$('shape-tool').innerHTML = SHAPE_ICONS[kind];
+		document.querySelectorAll('#shape-options [data-shape]').forEach(function (b) {
+			b.classList.toggle('active', b.dataset.shape === kind);
+		});
+		setTool('shape');
 	}
 
 	var TOOL_HELP = {
 		select: 'Click or drag a box to pick whole paths \u00b7 drag to move, Alt-drag to copy \u00b7 box handles scale, just outside a corner rotates \u00b7 pink lines set spacing',
 		direct: 'Click points, or a line to pick one segment \u00b7 Shift adds \u00b7 drag handles to reshape (Alt makes a corner) \u00b7 double-click a point for curve/corner, a line to add a point',
 		pen: 'Click for corners, drag for curves \u00b7 click the first point to close, or the end of another path to join \u00b7 Enter or Esc finishes',
-		ellipse: 'Drag out an ellipse \u00b7 Shift for a circle',
-		rect: 'Drag out a rectangle \u00b7 Shift for a square',
-		line: 'Drag a straight line \u00b7 Shift for 45\u00b0 steps',
+
 		anchor: 'Drag from a point to pull out curve handles \u00b7 click a point to make it a corner \u00b7 drag a handle to move it on its own',
 		scissors: 'Click a path to cut it there \u00b7 drag a line across paths to cut everything it crosses (Shift: 45\u00b0 steps)'
 	};
@@ -725,7 +748,7 @@
 		else if (state.tool === 'pen') penDown(e);
 		else if (state.tool === 'scissors') drag = { mode: 'knife', start: e.point };
 		else if (state.tool === 'anchor') anchorDown(e);
-		else if (SHAPE_TOOLS.indexOf(state.tool) >= 0) drag = { mode: 'shape', kind: state.tool, start: snap(e.point) };
+		else if (state.tool === 'shape') drag = { mode: 'shape', kind: state.shapeKind, start: snap(e.point) };
 	};
 
 	tool.onMouseDrag = function (e) {
@@ -839,8 +862,6 @@
 		}
 		drag = null;
 	};
-
-	var SHAPE_TOOLS = ['ellipse', 'rect', 'line'];
 
 	// A shape dragged from a to b. Shift makes a circle or square, or keeps a
 	// line to 45 degree steps. Returns null if it's too small to keep.
@@ -1606,9 +1627,9 @@
 			case 'v': setTool('select'); break;
 			case 'a': setTool('direct'); break;
 			case 'p': setTool('pen'); break;
-			case 'e': setTool('ellipse'); break;
-			case 'm': setTool('rect'); break;
-			case '\\': setTool('line'); break;
+			case 'e': useShape('ellipse'); break;
+			case 'm': useShape('rect'); break;
+			case '\\': useShape('line'); break;
 			case 'c': setTool(e.shiftKey ? 'anchor' : 'scissors'); break;
 			case 'x': sliceSelection(); break;
 			case 'r': rotateSelection(e.shiftKey ? -90 : 90); break;
@@ -2412,6 +2433,16 @@
 		buildMenus();
 		$('snap').addEventListener('change', function () { state.snap = this.checked; });
 		$('auto-slice').addEventListener('change', function () { state.autoSlice = this.checked; });
+		document.querySelectorAll('#shape-options [data-shape]').forEach(function (b) {
+			b.classList.toggle('active', b.dataset.shape === state.shapeKind);
+			b.addEventListener('click', function () { useShape(b.dataset.shape); });
+		});
+		// remember whether the guides section is open
+		var guides = $('guides-section');
+		try { guides.open = localStorage.getItem('gregfont-editor-guides-open') === '1'; } catch (e) { /* ignore */ }
+		guides.addEventListener('toggle', function () {
+			try { localStorage.setItem('gregfont-editor-guides-open', guides.open ? '1' : '0'); } catch (e) { /* ignore */ }
+		});
 		$('grid-size').addEventListener('change', function () {
 			var v = parseFloat(this.value);
 			if (v > 0) { state.grid = v; drawGuides(); }
