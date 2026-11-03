@@ -2433,7 +2433,92 @@
 				b.classList.toggle('active', b.dataset.value === (pair[1] || ''));
 			});
 		});
+		updatePositionPanel();
 		drawSelection();
+	}
+
+	// --- Position panel: where the selection is, in font units (y up)
+
+	// The selection's geometry: one point, or a box. Whole paths are measured
+	// by their full curve extent; loose points by the box around them.
+	function selectionGeometry() {
+		var segs = movingSegments();
+		if (!segs.length) return null;
+		if (segs.length === 1) return { single: true, point: segs[0].point.clone(), count: 1 };
+		var moving = new Set(segs), paths = selectedPaths();
+		var whole = paths.length && paths.every(function (p) {
+			return p.segments.every(function (s) { return moving.has(s); });
+		});
+		var b = null;
+		if (whole) paths.forEach(function (p) { b = b ? b.unite(p.bounds) : p.bounds.clone(); });
+		else b = pointBounds(segs);
+		return { single: false, box: b, whole: whole, paths: paths.length, count: segs.length };
+	}
+
+	function updatePositionPanel() {
+		var g = selectionGeometry();
+		var fields = { x: $('pos-x'), y: $('pos-y'), w: $('pos-w'), h: $('pos-h') };
+		Object.keys(fields).forEach(function (k) { fields[k].disabled = !g; });
+		$('pos-size').hidden = !!(g && g.single);
+		var kind = !g ? 'nothing selected'
+			: g.single ? 'point'
+			: g.whole ? g.paths + ' path' + (g.paths === 1 ? '' : 's') + ' · center'
+			: g.count + ' points · center';
+		$('position-kind').textContent = kind;
+		var vals = !g ? { x: '', y: '', w: '', h: '' }
+			: g.single ? { x: round(g.point.x, 0.01), y: round(-g.point.y, 0.01), w: '', h: '' }
+			: { x: round(g.box.center.x, 0.01), y: round(-g.box.center.y, 0.01), w: round(g.box.width, 0.01), h: round(g.box.height, 0.01) };
+		Object.keys(fields).forEach(function (k) {
+			var input = fields[k];
+			// don't fight the field being typed in or dragged
+			if (document.activeElement === input || input.closest('.scrubbing')) return;
+			input.value = vals[k];
+		});
+	}
+
+	// Move (x, y) or scale around the center (w, h) to the given value.
+	function capturePosition() {
+		var g = selectionGeometry();
+		return g ? { g: g, origs: movingSegments().map(origOf) } : null;
+	}
+
+	function applyPosition(key, value, base) {
+		if (!base || isNaN(value)) return;
+		var g = base.g, m = new P.Matrix();
+		var cx = g.single ? g.point.x : g.box.center.x;
+		var cy = g.single ? g.point.y : g.box.center.y;   // canvas y (down)
+		if (key === 'x') m.translate(value - cx, 0);
+		else if (key === 'y') m.translate(0, -value - cy);
+		else if (g.single) return;
+		else if (key === 'w') {
+			if (g.box.width < EPS || value <= 0) { setStatus('Can’t scale something with no width', true); return; }
+			m.scale(value / g.box.width, 1, g.box.center);
+		} else if (key === 'h') {
+			if (g.box.height < EPS || value <= 0) { setStatus('Can’t scale something with no height', true); return; }
+			m.scale(1, value / g.box.height, g.box.center);
+		}
+		applyMatrix(base.origs, m);
+		commit();
+	}
+
+	function bindPositionFields() {
+		var drag = null;
+		['x', 'y', 'w', 'h'].forEach(function (key) {
+			var input = $('pos-' + key);
+			input.addEventListener('scrubstart', function () { beginEdit(); drag = capturePosition(); });
+			input.addEventListener('scrub', function () { applyPosition(key, parseFloat(input.value), drag); });
+			input.addEventListener('change', function () {
+				var v = parseFloat(input.value);
+				if (drag) {
+					applyPosition(key, v, drag);
+					drag = null;
+					endEdit();
+				} else {
+					edit(function () { applyPosition(key, v, capturePosition()); });
+				}
+				updatePositionPanel();
+			});
+		});
 	}
 
 	function updateFontMeta() {
@@ -3058,6 +3143,7 @@
 			});
 		});
 		// bearings: one undo step for a whole drag
+		bindPositionFields();
 		['lsb', 'rsb'].forEach(function (key) {
 			var input = $('glyph-' + key);
 			input.addEventListener('scrubstart', function () { beginEdit(); });

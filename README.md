@@ -96,7 +96,7 @@ Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font and a 
 The layout follows desktop drawing apps:
 
 - **The left panel is the font**: the font picker, the font's settings (name, cell size, guides, typesetter defaults, default stroke ends and corners) and the glyph grid. Font settings and Guides fold away, and remember whether they were left open.
-- **The right panel is the selected glyph**: a preview with its code point and Illustrator layer name, its side bearings, end caps and corners for the selected paths, its stroke order (for plotters), and the kerning pairs it's part of. Clear and Delete are at the bottom.
+- **The right panel is the selected glyph**: a preview with its code point and Illustrator layer name, its side bearings, the selection's position (X / Y of a single point; center X / Y plus width and height for anything bigger, all editable: X / Y move it, W / H scale it around its center), end caps and corners for the selected paths, its stroke order (for plotters), and the kerning pairs it's part of. Clear and Delete are at the bottom.
 - **Tools** are in the tab on the left edge of the canvas: Select, Direct select, Pen, Anchor point, Shapes and Cut. A hint line at the bottom of the canvas explains the current tool.
 - **Commands** are in the menus at the top: **File** (new, import and export SVG, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) and **View** (fit, snap, show or hide the grid, guides and cell, light mode). Each menu item shows its keyboard shortcut.
 - **Options** for drawing (snap, grid size, on-screen stroke width, auto-slice, and which shape the Shapes tool draws) are in the bar above the canvas.

@@ -138,6 +138,18 @@
 				</div>
 			</section>
 
+			<section id="position-row">
+				<div class="panel-heading">Position <span class="hint" id="position-kind"></span></div>
+				<div class="field-pair">
+					<label class="field" data-scrub="x" title="Across, in font units: drag sideways or type"><span class="field-label">X</span><input type="number" id="pos-x" step="0.5"></label>
+					<label class="field" data-scrub="y" title="Up from the baseline, in font units: drag up or down, or type"><span class="field-label">Y</span><input type="number" id="pos-y" step="0.5"></label>
+				</div>
+				<div class="field-pair" id="pos-size">
+					<label class="field" data-scrub="x" title="Width: drag sideways or type (scales around the center)"><span class="field-label">W</span><input type="number" id="pos-w" step="0.5" min="0.5"></label>
+					<label class="field" data-scrub="x" title="Height: drag sideways or type (scales around the center)"><span class="field-label">H</span><input type="number" id="pos-h" step="0.5" min="0.5"></label>
+				</div>
+			</section>
+
 			<section id="path-style-row">
 				<div class="panel-heading">Selected path</div>
 				<div class="style-grid">

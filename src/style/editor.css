@@ -291,6 +291,9 @@ details.fold.sub > summary { font-size: 11px; font-weight: 500; letter-spacing: 
 #glyph-title { margin: 0; font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
 .style-grid { display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: center; gap: 8px; }
 #path-style-row.disabled .style-grid { opacity: .5; }
+#pos-size[hidden] { display: none; }
+#position-row .field:has(input:disabled) { opacity: .5; }
+#position-row .panel-heading .hint { margin-left: 4px; }
 #path-style-row.disabled .panel-heading::after { content: ' · none selected'; text-transform: none; letter-spacing: 0; font-weight: 400; }
 .kern-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 28px; align-items: center; gap: 6px; }
 .kern-row .pair { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 14px; }
