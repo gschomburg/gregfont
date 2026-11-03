@@ -59,7 +59,8 @@
 		entry: null,
 		ch: 'a',
 		tool: 'select',
-		snap: true,
+		snap: true,       // snap to the grid
+		snapPath: true,   // snap onto other paths' points and lines
 		grid: 5,
 		strokeWidth: 2,
 		undo: [],
@@ -767,10 +768,12 @@
 		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(-e.point.y, 0.1);
 		if (state.tool === 'pen' && penPath) {
 			if (rubber) rubber.remove();
-			rubber = line(penPath.lastSegment.point, snap(e.point), COLORS.overlay, true, overlayLayer);
+			rubber = line(penPath.lastSegment.point, snapTarget(e.point, [penPath]).point, COLORS.overlay, true, overlayLayer);
 		}
 		clearHover();
 		if (drag) return;
+		// show where the pen or a shape would snap onto a path
+		if (state.tool === 'pen' || state.tool === 'shape') hover = snapMarker(snapTarget(e.point, penPath ? [penPath] : null));
 		var cursor = '';
 		if (state.tool === 'select' || state.tool === 'direct') {
 			var box = hitBox(e.point);
@@ -793,7 +796,7 @@
 		else if (state.tool === 'pen') penDown(e);
 		else if (state.tool === 'scissors') drag = { mode: 'knife', start: e.point };
 		else if (state.tool === 'anchor') anchorDown(e);
-		else if (state.tool === 'shape') drag = { mode: 'shape', kind: state.shapeKind, start: snap(e.point) };
+		else if (state.tool === 'shape') drag = { mode: 'shape', kind: state.shapeKind, start: snapTarget(e.point).point };
 	};
 
 	tool.onMouseDrag = function (e) {
@@ -847,7 +850,10 @@
 			drag.segment.handleIn = h.multiply(-1);
 		} else if (drag.mode === 'shape') {
 			if (drag.preview) drag.preview.remove();
-			drag.preview = shapeFrom(drag.kind, drag.start, p, mod(e, 'shift'));
+			if (drag.marker) { drag.marker.remove(); drag.marker = null; }
+			var end = snapTarget(e.point);
+			drag.marker = snapMarker(end);
+			drag.preview = shapeFrom(drag.kind, drag.start, end.point, mod(e, 'shift'));
 			if (drag.preview) {
 				pathStyle(drag.preview);
 				drag.preview.strokeColor = COLORS.overlay;
@@ -878,7 +884,7 @@
 			updatePathStyleRow();
 		} else if (drag.mode === 'shape') {
 			if (drag.preview) drag.preview.remove();
-			var shape = shapeFrom(drag.kind, drag.start, snap(e.point), mod(e, 'shift'));
+			var shape = shapeFrom(drag.kind, drag.start, snapTarget(e.point).point, mod(e, 'shift'));
 			if (shape) {
 				edit(function () {
 					shape.data.style = {};
@@ -1073,10 +1079,12 @@
 		var segs = movingSegments(), moving = new Set(segs);
 		drag.segments = segs;
 		drag.starts = segs.map(function (s) { return s.point.clone(); });
-		// other points to snap onto
+		// other points, and lines of paths that aren't moving, to snap onto
 		drag.targets = [];
+		drag.staticPaths = [];
 		editablePaths().forEach(function (p) {
 			p.segments.forEach(function (s) { if (!moving.has(s)) drag.targets.push(s.point.clone()); });
+			if (p.segments.length > 1 && !p.segments.some(function (s) { return moving.has(s); })) drag.staticPaths.push(p);
 		});
 	}
 
@@ -1088,15 +1096,30 @@
 		}
 		var raw = e.point.subtract(drag.click);
 		var delta = snap(drag.anchorStart.add(raw)).subtract(drag.anchorStart);
-		// snap onto nearby points so pieces line up for joining
+		// snap onto nearby points (so pieces line up for joining), else onto lines
 		var best = null, tol = px(8);
-		drag.starts.forEach(function (st) {
-			var q = st.add(raw);
-			drag.targets.forEach(function (t) {
-				var d = t.getDistance(q);
-				if (d < tol && (!best || d < best.d)) best = { d: d, delta: t.subtract(st), at: t };
+		if (state.snapPath) {
+			drag.starts.forEach(function (st) {
+				var q = st.add(raw);
+				drag.targets.forEach(function (t) {
+					var d = t.getDistance(q);
+					if (d < tol && (!best || d < best.d)) best = { d: d, delta: t.subtract(st), at: t };
+				});
 			});
-		});
+			// lines too, when only a few points are moving
+			if (!best && drag.starts.length <= 20) {
+				var ctol = px(6);
+				drag.starts.forEach(function (st) {
+					var q = st.add(raw);
+					drag.staticPaths.forEach(function (p) {
+						var loc = p.getNearestLocation(q);
+						if (loc && loc.distance < ctol && (!best || loc.distance < best.d)) {
+							best = { d: loc.distance, delta: loc.point.subtract(st), at: loc.point };
+						}
+					});
+				});
+			}
+		}
 		if (drag.marker) { drag.marker.remove(); drag.marker = null; }
 		if (best) {
 			delta = best.delta;
@@ -1482,7 +1505,7 @@
 	// pen
 
 	function penDown(e) {
-		var p = snap(e.point);
+		var p = snapTarget(e.point, penPath ? [penPath] : null).point;
 		var tol = px(7);
 		if (!penPath) {
 			beginEdit();
@@ -1718,7 +1741,7 @@
 			case 'x': sliceSelection(); break;
 			case 'r': rotateSelection(e.shiftKey ? -90 : 90); break;
 			case 'h': flipSelection(e.shiftKey); break;
-			case 'g': setSnap(!state.snap); break;
+			case 'g': if (e.shiftKey) setSnapPath(!state.snapPath); else setSnap(!state.snap); break;
 			case 'o': setShowOrder(!state.show.order); break;
 			case 'f': fit(); break;
 			case 'enter': finishPen(); break;
@@ -1742,6 +1765,46 @@
 		state.snap = on;
 		$('snap').checked = on;
 	}
+
+	function setSnapPath(on) {
+		state.snapPath = on;
+		$('snap-path').checked = on;
+	}
+
+	// Where a point placed at `raw` should go: onto another path's point or
+	// line when Snap to paths is on and one is close, otherwise the grid (when
+	// Snap to grid is on). `exclude` lists paths to ignore. Returns
+	// { point, kind } with kind 'point', 'path', 'grid' or null.
+	function snapTarget(raw, exclude) {
+		if (state.snapPath) {
+			var best = null, tol = px(8);
+			editablePaths().forEach(function (p) {
+				if (exclude && exclude.indexOf(p) >= 0) return;
+				p.segments.forEach(function (s) {
+					var d = s.point.getDistance(raw);
+					if (d < tol && (!best || d < best.d)) best = { d: d, point: s.point.clone(), kind: 'point' };
+				});
+			});
+			if (best) return best;
+			var ctol = px(6);
+			editablePaths().forEach(function (p) {
+				if (exclude && exclude.indexOf(p) >= 0 || p.segments.length < 2) return;
+				var loc = p.getNearestLocation(raw);
+				if (loc && loc.distance < ctol && (!best || loc.distance < best.d)) best = { d: loc.distance, point: loc.point.clone(), kind: 'path' };
+			});
+			if (best) return best;
+		}
+		return { point: snap(raw), kind: state.snap ? 'grid' : null };
+	}
+
+	// a ring showing where a point will snap onto a path
+	function snapMarker(target) {
+		if (!target || (target.kind !== 'point' && target.kind !== 'path')) return null;
+		var m = marker(target.point, overlayLayer, true);
+		m.strokeColor = COLORS.bearing;
+		return m;
+	}
+
 
 	// ------------------------------------------------------- stroke order
 	//
@@ -2226,6 +2289,7 @@
 			{ label: 'Fit glyph', key: 'F', run: fit },
 			'-',
 			{ label: 'Snap to grid', key: 'G', run: function () { setSnap(!state.snap); }, checked: function () { return state.snap; } },
+			{ label: 'Snap to paths', key: 'Shift+G', run: function () { setSnapPath(!state.snapPath); }, checked: function () { return state.snapPath; } },
 			'-',
 			{ label: 'Show grid', key: "Ctrl+'", run: function () { toggleShow('grid'); }, checked: function () { return state.show.grid; } },
 			{ label: 'Show guides', key: 'Ctrl+;', run: function () { toggleShow('guides'); }, checked: function () { return state.show.guides; } },
@@ -3091,6 +3155,7 @@
 		});
 		buildMenus();
 		$('snap').addEventListener('change', function () { state.snap = this.checked; });
+		$('snap-path').addEventListener('change', function () { state.snapPath = this.checked; });
 		$('auto-slice').addEventListener('change', function () { state.autoSlice = this.checked; });
 		document.querySelectorAll('#shape-options [data-shape]').forEach(function (b) {
 			b.classList.toggle('active', b.dataset.shape === state.shapeKind);

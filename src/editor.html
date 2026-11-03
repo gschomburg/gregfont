@@ -71,7 +71,11 @@
 		</aside>
 
 		<div id="optionsbar">
-			<label class="switch-label" title="Snap points to the grid (G)"><input type="checkbox" class="switch" id="snap" checked> Snap</label>
+			<span class="snap-group">
+				<span class="field-label">Snap</span>
+				<label class="switch-label" title="Snap to the grid (G)"><input type="checkbox" class="switch" id="snap" checked> Grid</label>
+				<label class="switch-label" title="Snap onto other paths' points and lines (Shift+G)"><input type="checkbox" class="switch" id="snap-path" checked> Paths</label>
+			</span>
 			<label class="field compact" data-scrub="x"><span class="field-label">Grid</span><input type="number" id="grid-size" value="5" min="0.5" step="0.5"></label>
 			<label class="field compact" data-scrub="x" title="Stroke width on the canvas and preview (doesn't change the font)"><span class="field-label">Stroke</span><input type="number" id="stroke-width" value="2" min="0.1" step="0.5"></label>
 			<label class="switch-label" title="New strokes (pen and shapes) cut, and get cut by, whatever they cross"><input type="checkbox" class="switch" id="auto-slice"> Auto-slice</label>

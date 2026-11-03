@@ -241,6 +241,7 @@ details.fold.sub > summary { font-size: 11px; font-weight: 500; letter-spacing: 
 	background: var(--panel-2); color: var(--muted); overflow: hidden;
 }
 #shape-options { display: flex; align-items: center; }
+.snap-group { display: flex; align-items: center; gap: 12px; }
 #shape-options[hidden] { display: none; }
 #cursor-pos { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: nowrap; }
 
