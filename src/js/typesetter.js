@@ -927,11 +927,20 @@
 		$('t-mono').checked = !!b.mono;
 		setSegmented('t-align', b.align);
 		setSegmented('t-case', b.textCase);
+		var preset = false;
 		document.querySelectorAll('#t-colours .swatch-button').forEach(function (btn) {
 			btn.style.background = screenColour(btn.dataset.colour);   // as the page shows it
-			btn.classList.toggle('active', btn.dataset.colour.toLowerCase() === String(b.colour).toLowerCase());
+			var on = btn.dataset.colour.toLowerCase() === String(b.colour).toLowerCase();
+			btn.classList.toggle('active', on);
+			preset = preset || on;
 		});
-		$('t-colour').value = /^#[0-9a-f]{6}$/i.test(b.colour) ? b.colour : '#141414';
+		// a colour of your own fills the + circle and shows as picked
+		var pick = $('t-colour').parentNode;
+		pick.classList.toggle('custom', !preset);
+		pick.classList.toggle('active', !preset);
+		pick.style.background = preset ? '' : screenColour(b.colour);
+		pick.title = preset ? 'Pick any colour' : 'Your colour ' + b.colour + ' (click to change)';
+		if (document.activeElement !== $('t-colour')) $('t-colour').value = /^#[0-9a-f]{6}$/i.test(b.colour) ? b.colour : '#141414';
 		['t-x', 't-y', 't-w', 't-rot'].forEach(function (id) { $(id).disabled = !sel; });
 		setField('t-x', sel ? Math.round(sel.x) : '');
 		setField('t-y', sel ? Math.round(sel.y) : '');
@@ -1043,9 +1052,20 @@
 			btn.addEventListener('click', function () { changeSetting(function (b) { b.colour = c; }); });
 			$('t-colours').insertBefore(btn, $('t-colours').lastElementChild);
 		});
+		// the colour applies live as you pick (the picker has no OK button);
+		// one pick is one undo step
+		var picking = false;
+		$('t-colour').addEventListener('input', function () {
+			var c = this.value;
+			if (!picking && selectedBox()) pushUndo();
+			picking = true;
+			changeSetting(function (b) { b.colour = c; }, true);
+		});
 		$('t-colour').addEventListener('change', function () {
 			var c = this.value;
-			changeSetting(function (b) { b.colour = c; });
+			if (!picking && selectedBox()) pushUndo();
+			picking = false;
+			changeSetting(function (b) { b.colour = c; }, true);
 		});
 
 		// page

@@ -35,6 +35,9 @@ body {
 .colour-row .swatch-button.active { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
 .colour-pick { position: relative; width: 22px; height: 22px; border-radius: 50%; border: 1px dashed var(--muted); overflow: hidden; cursor: pointer; }
 .colour-pick input { position: absolute; inset: -6px; width: 34px; height: 34px; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.colour-pick.custom { border-style: solid; border-color: var(--line-2); }
+.colour-pick.active { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+.colour-pick.custom::after { content: ''; }
 .colour-pick::after { content: '+'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; pointer-events: none; }
 #type-panel .switch-label { font-size: 12px; }
 
