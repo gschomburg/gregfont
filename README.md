@@ -179,6 +179,10 @@ Editor:
 - Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/editor.css`.
 - Restyle the typesetter page to match the editor.
 
+Fonts:
+
+- Troutman's guides are off (x-height 20.1, descender −40.2). They were guessed from the letter shapes on import. Set them by hand in Font settings → Guides and save.
+
 From the notes in `main.js`:
 
 - Copy SVG to clipboard
