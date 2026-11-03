@@ -2248,6 +2248,17 @@
 			opt.textContent = entry.font.name + (entry.dirty ? ' *' : '');
 			select.appendChild(opt);
 		});
+		// ways to start a font, at the bottom of the list
+		var sep = document.createElement('option');
+		sep.disabled = true;
+		sep.textContent = '────────';
+		select.appendChild(sep);
+		[['new', '+ New font'], ['new-svg', '+ New font from SVG…']].forEach(function (pair) {
+			var opt = document.createElement('option');
+			opt.value = pair[0];
+			opt.textContent = pair[1];
+			select.appendChild(opt);
+		});
 		select.value = state.entries.indexOf(state.entry);
 		document.title = (state.entry && state.entry.dirty ? '* ' : '') + 'gregfont editor';
 	}
@@ -2292,7 +2303,11 @@
 		});
 		state.ch = 'a';
 		openEntry(addEntry(f, null));
-		setStatus('New font. Draw some glyphs, then Save.');
+		setStatus('New font: name it, draw some glyphs, then Save.');
+		// straight to naming it
+		$('font-settings').open = true;
+		$('font-name').focus();
+		$('font-name').select();
 	}
 
 	// what the hidden file input is choosing a file for: 'new' or 'update'
@@ -2603,7 +2618,13 @@
 		});
 
 		$('font-select').addEventListener('change', function () {
-			openEntry(state.entries[Number(this.value)]);
+			var v = this.value;
+			if (v === 'new' || v === 'new-svg') {
+				this.value = state.entries.indexOf(state.entry);   // until the new font exists
+				if (v === 'new') newFont(); else chooseSVG('new');
+				return;
+			}
+			openEntry(state.entries[Number(v)]);
 		});
 		$('import-file').addEventListener('change', function () {
 			if (this.files[0]) importSVG(this.files[0]);

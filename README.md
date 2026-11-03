@@ -171,6 +171,11 @@ textSample*.txt       Scratch character sets for testing
 
 ## Ideas / TODO
 
+Editor:
+
+- Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/editor.css`.
+- Restyle the typesetter page to match the editor.
+
 From the notes in `main.js`:
 
 - Copy SVG to clipboard
