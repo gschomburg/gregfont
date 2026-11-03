@@ -215,7 +215,7 @@ Editor:
 - Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/base.css`.
 - One stroke control instead of two. The glyph canvas has a Stroke field in its options bar and the preview has its own; there should be one, laid out the same way, next to the zoom controls on each.
 - Settle on one word for line thickness across both apps. The editor says "Stroke" (and "Strokes" for the default end and corner styles), the typesetter says "Pen", the code and README also say "stroke width" and "weight".
-- Onion skin: show other glyphs faintly behind the one being drawn (pick which, e.g. n and o behind an h) to match stems, curves and heights by eye, like having them side by side on an Illustrator board.
+- Context from the preview: draw the current glyph's neighbours from the preview text faintly on the canvas, where the text would put them (spacing and kerning applied). Working on A with "ABC" in the preview shows a ghost B to its right on the baseline, and moving a side bearing slides the neighbours live. Clicking a letter in the specimen would open it with that spot's neighbours around it, like zooming in to an isolation mode. Not tracing, just seeing the letter in context.
 - Scratch pad: a spot above the glyph grid that isn't a glyph but behaves like one. Paste pieces in, draw there, copy them back out later; a parts bin for shapes worth keeping. Saved with the font, never used in text or exports.
 
 Fonts:
