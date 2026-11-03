@@ -1253,11 +1253,17 @@
 	function start(list) {
 		fonts = list;
 		if (!fonts.length) { setStatus('No fonts found', true); return; }
-		fonts.forEach(function (f) {
-			var opt = document.createElement('option');
-			opt.value = f.file;
-			opt.textContent = GregFont.fontLabel(f.font);
-			$('font-select').appendChild(opt);
+		// grouped Final, Proof, Draft
+		GregFont.groupByStatus(fonts, function (f) { return f.font; }).forEach(function (group) {
+			var og = document.createElement('optgroup');
+			og.label = group.label;
+			group.items.forEach(function (f) {
+				var opt = document.createElement('option');
+				opt.value = f.file;
+				opt.textContent = GregFont.fontLabel(f.font);
+				og.appendChild(opt);
+			});
+			$('font-select').appendChild(og);
 		});
 		var saved = null;
 		try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { /* ignore */ }

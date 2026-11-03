@@ -3025,23 +3025,27 @@
 	function refreshFontSelect() {
 		var select = $('font-select');
 		select.innerHTML = '';
-		state.entries.forEach(function (entry, i) {
-			var opt = document.createElement('option');
-			opt.value = i;
-			opt.textContent = GregFont.fontLabel(entry.font) + (entry.dirty ? ' *' : '');
-			select.appendChild(opt);
+		// grouped Final, Proof, Draft, then ways to start a font
+		GregFont.groupByStatus(state.entries, function (e) { return e.font; }).forEach(function (group) {
+			var og = document.createElement('optgroup');
+			og.label = group.label;
+			group.items.forEach(function (entry) {
+				var opt = document.createElement('option');
+				opt.value = state.entries.indexOf(entry);
+				opt.textContent = GregFont.fontLabel(entry.font) + (entry.dirty ? ' *' : '');
+				og.appendChild(opt);
+			});
+			select.appendChild(og);
 		});
-		// ways to start a font, at the bottom of the list
-		var sep = document.createElement('option');
-		sep.disabled = true;
-		sep.textContent = '────────';
-		select.appendChild(sep);
-		[['new', '+ New font'], ['new-svg', '+ New font from SVG…']].forEach(function (pair) {
+		var start = document.createElement('optgroup');
+		start.label = 'New';
+		[['new', '+ New font'], ['new-svg', '+ New font from SVG…'], ['new-shapes', '+ New font from shapes…']].forEach(function (pair) {
 			var opt = document.createElement('option');
 			opt.value = pair[0];
 			opt.textContent = pair[1];
-			select.appendChild(opt);
+			start.appendChild(opt);
 		});
+		select.appendChild(start);
 		select.value = state.entries.indexOf(state.entry);
 		document.title = (state.entry && state.entry.dirty ? '* ' : '') + 'gregfont editor';
 	}
@@ -3426,9 +3430,9 @@
 
 		$('font-select').addEventListener('change', function () {
 			var v = this.value;
-			if (v === 'new' || v === 'new-svg') {
+			if (v === 'new' || v === 'new-svg' || v === 'new-shapes') {
 				this.value = state.entries.indexOf(state.entry);   // until the new font exists
-				if (v === 'new') newFont(); else chooseSVG('new');
+				if (v === 'new') newFont(); else chooseSVG(v === 'new-shapes' ? 'shapes' : 'new');
 				return;
 			}
 			openEntry(state.entries[Number(v)]);

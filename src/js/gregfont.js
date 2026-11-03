@@ -232,7 +232,20 @@
 		return STATUSES[s] ? s : 'final';
 	}
 
-	// "Bleeker (in progress)", or just the name when it's done
+	// Font lists group fonts by status in this order: final, proof, draft.
+	// items: anything; fontOf(item) gives its font. Returns the groups that
+	// have fonts in them, each in the items' own order: [{ status, label, items }].
+	function groupByStatus(items, fontOf) {
+		return ['final', 'proof', 'draft'].map(function (s) {
+			return {
+				status: s,
+				label: s.charAt(0).toUpperCase() + s.slice(1),
+				items: items.filter(function (it) { return statusOf(fontOf(it)) === s; })
+			};
+		}).filter(function (g) { return g.items.length; });
+	}
+
+	// "Bleeker (draft)", or just the name when it's final
 	function fontLabel(font) {
 		var s = statusOf(font);
 		return font.name + (s === 'final' ? '' : ' (' + STATUSES[s] + ')');
@@ -1088,6 +1101,7 @@
 		STATUSES: STATUSES,
 		statusOf: statusOf,
 		fontLabel: fontLabel,
+		groupByStatus: groupByStatus,
 		fontVersionText: fontVersionText,
 		shapesFromSVG: shapesFromSVG,
 		pathsFromSVG: pathsFromSVG,
