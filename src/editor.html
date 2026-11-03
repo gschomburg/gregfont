@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.2.0">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.2.0">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.2.1">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.2.1">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -126,7 +126,6 @@
 				<select id="preview-sample" title="What to set: your own text, or a sample"><option value="">Your text</option></select>
 				<label for="preview-text" class="visually-hidden">Preview text</label>
 				<input id="preview-text" value="Hamburgefonstiv HAMBURG 0123">
-				<label class="switch-label" title="For heavy strokes: stems that end on a guide line reach as far past it as round letters do. Preview only; the glyphs don't change."><input type="checkbox" class="switch" id="preview-extend"> Extend ends</label>
 				<label class="field compact" data-scrub="x" title="Stroke weight for the preview, in font units"><span class="field-label">Stroke</span><input type="number" id="preview-stroke" value="2" min="0.1" step="0.1"></label>
 				<div class="zoom-group specimen-only" role="group" aria-label="Specimen zoom">
 					<button type="button" class="icon-button" id="specimen-zoom-out" title="Zoom out (Ctrl+-)" aria-label="Zoom out">&minus;</button>
@@ -203,6 +202,7 @@
 					<label class="field" data-scrub="x" title="Left side bearing: drag sideways or type"><span class="field-label">Left</span><input type="number" id="glyph-lsb" step="0.5"></label>
 					<label class="field" data-scrub="x" title="Right side bearing: drag sideways or type"><span class="field-label">Right</span><input type="number" id="glyph-rsb" step="0.5"></label>
 				</div>
+				<label class="switch-label" title="See the typesetter's Extend ends to guides on the canvas and preview: stems ending on a guide line are lengthened by half the stroke, so at heavy weights they line up with round letters. View only; the glyph doesn't change."><input type="checkbox" class="switch" id="extend-ends"> Extend ends to guides</label>
 				<div class="sub-heading" id="kern-title">Kerning</div>
 				<div id="kerning-list"></div>
 				<form id="add-kern">
@@ -222,12 +222,12 @@
 			</div>
 		</aside>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.2.0"></script>
-		<script src="fonts/fonts.js?v=2.2.0"></script>
-		<script src="js/gregfont.js?v=2.2.0"></script>
-		<script src="js/version.js?v=2.2.0"></script>
-		<script src="js/ui.js?v=2.2.0"></script>
-		<script src="js/samples.js?v=2.2.0"></script>
-		<script src="js/editor.js?v=2.2.0"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.2.1"></script>
+		<script src="fonts/fonts.js?v=2.2.1"></script>
+		<script src="js/gregfont.js?v=2.2.1"></script>
+		<script src="js/version.js?v=2.2.1"></script>
+		<script src="js/ui.js?v=2.2.1"></script>
+		<script src="js/samples.js?v=2.2.1"></script>
+		<script src="js/editor.js?v=2.2.1"></script>
 	</body>
 </html>

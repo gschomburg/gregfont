@@ -82,6 +82,7 @@
 
 	var guidesLayer = P.project.activeLayer;
 	var glyphLayer = new P.Layer();
+	var extendLayer = new P.Layer();    // Extend ends to guides: the added lengths (view only)
 	var orderLayer = new P.Layer();     // stroke order: start points, direction, travel
 	var playLayer = new P.Layer();      // the Play animation
 	var selLayer = new P.Layer();       // selection highlights and transform box
@@ -348,8 +349,34 @@
 			label('lsb ' + glyph.lsb, [lx - px(4), vb.top + px(16)], COLORS.bearing, 'right');
 			label('rsb ' + glyph.rsb, [rx + px(4), vb.top + px(16)], COLORS.bearing);
 		}
+		drawExtensions();
 		drawOrder();
 		drawSelection();
+	}
+
+	// Extend ends to guides, on the canvas: draw the extra length on each
+	// stroke end that would be lengthened. Nothing is added to the glyph.
+	function drawExtensions() {
+		extendLayer.removeChildren();
+		var f = font();
+		if (!f || typeof previewView === 'undefined' || !previewView.extend) return;
+		editablePaths().forEach(function (p) {
+			if (p.closed || p.segments.length < 2) return;
+			var up = p.clone({ insert: false });
+			up.scale(1, -1, new P.Point(0, 0));          // the canvas is y-down, fonts are y-up
+			var added = [];
+			GregFont.extendEnds(P, f, up.getPathData(null, 4), state.strokeWidth, p.strokeCap, added);
+			added.forEach(function (a) {
+				var from = new P.Point(a.from[0], -a.from[1]), to = new P.Point(a.to[0], -a.to[1]);
+				// start a little inside the stroke so no hairline seam shows
+				var back = from.subtract(to).normalize(Math.min(0.5, state.strokeWidth / 4));
+				var l = new P.Path.Line({ from: from.add(back), to: to, insert: false });
+				l.strokeColor = COLORS.ink;
+				l.strokeWidth = state.strokeWidth;
+				l.strokeCap = 'butt';
+				extendLayer.addChild(l);
+			});
+		});
 	}
 
 	function bearingLines() {
@@ -1639,6 +1666,7 @@
 		// take keyboard focus from whatever button was clicked last, so
 		// Enter/Space don't press it again
 		wrap.focus({ preventScroll: true });
+		extendLayer.visible = false;   // the extended ends come back when the edit is done
 		if (e.button === 1 || (e.button === 0 && spaceDown)) {
 			e.preventDefault();
 			panning = { x: e.clientX, y: e.clientY };
@@ -1653,6 +1681,7 @@
 		drawGuides();
 	});
 	window.addEventListener('mouseup', function () {
+		if (!extendLayer.visible && !play) { extendLayer.visible = true; drawExtensions(); }
 		if (panning) { panning = null; wrap.classList.remove('panning'); }
 	});
 
@@ -2122,6 +2151,7 @@
 			pos = strokeEnd(p);
 		});
 		glyphLayer.visible = false;
+		extendLayer.visible = false;
 		selLayer.visible = false;
 		orderLayer.removeChildren();
 		play = { steps: steps, total: total, t0: performance.now(), raf: 0 };
@@ -2170,6 +2200,7 @@
 		play = null;
 		playLayer.removeChildren();
 		glyphLayer.visible = true;
+		extendLayer.visible = true;
 		selLayer.visible = true;
 		$('play-strokes').textContent = '▶ Play';
 		drawOrder();
@@ -3243,7 +3274,7 @@
 		}
 		function setStrokeWidth() {
 			var v = parseFloat(this.value);
-			if (v > 0) { state.strokeWidth = v; editablePaths().forEach(pathStyle); renderPreview(); }
+			if (v > 0) { state.strokeWidth = v; editablePaths().forEach(pathStyle); drawExtensions(); renderPreview(); }
 		}
 		['change', 'scrub'].forEach(function (type) {
 			$('grid-size').addEventListener(type, setGrid);
@@ -3348,10 +3379,11 @@
 			renderPreview();
 		});
 		$('preview-stroke').value = previewView.stroke;
-		$('preview-extend').checked = previewView.extend;
-		$('preview-extend').addEventListener('change', function () {
+		$('extend-ends').checked = previewView.extend;
+		$('extend-ends').addEventListener('change', function () {
 			previewView.extend = this.checked;
 			savePreviewView();
+			drawExtensions();
 			renderPreview();
 		});
 		['change', 'scrub'].forEach(function (type) {

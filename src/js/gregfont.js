@@ -290,9 +290,10 @@
 	 *
 	 * d is one path's data in font units (y up); width is the stroke width
 	 * in font units; cap is the end style used to draw it. Returns new path
-	 * data; the glyph itself never changes.
+	 * data; the glyph itself never changes. If `added` is an array, each
+	 * lengthening is pushed onto it as { from: [x, y], to: [x, y] }.
 	 */
-	function extendEnds(ps, font, d, width, cap) {
+	function extendEnds(ps, font, d, width, cap, added) {
 		var g = font.guides || {};
 		var guides = [0, g.xHeight, g.cap, g.descender].filter(function (v) { return typeof v === 'number' && isFinite(v); });
 		var tol = Math.max(font.cell.height * 0.03, 1);
@@ -325,6 +326,7 @@
 				} else {
 					path.insert(0, to);
 				}
+				if (len > 0 && added) added.push({ from: [pt.x, pt.y], to: [to.x, to.y] });
 				changed = true;
 			});
 		});
