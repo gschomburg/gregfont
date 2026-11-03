@@ -213,6 +213,8 @@ textSample*.txt       Scratch character sets for testing
 Editor:
 
 - Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/base.css`.
+- One stroke control instead of two. The glyph canvas has a Stroke field in its options bar and the preview has its own; there should be one, laid out the same way, next to the zoom controls on each.
+- Settle on one word for line thickness across both apps. The editor says "Stroke" (and "Strokes" for the default end and corner styles), the typesetter says "Pen", the code and README also say "stroke width" and "weight".
 
 Fonts:
 
