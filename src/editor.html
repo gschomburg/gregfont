@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>gregfont editor</title>
+		<link href="https://fonts.googleapis.com/css?family=Raleway:400,500,600" rel="stylesheet">
+		<link rel="stylesheet" type="text/css" href="style/editor.css">
+	</head>
+	<body>
+		<header id="topbar">
+			<span class="brand">gregfont editor</span>
+			<select id="font-select" title="Font"></select>
+			<button type="button" id="new-font">New</button>
+			<button type="button" id="import-svg" title="Import an Illustrator SVG with char-&lt;name&gt; layers">Import SVG</button>
+			<input type="file" id="import-file" accept=".svg,image/svg+xml" hidden>
+			<button type="button" id="save" class="primary" title="Save (Ctrl+S)">Save</button>
+			<span id="status"></span>
+			<a href="index.html" target="_blank" class="link">Typesetter ↗</a>
+		</header>
+
+		<aside id="glyph-list">
+			<div id="glyph-grid"></div>
+			<form id="add-glyph">
+				<input id="add-glyph-input" placeholder="Add glyph: é, ß, or a name" maxlength="32">
+				<button type="submit">+</button>
+			</form>
+		</aside>
+
+		<main id="stage">
+			<div id="toolbar">
+				<button type="button" class="tool" data-tool="select" title="Select / edit points (V)">Select <kbd>V</kbd></button>
+				<button type="button" class="tool" data-tool="pen" title="Pen: click for corners, drag for curves; click the first point to close, Enter/Esc to finish (P)">Pen <kbd>P</kbd></button>
+				<button type="button" class="tool" data-tool="ellipse" title="Ellipse: drag; Shift for a circle (E)">Ellipse <kbd>E</kbd></button>
+				<span class="sep"></span>
+				<label title="Snap points to the grid (G)"><input type="checkbox" id="snap" checked> Snap <kbd>G</kbd></label>
+				<label>Grid <input type="number" id="grid-size" value="5" min="0.5" step="0.5"></label>
+				<label>Stroke <input type="number" id="stroke-width" value="2" min="0.1" step="0.5"></label>
+				<span class="sep"></span>
+				<button type="button" id="undo" title="Undo (Ctrl+Z)">Undo</button>
+				<button type="button" id="redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+				<button type="button" id="fit" title="Fit glyph in view (F)">Fit <kbd>F</kbd></button>
+				<span id="cursor-pos"></span>
+			</div>
+			<div id="canvas-wrap" tabindex="-1">
+				<canvas id="editor-canvas"></canvas>
+				<div id="help">
+					Drag points and handles · double-click a point to toggle curve/corner · double-click a line to add a point ·
+					drag the pink lines to set spacing · arrows nudge (Shift = grid) · Delete removes · Ctrl+C/V copies paths between glyphs ·
+					wheel zooms · Space-drag pans
+				</div>
+			</div>
+		</main>
+
+		<aside id="inspector">
+			<section>
+				<h2>Glyph <span id="glyph-title"></span></h2>
+				<div class="row"><label>Left bearing</label><input type="number" id="glyph-lsb" step="0.5"></div>
+				<div class="row"><label>Right bearing</label><input type="number" id="glyph-rsb" step="0.5"></div>
+				<div class="row hint" id="glyph-layer-name"></div>
+				<div class="row" id="path-style-row">
+					<label>Selected path</label>
+					<select id="path-cap" title="End caps for the selected path(s)">
+						<option value="">caps: font</option><option value="butt">butt</option><option value="round">round</option><option value="square">square</option>
+					</select>
+					<select id="path-join" title="Joins for the selected path(s)">
+						<option value="">joins: font</option><option value="miter">miter</option><option value="round">round</option><option value="bevel">bevel</option>
+					</select>
+				</div>
+				<div class="row buttons">
+					<button type="button" id="clear-glyph">Clear</button>
+					<button type="button" id="delete-glyph">Delete glyph</button>
+				</div>
+			</section>
+
+			<section>
+				<h2>Font</h2>
+				<div class="row"><label>Name</label><input id="font-name"></div>
+				<div class="row"><label>File</label><span id="font-file" class="hint"></span></div>
+				<div class="row pair"><label>Cell</label><input type="number" id="cell-width" title="width"> × <input type="number" id="cell-height" title="height"></div>
+				<h3>Guides (y)</h3>
+				<div class="row"><label>Cap</label><input type="number" id="guide-cap" step="0.5"></div>
+				<div class="row"><label>x-height</label><input type="number" id="guide-xHeight" step="0.5"></div>
+				<div class="row"><label>Baseline</label><input type="number" id="guide-baseline" step="0.5"></div>
+				<div class="row"><label>Descender</label><input type="number" id="guide-descender" step="0.5"></div>
+				<h3>Stroke style</h3>
+				<div class="row"><label>Caps</label>
+					<select id="style-strokeCap"><option>butt</option><option>round</option><option>square</option></select></div>
+				<div class="row"><label>Joins</label>
+					<select id="style-strokeJoin"><option>miter</option><option>round</option><option>bevel</option></select></div>
+				<h3>Typesetter defaults</h3>
+				<div class="row"><label>Monospaced</label><input type="checkbox" id="spacing-monospaced"></div>
+				<div class="row"><label>Letter spacing</label><input type="number" id="spacing-letterSpacing"></div>
+				<div class="row"><label>Line height</label><input type="number" id="spacing-lineHeight"></div>
+			</section>
+
+			<section>
+				<h2>Kerning</h2>
+				<div id="kerning-list"></div>
+				<form id="add-kern" class="row pair">
+					<input id="kern-pair" placeholder="AV" maxlength="2">
+					<input type="number" id="kern-value" placeholder="-5" step="0.5">
+					<button type="submit">Add</button>
+				</form>
+				<div class="hint">Applied when text is set proportionally. Shift-click two letters in the preview to fill in a pair.</div>
+			</section>
+		</aside>
+
+		<footer id="preview-bar">
+			<div class="preview-controls">
+				<input id="preview-text" value="Hamburgefonstiv HAMBURG 0123">
+				<label><input type="checkbox" id="preview-mono"> Monospace</label>
+			</div>
+			<div id="preview"></div>
+		</footer>
+
+		<script src="libs/paper-core-0.12.18.min.js"></script>
+		<script src="js/gregfont.js"></script>
+		<script src="js/editor.js"></script>
+	</body>
+</html>

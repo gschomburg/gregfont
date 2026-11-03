@@ -109,3 +109,13 @@ button{
 #build.show{
 	display: block;
 }
+#editor-link{
+	display: block;
+	margin-top: 10px;
+	color: #bbbbbb;
+	text-align: center;
+	text-decoration: none;
+}
+#editor-link:hover{
+	color: white;
+}

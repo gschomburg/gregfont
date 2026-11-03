@@ -1,20 +1,23 @@
 # gregfont
 
-A small browser tool for setting text in a handful of custom single-line (stroke-based) fonts and exporting the result as SVG.
+Browser tools for making and using custom single-line (stroke-based) fonts:
 
-Each glyph is drawn as a stroked path in Illustrator, exported to SVG, and rendered on a canvas with [Paper.js](http://paperjs.org/). Because the letters are strokes rather than filled outlines, you can change stroke weight and end-cap style on the fly, which makes the output useful for plotters, laser/CNC engraving and other line-based work.
+- **Typesetter** (`index.html`): set text in any of the fonts and export it as SVG.
+- **Editor** (`editor.html`): draw glyphs with a bezier pen, set spacing and kerning, and import fonts drawn in Illustrator.
+
+Glyphs are stroked paths rendered with [Paper.js](http://paperjs.org/). Because the letters are strokes rather than filled outlines, you can change stroke weight and end-cap style on the fly, which makes the output useful for plotters, laser/CNC engraving and other line-based work.
 
 ## Running it
 
-There is no build step. Run the dev server from the repo root and open http://localhost:8000:
+There is no build step. Run the dev server from the repo root, then open http://localhost:8000 (typesetter) or http://localhost:8000/editor.html (editor):
 
 ```sh
 python tools/server.py        # or: python tools/server.py 8080
 ```
 
-It serves `src/` and also lets the browser save font files back into `src/fonts/` (used by the editor and importer). Any other static server pointed at `src/` works for just setting text. Opening `index.html` straight from disk won't work, because fonts are loaded with `fetch`.
+It serves `src/` and also lets the editor save font files straight into `src/fonts/`. Any other static server pointed at `src/` works for just setting text. Opening `index.html` straight from disk won't work, because fonts are loaded with `fetch`.
 
-## Using it
+## Typesetter
 
 Type into the text box at the bottom-left; the canvas re-renders as you type. For text over 600 characters, live updates stop and a ↻ button appears to rebuild manually.
 
@@ -73,33 +76,47 @@ Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json
 
 All reading, writing and importing lives in `src/js/gregfont.js`.
 
+## Editor
+
+Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font at the top, pick a glyph on the left, and draw on the canvas. The canvas works in font units, the same numbers stored in the font file.
+
+| Tool / action | How |
+| --- | --- |
+| **Select** <kbd>V</kbd> | Click a point or line to select it, Shift-click to add, drag on empty space to box-select. Drag points, handles or whole paths. Alt-drag a handle to break a smooth curve into a corner. |
+| **Pen** <kbd>P</kbd> | Click for corner points, click-drag for curves. Click the first point to close the path, or press Enter/Esc to finish it open. Clicking the end of an existing open path continues it. |
+| **Ellipse** <kbd>E</kbd> | Drag out an ellipse; Shift for a circle. |
+| Curve ↔ corner | Double-click a point. |
+| Add a point | Double-click a line. |
+| Spacing | Drag the pink dashed lines (left/right side bearings) or type the numbers in the Glyph panel. |
+| Nudge | Arrow keys move selected points 1 unit, Shift + arrows one grid step. |
+| Snap | <kbd>G</kbd> toggles snapping to the grid; set the grid size in the toolbar. |
+| Copy between glyphs | Ctrl+C copies the selected paths (or the whole glyph), Ctrl+V pastes into the current glyph. |
+| View | Mouse wheel zooms, Space-drag or middle-drag pans, <kbd>F</kbd> fits the glyph. |
+| Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
+| Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Without the dev server, the file is downloaded instead. |
+
+The **Font** panel sets the name, cell size, guide lines, default stroke caps and joins, and the typesetter defaults. Individual paths can override caps and joins from the **Glyph** panel. To add a glyph that isn't in the grid (é, ß, or a named alternate), type it into the box under the grid.
+
+The **preview** strip at the bottom sets a line of text with the font as you edit. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
+
 ## Adding a font from Illustrator
 
-The importer reads the same layout the original fonts were drawn in:
-
-1. Draw each glyph on a `W×H` artboard as its own group/layer named `char-<name>`. Letters and digits use themselves (`char-a`, `char-A`, `char-7`). Symbols use words (`char-dash`, `char-question`, `char-parenthleft`, …); see `GLYPH_NAMES` in `gregfont.js`. Any other name becomes a named extra glyph. Illustrator's `_1_`-style suffixes on duplicate names are ignored.
+1. Draw each glyph on a `W×H` artboard as its own group/layer named `char-<name>`. Letters and digits use themselves (`char-a`, `char-A`, `char-7`). Symbols use words (`char-dash`, `char-question`, `char-parenthleft`, …); the editor's Glyph panel shows the layer name for each glyph, and the full list is `GLYPH_NAMES` in `gregfont.js`. Any other name becomes a named extra glyph. Illustrator's `_1_`-style suffixes on duplicate names are ignored.
 2. Export to SVG. Any shapes work (paths, lines, polylines, polygons, circles), nested groups too, and stroke styles from Illustrator's CSS classes are kept.
-3. With the dev server running, open the typesetter and run this in the browser console:
-
-   ```js
-   const svg = await (await fetch('fonts/myfont_all_40x60.svg')).text(); // put the SVG in src/fonts/ first
-   const { font } = GregFont.fromSVG(paper, svg, { name: 'Myfont', monospaced: false });
-   await GregFont.saveToServer('myfont.json', font);  // writes src/fonts/myfont.json and adds it to fonts.json
-   ```
-
-   Side bearings default to 10% of the cell width, and the x-height and descender guides are measured from the `x` and descender letters.
-
-The editor (in progress) will make this a button and let you adjust spacing visually.
+3. In the editor, click **Import SVG** and pick the file. The font name comes from the file name (`myfont_all_40x60.svg` becomes "Myfont"). The cell size comes from the artboard. Side bearings start at 10% of the cell width, and the x-height and descender guides are measured from the `x` and descender letters.
+4. Check the spacing in the preview, adjust, and **Save**.
 
 ## Project layout
 
 ```
 src/
   index.html          Typesetter UI: canvas + settings panel
-  js/main.js          Typesetter: layout, rendering, export, sample texts
-  js/gregfont.js      Font format: load/save, Paper.js glyph building, SVG import
-  style/main.css
-  libs/               jQuery 3.1.1, Paper.js 0.10.2 (vendored)
+  editor.html         Editor UI
+  js/main.js          Typesetter: rendering, export, sample texts
+  js/editor.js        Editor: tools, glyph grid, inspector, preview, saving
+  js/gregfont.js      Font format: load/save, text layout, Paper.js glyphs, SVG import
+  style/main.css, style/editor.css
+  libs/               jQuery 3.1.1 (typesetter), Paper.js 0.12.18 core (vendored)
   fonts/
     fonts.json        Which fonts to load, in dropdown order
     <font>.json       Fonts

@@ -203,74 +203,40 @@ function renderType(stringText){
 	var s = getRenderSettings();
 	var font = FONTS[CURRENT_FONT_ID];
 	var layer = paper.project.activeLayer;
-	var margin = 10;
-	var xPos = margin;
-	var yPos = margin;
 	var scale = clamp(s.fontSize, .333, 2);
-	var wordGroup = null;
-	var prevChar = null;
 
-	for(var i=0; i<stringText.length; i++){
-		var ch = stringText[i];
-		if(ch == " "){
-			xPos += s.letterSpacing;
-			wordGroup = null;
-			prevChar = null;
-			if(s.wordWrap && xPos > s.wordWrapWidth/scale){
-				xPos = margin;
-				yPos += s.lineHeight;
-			}
-		}else if(ch == "\n"){
-			xPos = margin;
-			yPos += s.lineHeight;
-			wordGroup = null;
-			prevChar = null;
-		}else if(ch == "\t"){
-			//tab is equal to 4 spaces
-			xPos += s.letterSpacing*4;
-			wordGroup = null;
-			prevChar = null;
-		}else{
-			var found = GregFont.lookup(font, ch);
-			if(!found){
-				if(!missingWarned[font.name + ch]){
-					console.warn(font.name + " has no glyph for: " + ch);
-					missingWarned[font.name + ch] = true;
-				}
-				continue;
-			}
-			var template = GregFont.glyphItem(paper, font, found.char);
-			var glyph = template.clone({ insert: false });
-			if(s.strokeCap != 'default'){
-				glyph.strokeCap = s.strokeCap;
-			}
-			glyph.strokeWidth = s.strokeWeight;
-
-			if(wordGroup == null){
-				wordGroup = new paper.Group();
-				layer.addChild(wordGroup);
-			}
-			wordGroup.addChild(glyph);
-
-			if(s.monospace){
-				// place the cell as drawn
-				glyph.translate(new paper.Point(xPos, yPos));
-				xPos += s.letterSpacing;
-			}else{
-				// place the ink after the left side bearing (+ kerning with the previous letter)
-				var ink = template.bounds;
-				if(prevChar != null){
-					xPos += font.kerning[prevChar + found.char] || 0;
-				}
-				xPos += found.glyph.lsb;
-				glyph.translate(new paper.Point(xPos - ink.left, yPos));
-				xPos += ink.width + found.glyph.rsb + s.tracking;
-			}
-			prevChar = found.char;
-
-			effects(glyph);
+	var result = GregFont.layout(paper, font, stringText, {
+		monospace: s.monospace,
+		letterSpacing: s.letterSpacing,
+		lineHeight: s.lineHeight,
+		tracking: s.tracking,
+		wordWrap: s.wordWrap,
+		wrapWidth: s.wordWrapWidth / scale,
+		margin: 10
+	});
+	result.missing.forEach(function(ch){
+		if(!missingWarned[font.name + ch]){
+			console.warn(font.name + " has no glyph for: " + ch);
+			missingWarned[font.name + ch] = true;
 		}
-	}
+	});
+
+	var wordGroups = {};
+	result.glyphs.forEach(function(placed){
+		var glyph = GregFont.glyphItem(paper, font, placed.char).clone({ insert: false });
+		if(s.strokeCap != 'default'){
+			glyph.strokeCap = s.strokeCap;
+		}
+		glyph.strokeWidth = s.strokeWeight;
+		glyph.translate(new paper.Point(placed.x, placed.y));
+
+		if(!wordGroups[placed.word]){
+			wordGroups[placed.word] = new paper.Group();
+			layer.addChild(wordGroups[placed.word]);
+		}
+		wordGroups[placed.word].addChild(glyph);
+		effects(glyph);
+	});
 	//scale the type
 	layer.scale(scale, new paper.Point(0, 0));
 }

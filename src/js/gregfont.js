@@ -146,9 +146,81 @@
 		return group;
 	}
 
-	// Forget cached items, e.g. after a glyph is edited.
-	function clearCache(font) {
-		font._items = {};
+	// Forget cached items, e.g. after a glyph is edited. Pass `ch` to forget
+	// just that glyph.
+	function clearCache(font, ch) {
+		if (ch !== undefined && font._items) delete font._items[ch];
+		else font._items = {};
+	}
+
+	// Bounds of a glyph's ink (ignoring stroke width), or null if it's empty.
+	function inkBounds(ps, font, ch) {
+		var item = glyphItem(ps, font, ch);
+		return item && item.children.length ? item.bounds : null;
+	}
+
+	/*
+	 * Lay out text. Returns { glyphs: [{ char, x, y, word }], missing: [chars] }
+	 * where (x, y) is where the glyph's cell origin goes and `word` numbers
+	 * the words. `char` is the glyph actually drawn (after fallbacks).
+	 *
+	 * opts: { monospace, letterSpacing, lineHeight, tracking, wordWrap,
+	 *         wrapWidth, margin }
+	 * Monospace places each cell as drawn, `letterSpacing` apart. Otherwise
+	 * each glyph's ink goes after its lsb (plus kerning with the previous
+	 * glyph), and the next starts after the ink, rsb and tracking.
+	 * Spaces are `letterSpacing` wide, tabs four spaces.
+	 */
+	function layout(ps, font, text, opts) {
+		var margin = opts.margin || 0;
+		var x = margin, y = margin;
+		var word = 0, inWord = false, prev = null;
+		var out = [], missing = [];
+
+		function breakWord() {
+			if (inWord) word++;
+			inWord = false;
+			prev = null;
+		}
+
+		for (var i = 0; i < text.length; i++) {
+			var ch = text[i];
+			if (ch === ' ') {
+				x += opts.letterSpacing;
+				breakWord();
+				if (opts.wordWrap && x > opts.wrapWidth) {
+					x = margin;
+					y += opts.lineHeight;
+				}
+			} else if (ch === '\n') {
+				x = margin;
+				y += opts.lineHeight;
+				breakWord();
+			} else if (ch === '\t') {
+				x += opts.letterSpacing * 4;
+				breakWord();
+			} else if (ch !== '\r') {
+				var found = lookup(font, ch);
+				if (!found) {
+					if (missing.indexOf(ch) < 0) missing.push(ch);
+					continue;
+				}
+				if (opts.monospace) {
+					out.push({ char: found.char, x: x, y: y, word: word });
+					x += opts.letterSpacing;
+				} else {
+					var ink = inkBounds(ps, font, found.char);
+					var inkLeft = ink ? ink.left : 0, inkWidth = ink ? ink.width : 0;
+					if (prev !== null) x += font.kerning[prev + found.char] || 0;
+					x += found.glyph.lsb;
+					out.push({ char: found.char, x: x - inkLeft, y: y, word: word });
+					x += inkWidth + found.glyph.rsb + (opts.tracking || 0);
+				}
+				inWord = true;
+				prev = found.char;
+			}
+		}
+		return { glyphs: out, missing: missing };
 	}
 
 	// Most common value of `key` across items.
@@ -276,6 +348,8 @@
 		lookup: lookup,
 		glyphItem: glyphItem,
 		clearCache: clearCache,
+		inkBounds: inkBounds,
+		layout: layout,
 		fromSVG: fromSVG,
 		saveToServer: saveToServer
 	};
