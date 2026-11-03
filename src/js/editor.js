@@ -3077,7 +3077,7 @@
 			format: GregFont.FORMAT,
 			version: GregFont.VERSION,
 			name: 'Untitled',
-			status: 'in-progress',
+			status: 'draft',
 			cell: { width: 40, height: 60 },
 			guides: { cap: 60, xHeight: 30, descender: -20 },
 			style: { strokeCap: 'round', strokeJoin: 'round', miterLimit: 10 },

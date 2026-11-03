@@ -219,25 +219,30 @@
 
 	// JSON with one glyph per line, so diffs show which glyphs changed.
 	/*
-	 * Where a font is at: 'in-progress' (still being drawn), 'beta' (all
-	 * there, being tried out) or 'done'. A font without one is done. Saving
+	 * Where a font is at: 'draft' (still being drawn), 'proof' (all there,
+	 * being tried out) or 'final'. A font without one is final. (Earlier
+	 * names still read: in-progress, beta, done.) Saving
 	 * from the editor also counts up `revision` and sets `modified` (a date).
 	 */
-	var STATUSES = { 'in-progress': 'in progress', beta: 'beta', done: 'done' };
+	var STATUSES = { draft: 'draft', proof: 'proof', final: 'final' };
+	var OLD_STATUSES = { 'in-progress': 'draft', beta: 'proof', done: 'final' };
 
-	function statusOf(font) { return STATUSES[font.status] ? font.status : 'done'; }
+	function statusOf(font) {
+		var s = OLD_STATUSES[font.status] || font.status;
+		return STATUSES[s] ? s : 'final';
+	}
 
 	// "Bleeker (in progress)", or just the name when it's done
 	function fontLabel(font) {
 		var s = statusOf(font);
-		return font.name + (s === 'done' ? '' : ' (' + STATUSES[s] + ')');
+		return font.name + (s === 'final' ? '' : ' (' + STATUSES[s] + ')');
 	}
 
 	// "rev 3 · in progress", for a line of small print
 	function fontVersionText(font) {
 		var parts = [];
 		if (font.revision) parts.push('rev ' + font.revision);
-		if (statusOf(font) !== 'done') parts.push(STATUSES[statusOf(font)]);
+		if (statusOf(font) !== 'final') parts.push(STATUSES[statusOf(font)]);
 		return parts.join(' \u00b7 ');
 	}
 
@@ -1040,7 +1045,7 @@
 			format: FORMAT,
 			version: VERSION,
 			name: options.name || 'Untitled',
-			status: 'in-progress',
+			status: 'draft',
 			cell: cell,
 			guides: { cap: cap, xHeight: xHeight, descender: descender },
 			style: style,
