@@ -12,6 +12,11 @@ body {
 		"type canvas doc";
 }
 
+/* Unlike the editor, the canvas and page follow the panels: dark on dark,
+   light on light. */
+:root, :root[data-theme="dark"] { --canvas: #1a1b1f; --page: #2a2b30; --select: #5b95ff; }
+:root[data-theme="light"] { --canvas: #f3f3f1; --page: #ffffff; --select: #2f6fe0; }
+
 #topbar .product { color: var(--muted); margin: 0 8px 0 -4px; }
 
 /* left: type settings */

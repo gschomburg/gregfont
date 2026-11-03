@@ -3,11 +3,13 @@
  * themes, and the common pieces (buttons, fields, switches, menus, the top
  * bar, the tool tab, foldable sections). The canvas colours are read by
  * the pages' scripts for drawing, so every canvas colour lives here too.
- * Two themes: dark (dark panels and canvas) or light (light panels and
- * canvas).
+ * Two themes: dark panels around a light canvas, or light panels around a
+ * dark canvas. (The typesetter overrides this: its canvas and page follow
+ * the panels, see typesetter.css.)
  */
 :root,
 :root[data-theme="dark"] {
+	color-scheme: dark;
 	--bg: #16171a;
 	--panel: #1d1e22;
 	--panel-2: #222327;
@@ -22,43 +24,8 @@
 	--danger: #ef7a7a;
 	--shadow: rgba(0, 0, 0, 0.45);
 
-	/* the canvas: dark */
-	--canvas: #1a1b1f;
-	--page: #2a2b30;
-	--canvas-grid: #25262b;
-	--canvas-grid-major: #31323a;
-	--canvas-cell: rgba(255, 255, 255, 0.08);
-	--ink: #f2f2ef;
-	--guide-cap: #6aa5ff;
-	--guide-xh: #3ec99a;
-	--guide-base: #ffad42;
-	--guide-desc: #c39af0;
-	--bearing: #ff5fa2;
-	--select: #5b95ff;
-	--order-start: #22c55e;
-	--order-end: #fb7185;
-	--order-travel: #8a8c93;
-	--missing: #e7e7ea;
-}
-
-:root[data-theme="light"] {
-	--bg: #ffffff;
-	--panel: #f6f6f7;
-	--panel-2: #efeff1;
-	--surface: #ffffff;
-	--line: #e3e3e6;
-	--line-2: #d4d4d9;
-	--text: #18181b;
-	--muted: #5b5d64;
-	--accent: #2f6fe0;
-	--on-accent: #ffffff;
-	--accent-soft: rgba(47, 111, 224, 0.12);
-	--danger: #c43c3c;
-	--shadow: rgba(24, 24, 27, 0.16);
-
-	/* the canvas: light */
+	/* the canvas side: light */
 	--canvas: #f3f3f1;
-	--page: #ffffff;
 	--canvas-grid: #e3e3e0;
 	--canvas-grid-major: #d1d1cd;
 	--canvas-cell: rgba(0, 0, 0, 0.1);
@@ -73,6 +40,40 @@
 	--order-end: #be123c;
 	--order-travel: #8a8c93;
 	--missing: #2a2b30;
+}
+
+:root[data-theme="light"] {
+	color-scheme: light;
+	--bg: #ffffff;
+	--panel: #f6f6f7;
+	--panel-2: #efeff1;
+	--surface: #ffffff;
+	--line: #e3e3e6;
+	--line-2: #d4d4d9;
+	--text: #18181b;
+	--muted: #5b5d64;
+	--accent: #2f6fe0;
+	--on-accent: #ffffff;
+	--accent-soft: rgba(47, 111, 224, 0.12);
+	--danger: #c43c3c;
+	--shadow: rgba(24, 24, 27, 0.16);
+
+	/* the canvas side: dark */
+	--canvas: #1a1b1f;
+	--canvas-grid: #25262b;
+	--canvas-grid-major: #31323a;
+	--canvas-cell: rgba(255, 255, 255, 0.08);
+	--ink: #f2f2ef;
+	--guide-cap: #6aa5ff;
+	--guide-xh: #3ec99a;
+	--guide-base: #ffad42;
+	--guide-desc: #c39af0;
+	--bearing: #ff5fa2;
+	--select: #5b95ff;
+	--order-start: #22c55e;
+	--order-end: #fb7185;
+	--order-travel: #8a8c93;
+	--missing: #e7e7ea;
 }
 
 * { box-sizing: border-box; }
@@ -106,6 +107,14 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .spacer { flex: 1; }
+
+/* scrollbars: thin, in the panel colours */
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--muted); }
+::-webkit-scrollbar-corner { background: transparent; }
 .meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
 .hint { color: var(--muted); font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; }
 .panel-heading { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
