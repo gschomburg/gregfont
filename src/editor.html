@@ -15,7 +15,7 @@
 		<header id="topbar">
 			<span class="brand">gregfont</span>
 			<nav id="menubar"></nav>
-			<span class="spacer"></span>
+			<button type="button" id="tip" title="Tip: click for the next one"></button>
 			<span id="status"></span>
 			<button type="button" id="theme-toggle" class="icon-button" title="Switch light / dark" aria-label="Switch light / dark">
 				<svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>
@@ -111,7 +111,6 @@
 					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="15" r="2.5"/><circle cx="14" cy="15" r="2.5"/><path d="M7.4 13 14.5 2.5M12.6 13 5.5 2.5"/></svg>
 				</button>
 			</nav>
-			<div id="help"></div>
 		</div>
 
 		<footer id="preview-bar">
@@ -134,16 +133,8 @@
 				</div>
 			</section>
 
-			<section>
-				<div class="panel-heading">Spacing</div>
-				<div class="field-pair">
-					<label class="field" data-scrub="x" title="Left side bearing: drag sideways or type"><span class="field-label">Left</span><input type="number" id="glyph-lsb" step="0.5"></label>
-					<label class="field" data-scrub="x" title="Right side bearing: drag sideways or type"><span class="field-label">Right</span><input type="number" id="glyph-rsb" step="0.5"></label>
-				</div>
-			</section>
-
-			<section id="position-row">
-				<div class="panel-heading">Position <span class="hint" id="position-kind"></span></div>
+			<details id="position-row" class="fold" data-remember="info" open>
+				<summary>Info <span class="hint" id="position-kind"></span></summary>
 				<div class="field-pair">
 					<label class="field" data-scrub="x" title="Across, in font units: drag sideways or type"><span class="field-label">X</span><input type="number" id="pos-x" step="0.5"></label>
 					<label class="field" data-scrub="y" title="Up from the baseline, in font units: drag up or down, or type"><span class="field-label">Y</span><input type="number" id="pos-y" step="0.5"></label>
@@ -152,10 +143,10 @@
 					<label class="field" data-scrub="x" title="Width: drag sideways or type (scales around the center)"><span class="field-label">W</span><input type="number" id="pos-w" step="0.5" min="0.5"></label>
 					<label class="field" data-scrub="x" title="Height: drag sideways or type (scales around the center)"><span class="field-label">H</span><input type="number" id="pos-h" step="0.5" min="0.5"></label>
 				</div>
-			</section>
+			</details>
 
-			<section id="path-style-row">
-				<div class="panel-heading">Selected path</div>
+			<details id="path-style-row" class="fold" data-remember="path" open>
+				<summary>Selected path</summary>
 				<div class="style-grid">
 					<span class="field-label">Ends</span>
 					<div class="segmented icons" id="path-cap" role="group" aria-label="End caps for the selected paths">
@@ -172,10 +163,10 @@
 						<button type="button" data-value="bevel" title="Bevel" aria-label="Bevel corners"><svg viewBox="0 0 18 14"><path d="M3 13V4h12" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="bevel"/></svg></button>
 					</div>
 				</div>
-			</section>
+			</details>
 
-			<section id="stroke-order">
-				<div class="panel-heading">Stroke order</div>
+			<details id="stroke-order" class="fold" data-remember="stroke" open>
+				<summary>Stroke inspect</summary>
 				<span id="stroke-info" class="meta" title="Pen-up travel counts from 0,0 to the first stroke, then between strokes"></span>
 				<div class="button-row">
 					<button type="button" id="play-strokes" title="Draw the glyph stroke by stroke, the way a plotter would">&#9654; Play</button>
@@ -183,10 +174,15 @@
 					<button type="button" id="reverse-strokes" title="Reverse the direction of the selected strokes">Reverse</button>
 				</div>
 				<label class="switch-label" title="Show where each stroke starts, its direction, and the pen-up moves (O)"><input type="checkbox" class="switch" id="show-order"> Show start points &amp; order</label>
-			</section>
+			</details>
 
-			<section>
-				<div class="panel-heading" id="kern-title">Kerning</div>
+			<details id="spacing-section" class="fold" data-remember="spacing" open>
+				<summary>Spacing</summary>
+				<div class="field-pair">
+					<label class="field" data-scrub="x" title="Left side bearing: drag sideways or type"><span class="field-label">Left</span><input type="number" id="glyph-lsb" step="0.5"></label>
+					<label class="field" data-scrub="x" title="Right side bearing: drag sideways or type"><span class="field-label">Right</span><input type="number" id="glyph-rsb" step="0.5"></label>
+				</div>
+				<div class="sub-heading" id="kern-title">Kerning</div>
 				<div id="kerning-list"></div>
 				<form id="add-kern">
 					<label for="kern-pair" class="visually-hidden">Pair</label>
@@ -195,8 +191,8 @@
 					<input type="number" id="kern-value" placeholder="-5" step="0.5">
 					<button type="submit">Add</button>
 				</form>
-				<p class="hint">Used when text is set proportionally. Shift-click two letters in the preview to fill in a pair.</p>
-			</section>
+				<p class="hint">Kerning is used when text is set proportionally. Shift-click two letters in the preview to fill in a pair.</p>
+			</details>
 
 			<span class="spacer"></span>
 			<div class="glyph-actions">

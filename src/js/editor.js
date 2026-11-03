@@ -421,8 +421,7 @@
 		});
 		wrap.className = 'tool-' + name;
 		$('shape-options').hidden = name !== 'shape';
-		var help = name === 'shape' ? SHAPE_HELP[state.shapeKind] : TOOL_HELP[name];
-		$('help').textContent = help + ' \u00b7 wheel zooms \u00b7 Space-drag pans';
+		setTips(name);
 		clearHover();
 		updatePathStyleRow();
 	}
@@ -447,6 +446,55 @@
 			b.classList.toggle('active', b.dataset.shape === kind);
 		});
 		setTool('shape');
+	}
+
+	// --- tips: one at a time in the top bar
+
+	var GENERAL_TIPS = [
+		'Wheel zooms · Space-drag pans · F fits the glyph',
+		'Number fields can be dragged: sideways, or up and down for guides',
+		'Shift-click two letters in the preview to set up a kerning pair',
+		'Press O to see where each stroke starts and which way it runs',
+		'Snap → Paths puts points onto other paths (Shift+G)',
+		'Select two pieces and press Ctrl+J to join them into one stroke',
+		'X slices crossing strokes into pieces you can pick up one at a time',
+		'+ New font is at the bottom of the font list'
+	];
+	var tips = { list: [], i: 0, timer: 0, on: true };
+
+	// The current tool's tips first, then the general ones.
+	function setTips(toolName) {
+		var own = (toolName === 'shape' ? SHAPE_HELP[state.shapeKind] : TOOL_HELP[toolName]) || '';
+		tips.list = own.split(' · ').filter(Boolean).map(function (t) {
+			return t.charAt(0).toUpperCase() + t.slice(1);
+		}).concat(GENERAL_TIPS);
+		tips.i = 0;
+		showTip(false);
+	}
+
+	function showTip(fade) {
+		clearTimeout(tips.timer);
+		var el = $('tip');
+		if (!tips.on || !tips.list.length) { el.textContent = ''; el.classList.add('off'); return; }
+		el.classList.remove('off');
+		var text = tips.list[tips.i % tips.list.length];
+		function put() {
+			el.textContent = text;
+			el.classList.remove('fading');
+		}
+		if (fade) { el.classList.add('fading'); setTimeout(put, 250); } else put();
+		tips.timer = setTimeout(function () { tips.i++; showTip(true); }, 8000);
+	}
+
+	function nextTip() {
+		tips.i++;
+		showTip(true);
+	}
+
+	function setTipsOn(on) {
+		tips.on = on;
+		try { localStorage.setItem('gregfont-editor-tips', on ? '1' : '0'); } catch (e) { /* ignore */ }
+		showTip(false);
 	}
 
 	var TOOL_HELP = {
@@ -2310,6 +2358,10 @@
 			{ label: 'Play strokes', run: playStrokes },
 			'-',
 			{ label: 'Light mode', run: toggleTheme, checked: function () { return currentTheme() === 'light'; } }
+		] },
+		{ title: 'Help', items: [
+			{ label: 'Show tips', run: function () { setTipsOn(!tips.on); }, checked: function () { return tips.on; } },
+			{ label: 'Next tip', run: nextTip, enabled: function () { return tips.on; } }
 		] }
 	];
 
@@ -3233,6 +3285,9 @@
 			});
 		});
 		$('theme-toggle').addEventListener('click', toggleTheme);
+		try { tips.on = localStorage.getItem('gregfont-editor-tips') !== '0'; } catch (e) { /* ignore */ }
+		$('tip').addEventListener('click', nextTip);
+		$('tip').addEventListener('mousedown', function (e) { e.preventDefault(); });
 		$('play-strokes').addEventListener('click', playStrokes);
 		$('optimize-strokes').addEventListener('click', optimizeStrokes);
 		$('reverse-strokes').addEventListener('click', reverseSelection);
