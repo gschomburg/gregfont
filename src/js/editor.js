@@ -1402,7 +1402,42 @@
 		return p1;
 	}
 
+	// Joining a stroke onto a closed shape (like the tail of an "a" onto its
+	// bowl): if one of the stroke's ends touches the shape, open the shape at
+	// that point and join the two into one open stroke, around the shape and
+	// on into the stroke. Returns true if it handled the join.
+	function joinIntoClosed() {
+		var sel = selectedPaths();
+		var closedSel = sel.filter(function (p) { return p.closed && p.segments.length > 1; });
+		var openSel = sel.filter(function (p) { return !p.closed && p.segments.length > 1; });
+		if (!closedSel.length || !openSel.length) return false;
+		var hit = null;
+		openSel.some(function (op) {
+			return [op.firstSegment, op.lastSegment].some(function (end) {
+				return closedSel.some(function (cp) {
+					var loc = cp.getNearestLocation(end.point);
+					if (loc && loc.distance < 0.05) { hit = { end: end, shape: cp, loc: loc }; return true; }
+					return false;
+				});
+			});
+		});
+		if (!hit) {
+			setStatus('To join onto a closed shape, an end of the stroke has to touch it', true);
+			return true;
+		}
+		edit(function () {
+			hit.shape.splitAt(hit.loc);   // opens it there: both of its ends are now at the joint
+			var joined = joinEnds(hit.shape.lastSegment, hit.end);
+			deselectAll();
+			selectPath(joined);
+		});
+		updatePathStyleRow();
+		setStatus('Opened the shape where they meet and joined them into one stroke');
+		return true;
+	}
+
 	function joinSelection() {
+		if (joinIntoClosed()) return;
 		var anchors = selectedSegments();
 		var ends = anchors.filter(isOpenEnd);
 		var paths = selectedPaths().filter(function (p) { return !p.closed && p.segments.length > 1; });
