@@ -2390,7 +2390,10 @@
 		if (entry) openEntry(entry); else newFont();
 	}).catch(function (err) {
 		console.error(err);
-		setStatus('Could not load fonts: ' + err.message, true);
 		newFont();
+		// after newFont(), which sets its own status
+		setStatus(location.protocol === 'file:'
+			? 'Fonts can’t load from a file:// page. Run "python tools/server.py" and open http://localhost:8000/editor.html'
+			: 'Could not load fonts: ' + err.message, true);
 	});
 })();

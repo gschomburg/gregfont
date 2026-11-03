@@ -387,6 +387,13 @@ function init(){
 		buildText();
 	}).catch(function(err){
 		console.error("Failed to load fonts", err);
+		var msg = location.protocol === 'file:'
+			? 'Fonts can’t load from a file:// page. Run "python tools/server.py" and open http://localhost:8000'
+			: 'Could not load fonts: ' + err.message;
+		$('<div id="load-error">').text(msg).css({
+			position: 'fixed', top: 0, left: 0, right: 0, padding: '10px 16px', zIndex: 10,
+			background: '#e25c5c', color: '#fff', font: '14px Raleway, sans-serif'
+		}).appendTo('body');
 	});
 }
 
