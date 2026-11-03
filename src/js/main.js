@@ -100,16 +100,11 @@ XXXXXXauto update on change?
 */
 
 
-
-
-var FONTS_PATH="fonts/";
-var FONT_PATHS=["sutton.js", "nassau.js", "kosciuszko.js", "troutman.js"];
-var FONT_DATA=[];
-var fontsLoaded = 0;
+var FONTS_PATH = "fonts/";
+var FONTS = [];          // loaded gregfont objects, in manifest order
+var CURRENT_FONT_ID = 0;
 var fontsReady = false;
 
-
-var CURRENT_FONT_ID=0;
 var specimen =  "abcdefghij\n"+
 				"klmnopqrs\n"+
 				"tuvwxyz\n"+
@@ -119,9 +114,6 @@ var specimen =  "abcdefghij\n"+
 				"TUVWXYZ\n"+
 				"~!?.,<>:;'\"\n"+
 				"[]{}\\/|+=-*_-";
-
-// specimen = textSamples.sk2017;
-
 
 
 //UI EVENTS
@@ -133,20 +125,19 @@ $( "#export" ).click(function() {
 	//replace whitespace with underscores
 	fileName = fileName.replace(/[\s]/g,"_");
 	fileName = fileName.replace(/[^a-zA-Z\d_]/g,"");
-	console.log("fileName " + fileName);
 	downloadSVG(fileName);
 });
 $( "#build" ).click(function() {
-  buildText();
+	buildText();
 });
 
 $( "#font-select" ).change(function() {
-  	CURRENT_FONT_ID = Number($( this ).val());
-  	if(fontsReady) resetRenderSettings();
+	CURRENT_FONT_ID = Number($( this ).val());
+	if(fontsReady) resetRenderSettings();
 });
 
 $( "#font-scale" ).change(function() {
-  $( "#font-scale" ).val( clamp( $( "#font-scale" ).val(), .333, 2) );
+	$( "#font-scale" ).val( clamp( $( "#font-scale" ).val(), .333, 2) );
 });
 
 $("#text-field").on('input',function(e){
@@ -159,10 +150,8 @@ $("#text-field").on('input',function(e){
 });
 
 $(".build-on-change").change(function(){
-	// console.log("change");
 	buildText();
 });
-
 
 $(window).bind('keydown', function(event) {
 	if (event.ctrlKey) {
@@ -175,17 +164,16 @@ $(window).bind('keydown', function(event) {
 });
 
 $( "#sample-select" ).change(function() {
-  	var sample = $( this ).val();
-  	if(textSamples[sample] !=null){
-  		$("#text-field").val(textSamples[sample]);
-  	}
-  	buildText();
-  	//resetRenderSettings();
+	var sample = $( this ).val();
+	if(textSamples[sample] !=null){
+		$("#text-field").val(textSamples[sample]);
+	}
+	buildText();
 });
 
 function getRenderSettings(){
 	//get the render settings from the form
-	var settings={
+	return {
 		strokeCap: $( '#cap-select' ).val(),
 		strokeWeight: Number($( '#stroke-weight' ).val()),
 		fontSize: Number($( '#font-scale' ).val()),
@@ -194,93 +182,97 @@ function getRenderSettings(){
 		letterSpacing: Number($( '#letter-spacing' ).val()),
 		lineHeight: Number($( '#line-height' ).val()),
 		monospace: $( '#monospace' ).prop('checked'),
-		spacingBase: Number($( '#spacing-base' ).val()),
+		tracking: Number($( '#tracking' ).val()),
 	};
-	return settings;
 }
 
 function resetRenderSettings(){
-	//this is called when the font is changed
-	//use the default settings from the font file
-	var font = FONT_DATA[CURRENT_FONT_ID];
-	$( '#letter-spacing' ).val(font.baseLetterSpacing);
-	$( '#line-height' ).val(font.baseLineHeight);
-	$( '#monospace' ).prop('checked', font.monospaced);
-	$( '#spacing-base' ).val(font.baseLetterSpaceUnit);
+	//called when the font is changed: use the font's default settings
+	var spacing = FONTS[CURRENT_FONT_ID].spacing;
+	$( '#letter-spacing' ).val(spacing.letterSpacing);
+	$( '#line-height' ).val(spacing.lineHeight);
+	$( '#monospace' ).prop('checked', spacing.monospaced);
+	$( '#tracking' ).val(0);
 }
 
 //DRAWING FONTS
 /**************************************/
+var missingWarned = {};
+
 function renderType(stringText){
-	var renderSettings=getRenderSettings();
+	var s = getRenderSettings();
+	var font = FONTS[CURRENT_FONT_ID];
+	var layer = paper.project.activeLayer;
 	var margin = 10;
-	var xPos=margin;
-	var yPos=margin;
-	
-	var wordGroup;
-	var scale = clamp(renderSettings.fontSize, .33, 2);
+	var xPos = margin;
+	var yPos = margin;
+	var scale = clamp(s.fontSize, .333, 2);
+	var wordGroup = null;
+	var prevChar = null;
+
 	for(var i=0; i<stringText.length; i++){
-		if(stringText[i] == " "){
-			// Space width is Letter Spacing in both modes. (This used to read an
-			// undeclared `monospace` var, which always resolved to the checkbox
-			// element, so this is the width spaces have always had.)
-			xPos += renderSettings.letterSpacing;
+		var ch = stringText[i];
+		if(ch == " "){
+			xPos += s.letterSpacing;
 			wordGroup = null;
-
-			if(renderSettings.wordWrap && xPos > renderSettings.wordWrapWidth/scale){
+			prevChar = null;
+			if(s.wordWrap && xPos > s.wordWrapWidth/scale){
 				xPos = margin;
-				yPos += renderSettings.lineHeight;
+				yPos += s.lineHeight;
 			}
-		}else if(stringText[i] == "\n"){
-
+		}else if(ch == "\n"){
 			xPos = margin;
-			yPos += renderSettings.lineHeight;
+			yPos += s.lineHeight;
 			wordGroup = null;
-		}else if(stringText[i] == "\t"){
+			prevChar = null;
+		}else if(ch == "\t"){
 			//tab is equal to 4 spaces
-			xPos += renderSettings.letterSpacing*4;
+			xPos += s.letterSpacing*4;
 			wordGroup = null;
-
+			prevChar = null;
 		}else{
-			if(wordGroup==null){
-				wordGroup = new Group();
-			}
-			
-
-			var charLayer = getCharacterGroup(stringText[i]);
-			if(charLayer==null){
-				console.log("Error character not found: " + stringText[i]);
+			var found = GregFont.lookup(font, ch);
+			if(!found){
+				if(!missingWarned[font.name + ch]){
+					console.warn(font.name + " has no glyph for: " + ch);
+					missingWarned[font.name + ch] = true;
+				}
 				continue;
 			}
-			var offset = charLayer.bounds.center;
-			var copy = charLayer.clone();
-			copy.visible=true;
-			if(renderSettings.strokeCap != 'default'){
-				copy.strokeCap = renderSettings.strokeCap;
+			var template = GregFont.glyphItem(paper, font, found.char);
+			var glyph = template.clone({ insert: false });
+			if(s.strokeCap != 'default'){
+				glyph.strokeCap = s.strokeCap;
 			}
-			copy.strokeWidth = renderSettings.strokeWeight;
-			wordGroup.addChild(copy);
+			glyph.strokeWidth = s.strokeWeight;
 
-			if(renderSettings.monospace){
-				copy.position = new Point(xPos + offset.x, yPos + offset.y);
-				xPos += renderSettings.letterSpacing;
+			if(wordGroup == null){
+				wordGroup = new paper.Group();
+				layer.addChild(wordGroup);
+			}
+			wordGroup.addChild(glyph);
+
+			if(s.monospace){
+				// place the cell as drawn
+				glyph.translate(new paper.Point(xPos, yPos));
+				xPos += s.letterSpacing;
 			}else{
-				var sideBearing = getCharSideBearing(stringText[i]);
-				//add the left side bearing
-				xPos += sideBearing[0] * renderSettings.spacingBase;
-				//position the letter
-				copy.position = new Point(xPos + offset.x, yPos + offset.y);
-				//add the width of the letter
-				xPos += copy.bounds.width;
-				//add the right side bearing
-				xPos += sideBearing[1] * renderSettings.spacingBase;
+				// place the ink after the left side bearing (+ kerning with the previous letter)
+				var ink = template.bounds;
+				if(prevChar != null){
+					xPos += font.kerning[prevChar + found.char] || 0;
+				}
+				xPos += found.glyph.lsb;
+				glyph.translate(new paper.Point(xPos - ink.left, yPos));
+				xPos += ink.width + found.glyph.rsb + s.tracking;
 			}
+			prevChar = found.char;
 
-			effects(copy);
+			effects(glyph);
 		}
 	}
 	//scale the type
-	project.activeLayer.scale(scale, new Point(0, 0));
+	layer.scale(scale, new paper.Point(0, 0));
 }
 
 function clamp(val, min, max){
@@ -289,95 +281,60 @@ function clamp(val, min, max){
 	return val;
 }
 
-function getCharacterGroup(character){
-	var charData = characterMap[character];
-	if(charData==null){
-		console.log("Error Character Not Mapped: " + character);
-		return null;
-	}
-	return FONT_DATA[CURRENT_FONT_ID].paperSymbols.children['char-' + charData.name];
-}
-
-function getCharSideBearing(_char){
-    //return side bearing values
-    var fontLetterSpacing = FONT_DATA[CURRENT_FONT_ID].charLetterSpacing;
-
-    if(fontLetterSpacing[_char] && fontLetterSpacing[_char].sidebearing){
-        return fontLetterSpacing[_char].sidebearing;
-    }
-
-    // $.writeln("No spacing info found: " + _char);
-    return [0,0];
-}
-
 function reset(){
-	project.clear();
+	paper.project.clear();
 }
 
 function buildText(){
 	if(!fontsReady) return;
 	reset();
 	renderType($('#text-field').val());
+	paper.view.draw();
 }
 
 //LOADING & SAVING
 /**************************************/
-function loadFontData(id){
-	//if (typeof someObject == 'undefined') 
-	$.loadScript(FONTS_PATH + FONT_PATHS[id], function(){	
-		FONT_DATA[id] = data;
-		loadFontSVG(id);
-	});
+function loadFonts(){
+	return fetch(FONTS_PATH + "fonts.json", { cache: 'no-store' })
+		.then(function(res){ return res.json(); })
+		.then(function(manifest){
+			return Promise.all(manifest.fonts.map(function(file){
+				return GregFont.load(FONTS_PATH + file);
+			}));
+		});
 }
 
-function loadFontSVG(id){
-	//get the font file param
-	var options={
-		onLoad:function(item){
-			FONT_DATA[id].paperSymbols = item;
-			fontsLoaded++;
-			if(fontsLoaded == FONT_PATHS.length){
-				fontsReady = true;
-				initRun();
-			}
-		},
-		insert:false,
-		expandShapes:true,
-	};
-	paper.project.importSVG(FONTS_PATH + FONT_DATA[id].file, options);
+function fillFontSelect(){
+	var select = $("#font-select");
+	var selected = Number(select.val()) || 0;
+	select.empty();
+	FONTS.forEach(function(font, i){
+		select.append($("<option>").val(i).text(font.name.toUpperCase()));
+	});
+	select.val(selected < FONTS.length ? selected : 0);
 }
 
 function downloadSVG(fileName){
-	paper.project.exportSVG();
+	if(!fileName) {
+		fileName = "gf_000";
+	}
 
-   if(!fileName) {
-       fileName = "gf_000.svg"
-   }
+	var url = "data:image/svg+xml;utf8," + encodeURIComponent(paper.project.exportSVG({asString:true}));
 
-   var url = "data:image/svg+xml;utf8," + encodeURIComponent(paper.project.exportSVG({asString:true}));
-
-   var link = document.createElement("a");
-   link.download = fileName;
-   link.href = url;
-   link.click();
+	var link = document.createElement("a");
+	link.download = fileName + ".svg";
+	link.href = url;
+	link.click();
 }
 
 //UTILS
 /**************************************/
-jQuery.loadScript = function (url, callback) {
-    jQuery.ajax({
-        url: url,
-        dataType: 'script',
-        success: callback,
-        async: true
-    });
-}
 
 //get all the segements in an item
 function allSegments(item, recursive){
 	if(recursive>4) return; // stop it at 4 deep
 	var segments=[];
-	
+
 	if(item.segments !=null && item.segments.length>0){
 		segments = segments.concat(item.segments);
 	}
@@ -397,7 +354,7 @@ function allSegments(item, recursive){
 function allCurves(item, recursive){
 	if(recursive>4) return; // stop it at 4 deep
 	var curves=[];
-	
+
 	if(item.curves !=null && item.curves.length>0){
 		curves = curves.concat(item.curves);
 	}
@@ -425,163 +382,46 @@ function effects(item){
 function doStuffToCurves(item){
 	var curves = allCurves(item, 0);
 	for(var i = 0; i< curves.length; i++){
-		// if(curves[i].isStraight()){
-		// 	curves[i].path.style.strokeWidth = 10;
-		// }
 		//draw line that is tangent
-		var curve = curves[i];
-		
-
-		stepCurves(curve, 5);
+		stepCurves(curves[i], 5);
 	}
 }
 function stepCurves(curve, steps){
 	for(var s=1/steps; s<1; s+=1/steps){
-		var tan = curve.getNormalAtTime(s);
+		var normal = curve.getNormalAtTime(s).multiply(10);
 		var p1 = curve.getPointAtTime(s);
-		var p = Path.Line(p1-(tan * 10), p1+(tan * 10));
-		p.strokeColor = 'red'
+		var p = new paper.Path.Line(p1.subtract(normal), p1.add(normal));
+		p.strokeColor = 'red';
 		p.strokeWidth = 1;
 	}
 }
 
 function drawSegments(item){
-	
 	var segments = allSegments(item, 0);
-
 	for(var i = 0; i< segments.length; i++){
-		var dot = new Shape.Circle(segments[i].point, 3);
+		var dot = new paper.Shape.Circle(segments[i].point, 3);
 		dot.fillColor = 'red';
 		item.addChild(dot);
-		// segments[i].path.style.strokeWidth = Math.random()*8;
 	}
 }
-
-
 
 
 //SETUP + INIT
 /**************************************/
 function init(){
-	//load in the fonts
-	// loadFontData(0);
-	// loadFontData(1);
-	// loadFontData(2);
-	for(var i =0; i<FONT_PATHS.length; i++){
-		loadFontData(i);
-	}
-
-	//specimen
+	paper.setup(document.getElementById("fontView"));
 	$('#text-field').val(specimen);
+
+	loadFonts().then(function(fonts){
+		FONTS = fonts;
+		fillFontSelect();
+		CURRENT_FONT_ID = Number($('#font-select').val());
+		fontsReady = true;
+		resetRenderSettings();
+		buildText();
+	}).catch(function(err){
+		console.error("Failed to load fonts", err);
+	});
 }
 
-//wait until everything is loaded
-function initRun(){
-	// match whatever the dropdown shows (browsers can restore form state on reload)
-	CURRENT_FONT_ID = Number($('#font-select').val());
-	reset();
-	resetRenderSettings();
-	buildText();
-}
-
-init(); // initRun() is called once every font has loaded
-
-var characterMap = {
-    "a":{name:"a", layer:null},
-    "b":{name:"b", layer:null},
-    "c":{name:"c", layer:null},
-    "d":{name:"d", layer:null},
-    "e":{name:"e", layer:null},
-    "f":{name:"f", layer:null},
-    "g":{name:"g", layer:null},
-    "h":{name:"h", layer:null},
-    "i":{name:"i", layer:null},
-    "j":{name:"j", layer:null},
-    "k":{name:"k", layer:null},
-    "l":{name:"l", layer:null},
-    "m":{name:"m", layer:null},
-    "n":{name:"n", layer:null},
-    "o":{name:"o", layer:null},
-    "p":{name:"p", layer:null},
-    "q":{name:"q", layer:null},
-    "r":{name:"r", layer:null},
-    "s":{name:"s", layer:null},
-    "t":{name:"t", layer:null},
-    "u":{name:"u", layer:null},
-    "v":{name:"v", layer:null},
-    "w":{name:"w", layer:null},
-    "x":{name:"x", layer:null},
-    "y":{name:"y", layer:null},
-    "z":{name:"z", layer:null},
-    "A":{name:"A", layer:null},
-    "B":{name:"B", layer:null},
-    "C":{name:"C", layer:null},
-    "D":{name:"D", layer:null},
-    "E":{name:"E", layer:null},
-    "F":{name:"F", layer:null},
-    "G":{name:"G", layer:null},
-    "H":{name:"H", layer:null},
-    "I":{name:"I", layer:null},
-    "J":{name:"J", layer:null},
-    "K":{name:"K", layer:null},
-    "L":{name:"L", layer:null},
-    "M":{name:"M", layer:null},
-    "N":{name:"N", layer:null},
-    "O":{name:"O", layer:null},
-    "P":{name:"P", layer:null},
-    "Q":{name:"Q", layer:null},
-    "R":{name:"R", layer:null},
-    "S":{name:"S", layer:null},
-    "T":{name:"T", layer:null},
-    "U":{name:"U", layer:null},
-    "V":{name:"V", layer:null},
-    "W":{name:"W", layer:null},
-    "X":{name:"X", layer:null},
-    "Y":{name:"Y", layer:null},
-    "Z":{name:"Z", layer:null},
-    "0":{name:"0", layer:null},
-    "1":{name:"1", layer:null},
-    "2":{name:"2", layer:null},
-    "3":{name:"3", layer:null},
-    "4":{name:"4", layer:null},
-    "5":{name:"5", layer:null},
-    "6":{name:"6", layer:null},
-    "7":{name:"7", layer:null},
-    "8":{name:"8", layer:null},
-    "9":{name:"9", layer:null},
-    "-":{name:"dash", layer:null},
-    "—":{name:"dash", layer:null},
-    "_":{name:"underscore", layer:null},
-    '"':{name:"doublequote", layer:null},
-    "“":{name:"doublequote", layer:null},
-    "”":{name:"doublequote", layer:null},
-    "'":{name:"quote", layer:null},
-    "’":{name:"quote", layer:null},
-    ",":{name:"comma", layer:null},
-    "~":{name:"tilde", layer:null},
-    ":":{name:"colon", layer:null},
-    ";":{name:"semicolon", layer:null},
-    "?":{name:"question", layer:null},
-    ".":{name:"period", layer:null},
-    "!":{name:"exclamation", layer:null},
-    "&":{name:"ampersand", layer:null},
-    "#":{name:"pound", layer:null},
-    "|":{name:"bar", layer:null},
-    "\\":{name:"backslash", layer:null},
-    "/":{name:"slash", layer:null},
-    ")":{name:"parenthright", layer:null},
-    "(":{name:"parenthleft", layer:null},
-    "%":{name:"percent", layer:null},
-    ">":{name:"greaterthan", layer:null},
-    "<":{name:"lessthan", layer:null},
-    "}":{name:"curlyright", layer:null},
-    "{":{name:"curlyleft", layer:null},
-    "]":{name:"bracketright", layer:null},
-    "[":{name:"bracketleft", layer:null},
-    "^":{name:"caret", layer:null},
-    "@":{name:"at", layer:null},
-    "$":{name:"dollar", layer:null},
-    "=":{name:"equal", layer:null},
-    "+":{name:"plus", layer:null},
-    "*":{name:"asterix", layer:null}
-}
+init();

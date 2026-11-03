@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="utf-8">
 		<title>greg font</title>
 		<link href="https://fonts.googleapis.com/css?family=Raleway:400,500" rel="stylesheet">
 		<link rel="stylesheet" type="text/css" href="style/main.css">
@@ -29,10 +30,7 @@
 				<div class ="form-group">
 					<label>Font:</label>
 					<select id="font-select" name="font" class="build-on-change">
-						<option value="0" selected>SUTTON</option> 
-						<option value="1">NASSAU</option>
-						<option value="2">KOSCIUSZKO</option>
-						<option value="3">TROUTMAN</option>
+						<!-- filled from fonts/fonts.json -->
 					</select>
 				</div>
 				<div class ="form-group">
@@ -48,8 +46,8 @@
 				<input id="monospace" class="build-on-change" type="checkbox" checked>
 				</div>
 				<div class ="form-group">
-				<label title="Amount of letter spacing when NOT monospaced">Spacing Base:</label>
-				<input id="spacing-base" class="build-on-change" type="number" value="6">
+				<label title="Extra space added after each letter when NOT monospaced">Tracking:</label>
+				<input id="tracking" class="build-on-change" type="number" value="0">
 				</div>
 			</div>
 			<div class="col">
@@ -89,7 +87,8 @@
 
 	<script type="text/javascript" src="libs/jquery-3.1.1.min.js"></script>
 	<script type="text/javascript" src="libs/paper-full.min.js"></script>	
-	<script type="text/paperscript" src="js/main.js" canvas="fontView"></script>
+	<script type="text/javascript" src="js/gregfont.js"></script>
+	<script type="text/javascript" src="js/main.js"></script>
 	
 	</body>
 
