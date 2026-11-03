@@ -65,7 +65,8 @@
 		kernPick: null,
 		autoSlice: false,  // new strokes cut what they cross
 		added: [],         // glyphs added from the sidebar but not drawn yet
-		shapeKind: 'ellipse' // what the shape tool draws: ellipse, rect or line
+		shapeKind: 'ellipse', // what the shape tool draws: ellipse, rect or line
+		show: { grid: true, guides: true, cell: true }   // View menu toggles
 	};
 
 	// ---------------------------------------------------------------- setup
@@ -291,37 +292,43 @@
 		if (!f) return;
 		var vb = P.view.bounds;
 
-		// grid: thin out the lines when zoomed out
-		var step = state.grid;
-		while (step * P.view.zoom < 8) step *= 2;
-		var major = step * 10;
-		for (var x = Math.floor(vb.left / step) * step; x <= vb.right; x += step) {
-			line([x, vb.top], [x, vb.bottom], Math.abs(x % major) < 1e-6 ? COLORS.gridMajor : COLORS.grid);
-		}
-		for (var y = Math.floor(vb.top / step) * step; y <= vb.bottom; y += step) {
-			line([vb.left, y], [vb.right, y], Math.abs(y % major) < 1e-6 ? COLORS.gridMajor : COLORS.grid);
+		// grid: thin out the lines when zoomed out (snapping works either way)
+		if (state.show.grid) {
+			var step = state.grid;
+			while (step * P.view.zoom < 8) step *= 2;
+			var major = step * 10;
+			for (var x = Math.floor(vb.left / step) * step; x <= vb.right; x += step) {
+				line([x, vb.top], [x, vb.bottom], Math.abs(x % major) < 1e-6 ? COLORS.gridMajor : COLORS.grid);
+			}
+			for (var y = Math.floor(vb.top / step) * step; y <= vb.bottom; y += step) {
+				line([vb.left, y], [vb.right, y], Math.abs(y % major) < 1e-6 ? COLORS.gridMajor : COLORS.grid);
+			}
 		}
 
 		// the cell: a light fill sitting on the baseline, under the grid lines.
 		// (The canvas is y-down, so heights above the baseline are negative here.)
-		var cell = new P.Path.Rectangle({ point: [0, -f.cell.height], size: [f.cell.width, f.cell.height], fillColor: COLORS.cell, insert: false });
-		guidesLayer.addChild(cell);
-		cell.sendToBack();
+		if (state.show.cell) {
+			var cell = new P.Path.Rectangle({ point: [0, -f.cell.height], size: [f.cell.width, f.cell.height], fillColor: COLORS.cell, insert: false });
+			guidesLayer.addChild(cell);
+			cell.sendToBack();
+		}
 
-		// font guides, labelled with their height
-		Object.keys(COLORS.guide).forEach(function (key) {
-			var h = key === 'baseline' ? 0 : f.guides[key];
-			if (h === null || h === undefined) return;
-			var gy = -h;
-			line([vb.left, gy], [vb.right, gy], COLORS.guide[key]);
-			// past the tool tab
-			label((key === 'xHeight' ? 'x-height' : key) + ' ' + h, [vb.left + px(58), gy - px(4)], COLORS.guide[key]);
-		});
+		if (state.show.guides) {
+			// font guides, labelled with their height
+			Object.keys(COLORS.guide).forEach(function (key) {
+				var h = key === 'baseline' ? 0 : f.guides[key];
+				if (h === null || h === undefined) return;
+				var gy = -h;
+				line([vb.left, gy], [vb.right, gy], COLORS.guide[key]);
+				// past the tool tab
+				label((key === 'xHeight' ? 'x-height' : key) + ' ' + h, [vb.left + px(58), gy - px(4)], COLORS.guide[key]);
+			});
 
-		// the origin
-		var dot = new P.Path.Circle({ center: [0, 0], radius: px(3.5), fillColor: COLORS.guide.baseline, insert: false });
-		guidesLayer.addChild(dot);
-		label('0,0', [-px(6), px(14)], COLORS.guide.baseline, 'right');
+			// the origin
+			var dot = new P.Path.Circle({ center: [0, 0], radius: px(3.5), fillColor: COLORS.guide.baseline, insert: false });
+			guidesLayer.addChild(dot);
+			label('0,0', [-px(6), px(14)], COLORS.guide.baseline, 'right');
+		}
 
 		// side bearings
 		var glyph = f.glyphs[state.ch];
@@ -1650,6 +1657,8 @@
 		if (ctrl && key === 'v') { paste(); return; }
 		if (ctrl && key === 'j') { e.preventDefault(); joinSelection(); return; }
 		if (ctrl && key === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); return; }
+		if (ctrl && key === "'") { e.preventDefault(); toggleShow('grid'); return; }
+		if (ctrl && key === ';') { e.preventDefault(); toggleShow('guides'); return; }
 		if (ctrl) return;
 
 		var step = e.shiftKey ? state.grid : 1;
@@ -1686,6 +1695,20 @@
 	function setSnap(on) {
 		state.snap = on;
 		$('snap').checked = on;
+	}
+
+	// View > Show grid / guides / cell. Remembered between visits.
+	function toggleShow(what) {
+		state.show[what] = !state.show[what];
+		try { localStorage.setItem('gregfont-editor-show', JSON.stringify(state.show)); } catch (e) { /* ignore */ }
+		drawGuides();
+	}
+
+	function loadShow() {
+		try {
+			var saved = JSON.parse(localStorage.getItem('gregfont-editor-show') || 'null');
+			if (saved) Object.keys(state.show).forEach(function (k) { if (typeof saved[k] === 'boolean') state.show[k] = saved[k]; });
+		} catch (e) { /* ignore */ }
 	}
 
 	function currentTheme() {
@@ -1830,6 +1853,10 @@
 			{ label: 'Fit glyph', key: 'F', run: fit },
 			'-',
 			{ label: 'Snap to grid', key: 'G', run: function () { setSnap(!state.snap); }, checked: function () { return state.snap; } },
+			'-',
+			{ label: 'Show grid', key: "Ctrl+'", run: function () { toggleShow('grid'); }, checked: function () { return state.show.grid; } },
+			{ label: 'Show guides', key: 'Ctrl+;', run: function () { toggleShow('guides'); }, checked: function () { return state.show.guides; } },
+			{ label: 'Show cell', run: function () { toggleShow('cell'); }, checked: function () { return state.show.cell; } },
 			'-',
 			{ label: 'Light mode', run: toggleTheme, checked: function () { return currentTheme() === 'light'; } }
 		] }
@@ -2731,6 +2758,7 @@
 		});
 	}
 
+	loadShow();
 	bindUI();
 	setTool('select');
 	loadAll().then(function () {
