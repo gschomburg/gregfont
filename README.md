@@ -128,7 +128,7 @@ The layout follows desktop drawing apps:
 | Spacing | Drag the pink dashed lines (left/right side bearings) or type the numbers in the Glyph panel. |
 | Nudge | Arrow keys move the selection 1 unit, Shift + arrows one grid step. |
 | Snap | Two switches in the bar above the canvas. **Grid** (<kbd>G</kbd>) snaps to the grid; set its size next to it. **Paths** (<kbd>Shift+G</kbd>) snaps onto other paths' points, or failing that onto their lines, when dragging points or handles, placing pen points (and pulling their handles) and drawing shapes; a pink ring shows where. A handle never snaps onto its own point. A nearby path wins over the grid; with both off, points go exactly where you put them. |
-| View | Mouse wheel zooms, Space-drag or middle-drag pans, <kbd>F</kbd> fits the glyph. |
+| View | Mouse wheel zooms, Space-drag or middle-drag pans. The − / % / + / **Fit** buttons at the right of the bar above the canvas zoom out, go back to 100% (one font unit per pixel), zoom in, and fit the glyph; so do Ctrl+− / Ctrl+= / Ctrl+0, and <kbd>F</kbd> fits too. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
 | Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `src/fonts` folder. Browsers without folder access download the file instead. |
 
@@ -136,7 +136,7 @@ The **Font** panel sets the name, cell size, guide lines, default stroke caps an
 
 The **preview** strip at the bottom sets a line of text with the font as you edit, at the strip's height; text that doesn't fit is cut off at the right. It's monospaced when the font's **Mono** switch (left panel) is on. **Stroke** sets the preview's stroke weight, in font units. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
 
-The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The **Specimen** button at the right of the preview bar (or picking a sample) slides the preview up into a **specimen view** over the glyph canvas, wrapping the text to the view's width. Zoom with the − / % / + buttons in the bar, Ctrl+wheel (or a trackpad pinch) anywhere over it, or Ctrl+= / Ctrl+− (Ctrl+0 or clicking the % goes back to 100%, one font unit per pixel). Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
+The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The **Specimen** button at the right of the preview bar (or picking a sample) slides the preview up into a **specimen view** over the glyph canvas. The text is wrapped once, to the view's width, and then you zoom and move around it like the canvas: the wheel (or a trackpad pinch) zooms around the cursor, dragging moves around, and the − / % / + / **Fit** buttons in the bar (or Ctrl+= / Ctrl+− / Ctrl+0) zoom, go back to 100% (one font unit per pixel) or fit the whole specimen in view. Line breaks never change while zooming; reopening the specimen wraps it to the view again. Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
 
 ## Working in Illustrator
 

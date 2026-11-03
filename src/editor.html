@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.0.4">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.0.4">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.1.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.1.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -88,6 +88,12 @@
 				</span>
 			</span>
 			<span id="cursor-pos"></span>
+			<div class="zoom-group" role="group" aria-label="Canvas zoom">
+					<button type="button" class="icon-button" id="canvas-zoom-out" title="Zoom out (Ctrl+-)" aria-label="Zoom out">&minus;</button>
+					<button type="button" class="zoom-label" id="canvas-zoom-reset" title="Back to 100%: one font unit per pixel">100%</button>
+					<button type="button" class="icon-button" id="canvas-zoom-in" title="Zoom in (Ctrl+=)" aria-label="Zoom in">+</button>
+					<button type="button" class="fit-button" id="canvas-zoom-fit" title="Fit the glyph in view (F, Ctrl+0)">Fit</button>
+				</div>
 		</div>
 
 		<div id="canvas-wrap" tabindex="-1">
@@ -122,9 +128,10 @@
 				<input id="preview-text" value="Hamburgefonstiv HAMBURG 0123">
 				<label class="field compact" data-scrub="x" title="Stroke weight for the preview, in font units"><span class="field-label">Stroke</span><input type="number" id="preview-stroke" value="2" min="0.1" step="0.1"></label>
 				<div class="zoom-group specimen-only" role="group" aria-label="Specimen zoom">
-					<button type="button" class="icon-button" id="specimen-zoom-out" title="Zoom out (Ctrl+-, or Ctrl+wheel)" aria-label="Zoom out">&minus;</button>
-					<button type="button" class="zoom-label" id="specimen-zoom-reset" title="Back to 100% (Ctrl+0)">100%</button>
-					<button type="button" class="icon-button" id="specimen-zoom-in" title="Zoom in (Ctrl+=, or Ctrl+wheel)" aria-label="Zoom in">+</button>
+					<button type="button" class="icon-button" id="specimen-zoom-out" title="Zoom out (Ctrl+-)" aria-label="Zoom out">&minus;</button>
+					<button type="button" class="zoom-label" id="specimen-zoom-reset" title="Back to 100%: one font unit per pixel">100%</button>
+					<button type="button" class="icon-button" id="specimen-zoom-in" title="Zoom in (Ctrl+=)" aria-label="Zoom in">+</button>
+					<button type="button" class="fit-button" id="specimen-zoom-fit" title="Fit the whole specimen in view (Ctrl+0)">Fit</button>
 				</div>
 				<button type="button" id="preview-expand" title="Expand into a specimen view (Esc closes it)" aria-label="Expand the preview into a specimen view">
 					<svg class="icon-expand" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>
@@ -214,12 +221,12 @@
 			</div>
 		</aside>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.0.4"></script>
-		<script src="fonts/fonts.js?v=2.0.4"></script>
-		<script src="js/gregfont.js?v=2.0.4"></script>
-		<script src="js/version.js?v=2.0.4"></script>
-		<script src="js/ui.js?v=2.0.4"></script>
-		<script src="js/samples.js?v=2.0.4"></script>
-		<script src="js/editor.js?v=2.0.4"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.1.0"></script>
+		<script src="fonts/fonts.js?v=2.1.0"></script>
+		<script src="js/gregfont.js?v=2.1.0"></script>
+		<script src="js/version.js?v=2.1.0"></script>
+		<script src="js/ui.js?v=2.1.0"></script>
+		<script src="js/samples.js?v=2.1.0"></script>
+		<script src="js/editor.js?v=2.1.0"></script>
 	</body>
 </html>

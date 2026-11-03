@@ -108,6 +108,12 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .spacer { flex: 1; }
 
+/* zoom controls: - 100% + Fit */
+.zoom-group { display: flex; align-items: center; gap: 2px; }
+.zoom-group .icon-button { width: 26px; height: 24px; font-size: 15px; line-height: 1; }
+.zoom-group .zoom-label { min-width: 54px; padding: 2px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.zoom-group .fit-button { height: 24px; padding: 0 9px; margin-left: 4px; font-size: 12px; }
+
 /* scrollbars: thin, in the panel colours */
 * { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }

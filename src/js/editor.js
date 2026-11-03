@@ -294,6 +294,7 @@
 	}
 
 	function drawGuides() {
+		showCanvasZoom();
 		guidesLayer.removeChildren();
 		var f = font();
 		if (!f) return;
@@ -356,6 +357,21 @@
 		var ink = inkBounds();
 		if (!glyph || !ink) return null;
 		return { lsb: ink.left - glyph.lsb, rsb: ink.right + glyph.rsb, ink: ink };
+	}
+
+	// --- canvas zoom: the - / % / + / Fit controls and Ctrl+= / Ctrl+- / Ctrl+0
+	function zoomCanvas(zoom, at) {
+		zoom = Math.min(Math.max(zoom, 0.2), 200);
+		at = at || P.view.center;
+		var old = P.view.zoom;
+		P.view.center = at.add(P.view.center.subtract(at).multiply(old / zoom));
+		P.view.zoom = zoom;
+		drawGuides();
+	}
+
+	function showCanvasZoom() {
+		var label = $('canvas-zoom-reset');
+		if (label) label.textContent = Math.round(P.view.zoom * 100) + '%';
 	}
 
 	function fit() {
@@ -1616,12 +1632,7 @@
 		e.preventDefault();
 		var rect = canvas.getBoundingClientRect();
 		var mouse = P.view.viewToProject(new P.Point(e.clientX - rect.left, e.clientY - rect.top));
-		var old = P.view.zoom;
-		var zoom = Math.min(Math.max(old * Math.pow(1.0015, -e.deltaY), 0.2), 200);
-		var center = mouse.add(P.view.center.subtract(mouse).multiply(old / zoom));
-		P.view.zoom = zoom;
-		P.view.center = center;
-		drawGuides();
+		zoomCanvas(P.view.zoom * Math.pow(1.0015, -e.deltaY), mouse);
 	}, { passive: false });
 
 	wrap.addEventListener('mousedown', function (e) {
@@ -2672,6 +2683,7 @@
 		body.classList.remove('sliding');
 		$('preview-expand').setAttribute('aria-label', on ? 'Close the specimen view' : 'Expand the preview into a specimen view');
 		$('preview-expand').title = on ? 'Back to the glyph (Esc)' : 'Expand into a specimen view (Esc closes it)';
+		if (on && !isSpecimen()) resetSpecimenView();
 		var still = !bar.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		if (on === isSpecimen() || still) {
 			body.classList.toggle('specimen', on);
@@ -2708,15 +2720,13 @@
 
 	function isSpecimen() { return document.body.classList.contains('specimen'); }
 
-	// The preview's own stroke weight (font units) and the specimen's zoom
-	// (screen pixels per font unit).
-	var previewView = { stroke: 2, zoom: 1 };
+	// The preview's own stroke weight (font units, remembered), and the
+	// specimen's camera: zoom (screen pixels per font unit), pan (pixels),
+	// and the width the text wraps at (font units), set when it opens.
+	var previewView = { stroke: 2, zoom: 1, panX: 0, panY: 0, wrap: null, w: 0, h: 0 };
 	try {
 		var savedView = JSON.parse(localStorage.getItem('gregfont-editor-preview') || 'null');
-		if (savedView) {
-			if (savedView.stroke > 0) previewView.stroke = savedView.stroke;
-			if (savedView.zoom > 0) previewView.zoom = savedView.zoom;
-		}
+		if (savedView && savedView.stroke > 0) previewView.stroke = savedView.stroke;
 	} catch (e) { /* ignore */ }
 
 	// Space around the preview text, in font units. Fixed, so a thicker
@@ -2724,32 +2734,66 @@
 	function previewMargin(f) { return Math.max(f.cell.height * 0.08, 2); }
 
 	function savePreviewView() {
-		try { localStorage.setItem('gregfont-editor-preview', JSON.stringify(previewView)); } catch (e) { /* ignore */ }
+		try { localStorage.setItem('gregfont-editor-preview', JSON.stringify({ stroke: previewView.stroke })); } catch (e) { /* ignore */ }
 	}
 
-	function setSpecimenZoom(z) {
-		previewView.zoom = Math.min(Math.max(z, 0.1), 12);
+	var SPEC_PAD_X = 22, SPEC_PAD_Y = 18;   // screen pixels around the text
+
+	// Opening the specimen: wrap the text to the view's width at 100%.
+	function resetSpecimenView() {
+		previewView.wrap = null;
+		previewView.zoom = 1;
+		previewView.panX = SPEC_PAD_X;
+		previewView.panY = SPEC_PAD_Y;
+	}
+
+	function applySpecimenView() {
+		var g = $('preview').querySelector('g.spec-view');
+		if (g) g.setAttribute('transform', 'matrix(' + previewView.zoom + ' 0 0 ' + previewView.zoom + ' ' + previewView.panX + ' ' + previewView.panY + ')');
 		$('specimen-zoom-reset').textContent = Math.round(previewView.zoom * 100) + '%';
-		savePreviewView();
-		renderPreview();
 	}
 
-	// The expanded specimen: the text wrapped to the view's width, at the zoom.
+	// zoom around a point in the preview box (screen pixels), or its centre
+	function zoomSpecimen(z, sx, sy) {
+		var box = $('preview');
+		if (sx === undefined) { sx = box.clientWidth / 2; sy = box.clientHeight / 2; }
+		z = Math.min(Math.max(z, 0.05), 40);
+		previewView.panX = sx - (sx - previewView.panX) * z / previewView.zoom;
+		previewView.panY = sy - (sy - previewView.panY) * z / previewView.zoom;
+		previewView.zoom = z;
+		applySpecimenView();
+	}
+
+	function fitSpecimen() {
+		var box = $('preview'), v = previewView;
+		if (!v.w || !v.h) return;
+		var bw = Math.max(box.clientWidth - SPEC_PAD_X * 2, 50), bh = Math.max(box.clientHeight - SPEC_PAD_Y * 2, 50);
+		v.zoom = Math.min(bw / v.w, bh / v.h);
+		v.panX = (box.clientWidth - v.w * v.zoom) / 2;
+		v.panY = Math.max((box.clientHeight - v.h * v.zoom) / 2, SPEC_PAD_Y);
+		applySpecimenView();
+	}
+
+	// The expanded specimen: laid out once (wrapped to the view's width when
+	// it opened), then zoomed and panned like the canvas.
 	function renderSpecimen(f, box, mono) {
-		var scale = previewView.zoom;
-		var avail = Math.max(box.clientWidth - 44, 100);
+		var v = previewView, pad = previewMargin(f);
+		if (!v.wrap) v.wrap = Math.max(box.clientWidth - SPEC_PAD_X * 2, 100) / v.zoom - pad * 2;
 		var result = GregFont.layoutBlock(P, f, previewText(), {
 			monospace: mono, letterSpacing: f.spacing.letterSpacing, lineHeight: f.spacing.lineHeight,
-			width: avail / scale
+			width: v.wrap
 		});
-		var pad = previewMargin(f);
-		var svg = svgEl('svg', {
-			width: avail, height: Math.ceil((result.height + pad * 2) * scale),
-			viewBox: [-pad, -pad, avail / scale, result.height + pad * 2].join(' ')
-		});
-		result.glyphs.forEach(function (placed) { svg.appendChild(previewGlyph(f, placed)); });
+		v.w = Math.max(result.width, 1) + pad * 2;
+		v.h = result.height + pad * 2;
+		var svg = svgEl('svg');
+		var g = svgEl('g', { class: 'spec-view' });
+		var inner = svgEl('g', { transform: 'translate(' + pad + ' ' + pad + ')' });
+		result.glyphs.forEach(function (placed) { inner.appendChild(previewGlyph(f, placed)); });
+		g.appendChild(inner);
+		svg.appendChild(g);
 		box.appendChild(svg);
-		box.title = 'Click a letter to edit it. Shift-click two letters to set up a kerning pair.';
+		applySpecimenView();
+		box.title = 'Wheel zooms, drag to move around. Click a letter to edit it; Shift-click two letters to set up a kerning pair.';
 	}
 
 	// One clickable glyph for the preview or specimen.
@@ -3321,22 +3365,69 @@
 			else renderPreview();
 		});
 		$('preview-expand').addEventListener('click', function () { setSpecimen(!isSpecimen()); });
-		$('specimen-zoom-reset').textContent = Math.round(previewView.zoom * 100) + '%';
-		$('specimen-zoom-in').addEventListener('click', function () { setSpecimenZoom(previewView.zoom * 1.25); });
-		$('specimen-zoom-out').addEventListener('click', function () { setSpecimenZoom(previewView.zoom / 1.25); });
-		$('specimen-zoom-reset').addEventListener('click', function () { setSpecimenZoom(1); });
-		// Ctrl+wheel (or a trackpad pinch) anywhere over the specimen zooms it,
-		// not the browser
+		// specimen zoom: buttons, the wheel anywhere over it (Ctrl or not, so
+		// a trackpad pinch works too, and never the browser's zoom)
+		$('specimen-zoom-in').addEventListener('click', function () { zoomSpecimen(previewView.zoom * 1.25); });
+		$('specimen-zoom-out').addEventListener('click', function () { zoomSpecimen(previewView.zoom / 1.25); });
+		$('specimen-zoom-reset').addEventListener('click', function () { zoomSpecimen(1); });
+		$('specimen-zoom-fit').addEventListener('click', fitSpecimen);
 		$('preview-bar').addEventListener('wheel', function (e) {
-			if (!isSpecimen() || !(e.ctrlKey || e.metaKey)) return;
+			if (!isSpecimen()) return;
 			e.preventDefault();
-			setSpecimenZoom(previewView.zoom * Math.pow(1.0015, -e.deltaY));
+			var r = $('preview').getBoundingClientRect();
+			zoomSpecimen(previewView.zoom * Math.pow(1.0015, -e.deltaY), e.clientX - r.left, e.clientY - r.top);
 		}, { passive: false });
+		// drag anywhere to move around; a click without moving still picks a letter
+		var specDrag = null;
+		$('preview').addEventListener('pointerdown', function (e) {
+			if (!isSpecimen() || (e.button !== 0 && e.button !== 1)) return;
+			if (e.button === 1) e.preventDefault();
+			specDrag = { x: e.clientX, y: e.clientY, px: previewView.panX, py: previewView.panY, moved: false, id: e.pointerId };
+		});
+		$('preview').addEventListener('pointermove', function (e) {
+			if (!specDrag) return;
+			var dx = e.clientX - specDrag.x, dy = e.clientY - specDrag.y;
+			if (!specDrag.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+			if (!specDrag.moved) {
+				specDrag.moved = true;
+				$('preview').classList.add('panning');
+				try { $('preview').setPointerCapture(specDrag.id); } catch (err) { /* ignore */ }
+			}
+			previewView.panX = specDrag.px + dx;
+			previewView.panY = specDrag.py + dy;
+			applySpecimenView();
+		});
+		function endSpecDrag() {
+			if (!specDrag) return;
+			if (specDrag.moved) {
+				// swallow the click that follows a drag, so it doesn't pick a letter
+				window.addEventListener('click', function swallow(ev) { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true });
+				setTimeout(function () { $('preview').classList.remove('panning'); }, 0);
+			}
+			specDrag = null;
+		}
+		$('preview').addEventListener('pointerup', endSpecDrag);
+		$('preview').addEventListener('pointercancel', endSpecDrag);
+
+		// glyph canvas zoom controls
+		$('canvas-zoom-in').addEventListener('click', function () { zoomCanvas(P.view.zoom * 1.25); });
+		$('canvas-zoom-out').addEventListener('click', function () { zoomCanvas(P.view.zoom / 1.25); });
+		$('canvas-zoom-reset').addEventListener('click', function () { zoomCanvas(1); });
+		$('canvas-zoom-fit').addEventListener('click', fit);
+		['canvas-zoom-in', 'canvas-zoom-out', 'canvas-zoom-reset', 'canvas-zoom-fit', 'specimen-zoom-in', 'specimen-zoom-out', 'specimen-zoom-reset', 'specimen-zoom-fit'].forEach(function (id) {
+			$(id).addEventListener('mousedown', function (e) { e.preventDefault(); });   // keep keyboard focus put
+		});
+
+		// Ctrl+= / Ctrl+- / Ctrl+0: the specimen when it's open, otherwise the canvas
 		document.addEventListener('keydown', function (e) {
-			if (!isSpecimen() || !(e.ctrlKey || e.metaKey)) return;
-			if (e.key === '=' || e.key === '+') { e.preventDefault(); e.stopImmediatePropagation(); setSpecimenZoom(previewView.zoom * 1.25); }
-			else if (e.key === '-') { e.preventDefault(); e.stopImmediatePropagation(); setSpecimenZoom(previewView.zoom / 1.25); }
-			else if (e.key === '0') { e.preventDefault(); e.stopImmediatePropagation(); setSpecimenZoom(1); }
+			if (!(e.ctrlKey || e.metaKey) || e.altKey || isTyping(e)) return;
+			var k = e.key, spec = isSpecimen();
+			if (k !== '=' && k !== '+' && k !== '-' && k !== '0') return;
+			e.preventDefault();
+			e.stopImmediatePropagation();
+			if (k === '0') { if (spec) fitSpecimen(); else fit(); return; }
+			var f = k === '-' ? 0.8 : 1.25;
+			if (spec) zoomSpecimen(previewView.zoom * f); else zoomCanvas(P.view.zoom * f);
 		}, true);
 		new ResizeObserver(function () { renderPreview(); }).observe($('preview'));
 		bindFontInputs();
