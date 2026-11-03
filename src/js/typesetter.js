@@ -928,6 +928,7 @@
 		setSegmented('t-align', b.align);
 		setSegmented('t-case', b.textCase);
 		document.querySelectorAll('#t-colours .swatch-button').forEach(function (btn) {
+			btn.style.background = screenColour(btn.dataset.colour);   // as the page shows it
 			btn.classList.toggle('active', btn.dataset.colour.toLowerCase() === String(b.colour).toLowerCase());
 		});
 		$('t-colour').value = /^#[0-9a-f]{6}$/i.test(b.colour) ? b.colour : '#141414';
@@ -1172,6 +1173,7 @@
 	function toggleTheme() {
 		GregUI.setTheme(GregUI.currentTheme() === 'dark' ? 'light' : 'dark');
 		render();
+		refreshPanels();
 	}
 
 	document.addEventListener('keydown', function (e) {
