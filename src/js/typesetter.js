@@ -291,18 +291,33 @@
 
 	function px(n) { return n / state.zoom; }   // screen pixels -> page pixels
 
+	// On the dark page, near-black pens are shown light so they stay
+	// visible. Only on screen: saved files keep the real colour.
+	function screenColour(c) {
+		if (GregUI.currentTheme() !== 'dark') return c;
+		var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c);
+		if (!m) return c;
+		var lum = [m[1], m[2], m[3]].map(function (h) {
+			var v = parseInt(h, 16) / 255;
+			return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+		});
+		var l = 0.2126 * lum[0] + 0.7152 * lum[1] + 0.0722 * lum[2];
+		return l < 0.03 ? '#ececea' : c;
+	}
+
 	function render() {
 		var page = doc.page;
 		pageLayer.innerHTML = '';
+		var css = getComputedStyle(document.documentElement);
 		el('rect', { x: 2, y: 3, width: page.width, height: page.height, fill: '#000', opacity: 0.12 }, pageLayer);
-		el('rect', { x: 0, y: 0, width: page.width, height: page.height, fill: '#ffffff' }, pageLayer);
+		el('rect', { x: 0, y: 0, width: page.width, height: page.height, fill: css.getPropertyValue('--page').trim() || '#ffffff' }, pageLayer);
 
 		inkLayer.innerHTML = '';
 		doc.boxes.forEach(function (b) {
 			var g = el('g', { 'data-box': b.id }, inkLayer);
 			boxData(b).strokes.forEach(function (s) {
 				el('path', {
-					d: s.d, fill: 'none', stroke: s.colour, 'stroke-width': s.width,
+					d: s.d, fill: 'none', stroke: screenColour(s.colour), 'stroke-width': s.width,
 					'stroke-linecap': s.cap, 'stroke-linejoin': s.join, 'stroke-miterlimit': s.miter
 				}, g);
 			});
@@ -832,7 +847,7 @@
 		var items = order.map(function (o) {
 			var s = o.s;
 			var p = el('path', {
-				d: o.reverse ? reversedD(s) : s.d, fill: 'none', stroke: s.colour, 'stroke-width': s.width,
+				d: o.reverse ? reversedD(s) : s.d, fill: 'none', stroke: screenColour(s.colour), 'stroke-width': s.width,
 				'stroke-linecap': s.cap, 'stroke-linejoin': s.join, 'stroke-miterlimit': s.miter
 			}, playLayer);
 			var len = p.getTotalLength() || 0.01;
@@ -1156,7 +1171,7 @@
 
 	function toggleTheme() {
 		GregUI.setTheme(GregUI.currentTheme() === 'dark' ? 'light' : 'dark');
-		renderUI();
+		render();
 	}
 
 	document.addEventListener('keydown', function (e) {

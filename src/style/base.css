@@ -24,6 +24,7 @@
 
 	/* the canvas: dark */
 	--canvas: #1a1b1f;
+	--page: #2a2b30;
 	--canvas-grid: #25262b;
 	--canvas-grid-major: #31323a;
 	--canvas-cell: rgba(255, 255, 255, 0.08);
@@ -57,6 +58,7 @@
 
 	/* the canvas: light */
 	--canvas: #f3f3f1;
+	--page: #ffffff;
 	--canvas-grid: #e3e3e0;
 	--canvas-grid-major: #d1d1cd;
 	--canvas-cell: rgba(0, 0, 0, 0.1);
