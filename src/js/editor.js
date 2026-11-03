@@ -141,6 +141,7 @@
 				item.remove();
 				parts.forEach(function (path) {
 					path.data.style = Object.assign({}, style);
+					if (entry.group) path.data.group = entry.group;
 					pathStyle(path);
 					glyphLayer.addChild(path);
 				});
@@ -163,6 +164,7 @@
 			var entry = { d: p.getPathData(null, 3) };
 			var style = p.data.style || {};
 			Object.keys(style).forEach(function (k) { if (style[k] !== undefined && style[k] !== '') entry[k] = style[k]; });
+			if (p.data.group) entry.group = p.data.group;
 			return entry;
 		});
 		GregFont.clearCache(f, state.ch);
@@ -352,8 +354,8 @@
 		if (name === 'select') {
 			// the Select tool always works on whole paths
 			selCurves.clear();
-			paths.forEach(selectWhole);
-		} else if (name === 'direct' && state.tool === 'select') {
+			paths.forEach(function (p) { groupMembers(p).forEach(selectWhole); });
+		} else if ((name === 'direct' || name === 'anchor') && state.tool === 'select') {
 			paths.forEach(selectPoints);
 		}
 		state.tool = name;
@@ -371,7 +373,8 @@
 		direct: 'Click points, or a line to pick one segment \u00b7 Shift adds \u00b7 drag handles to reshape (Alt makes a corner) \u00b7 double-click a point for curve/corner, a line to add a point',
 		pen: 'Click for corners, drag for curves \u00b7 click the first point to close, or the end of another path to join \u00b7 Enter or Esc finishes',
 		ellipse: 'Drag out an ellipse \u00b7 Shift for a circle',
-		scissors: 'Click a path to cut it there'
+		anchor: 'Drag from a point to pull out curve handles \u00b7 click a point to make it a corner \u00b7 drag a handle to move it on its own',
+		scissors: 'Click a path to cut it there \u00b7 drag a line across paths to cut everything it crosses (Shift: 45\u00b0 steps)'
 	};
 
 	// --- selection model
@@ -443,6 +446,50 @@
 	function selectPath(p) {
 		if (state.tool === 'direct') selectPoints(p);
 		else selectWhole(p);
+	}
+
+	// --- groups (stored per path as data.group, a number)
+
+	function groupMembers(path) {
+		var g = path.data.group;
+		if (!g) return [path];
+		return editablePaths().filter(function (p) { return p.data.group === g; });
+	}
+
+	function newGroupId() {
+		var max = 0;
+		editablePaths().forEach(function (p) { if (p.data.group > max) max = p.data.group; });
+		return max + 1;
+	}
+
+	// copies of grouped paths become their own new groups
+	function regroup(paths) {
+		var map = {}, next = newGroupId();
+		paths.forEach(function (p) {
+			var g = p.data.group;
+			if (!g) return;
+			if (!map[g]) map[g] = next++;
+			p.data.group = map[g];
+		});
+	}
+
+	function groupSelection() {
+		var paths = selectedPaths();
+		if (paths.length < 2) { setStatus('Select two or more paths to group'); return; }
+		edit(function () {
+			var id = newGroupId();
+			paths.forEach(function (p) { p.data.group = id; });
+		});
+		setStatus('Grouped ' + paths.length + ' paths');
+	}
+
+	function ungroupSelection() {
+		var paths = selectedPaths().filter(function (p) { return p.data.group; });
+		if (!paths.length) { setStatus('Nothing grouped is selected'); return; }
+		edit(function () {
+			paths.forEach(function (p) { delete p.data.group; });
+		});
+		setStatus('Ungrouped');
 	}
 
 	function toggleAnchor(s) {
@@ -601,8 +648,21 @@
 		if (!hit) return;
 		var h;
 		if (state.tool === 'select') {
-			h = hit.item.clone({ insert: false });
-			h.selected = false;
+			// outline the whole group
+			h = new P.Group({ insert: false });
+			groupMembers(hit.item).forEach(function (m) {
+				var c = m.clone({ insert: false });
+				c.selected = false;
+				c.fillColor = null;
+				c.strokeColor = COLORS.select;
+				c.strokeWidth = 2;
+				c.strokeScaling = false;
+				h.addChild(c);
+			});
+			h.opacity = 0.6;
+			overlayLayer.addChild(h);
+			hover = h;
+			return;
 		} else if (hit.type === 'segment') {
 			hover = marker(hit.segment.point, overlayLayer, true);
 			return;
@@ -638,7 +698,7 @@
 			if (box) cursor = box.kind === 'rotate' ? 'grab' : RESIZE_CURSORS[box.handle[0]];
 			else if (!hitGlyph(e.point) && hitBearing(e.point)) cursor = 'ew-resize';
 			else showHover(e.point);
-		} else if (state.tool === 'scissors') {
+		} else if (state.tool === 'scissors' || state.tool === 'anchor') {
 			showHover(e.point);
 		}
 		wrap.style.cursor = cursor;
@@ -650,7 +710,8 @@
 		if (state.tool === 'select') selectDown(e);
 		else if (state.tool === 'direct') directDown(e);
 		else if (state.tool === 'pen') penDown(e);
-		else if (state.tool === 'scissors') scissorsDown(e);
+		else if (state.tool === 'scissors') drag = { mode: 'knife', start: e.point };
+		else if (state.tool === 'anchor') anchorDown(e);
 		else if (state.tool === 'ellipse') drag = { mode: 'ellipse', start: snap(e.point) };
 	};
 
@@ -683,6 +744,22 @@
 			drag.box.strokeScaling = false;
 			drag.box.dashArray = [3, 3];
 			overlayLayer.addChild(drag.box);
+		} else if (drag.mode === 'knife') {
+			if (drag.line) drag.line.remove();
+			drag.end = constrain(drag.start, e.point, mod(e, 'shift'));
+			if (drag.end.getDistance(drag.start) > px(4)) {
+				drag.line = line(drag.start, drag.end, COLORS.bearing, true, overlayLayer);
+			}
+		} else if (drag.mode === 'convert') {
+			// pull handles out of the point, mirrored, as with Illustrator's Anchor Point tool
+			var cs = drag.segment;
+			var out = p.subtract(cs.point);
+			if (out.getDistance(new P.Point(0, 0)) > px(2)) {
+				drag.moved = true;
+				cs.handleOut = out;
+				cs.handleIn = out.multiply(-1);
+				commit();
+			}
 		} else if (drag.mode === 'pen-handle') {
 			var h = p.subtract(drag.segment.point);
 			drag.segment.handleOut = h;
@@ -709,7 +786,7 @@
 					var rp = new P.Path.Rectangle({ rectangle: rect, insert: false });
 					editablePaths().forEach(function (path) {
 						var inside = path.segments.some(function (s) { return rect.contains(s.point); });
-						if (inside || path.getIntersections(rp).length) selectWhole(path);
+						if (inside || path.getIntersections(rp).length) groupMembers(path).forEach(selectWhole);
 					});
 				} else {
 					editablePaths().forEach(function (path) {
@@ -732,6 +809,17 @@
 			}
 		} else if (drag.mode === 'pen-handle') {
 			commit();
+		} else if (drag.mode === 'knife') {
+			if (drag.line) { drag.line.remove(); knifeCut(drag.start, drag.end); }
+			else clickCut(e.point);
+		} else if (drag.mode === 'convert') {
+			// a click without a drag makes a sharp corner
+			if (!drag.moved) {
+				drag.segment.handleIn = [0, 0];
+				drag.segment.handleOut = [0, 0];
+			}
+			endEdit();
+			updatePathStyleRow();
 		} else {
 			if (drag.mode === 'transform' && drag.kind === 'rotate') setStatus('');
 			endEdit();
@@ -780,14 +868,14 @@
 			return;
 		}
 
-		var path = hit.item;
+		var path = hit.item, members = groupMembers(path);
 		if (shift && path.selected) {
-			path.selected = false;
+			members.forEach(function (m) { m.selected = false; });
 			updatePathStyleRow();
 			return;
 		}
 		if (!shift && !path.selected) deselectAll();
-		selectWhole(path);
+		members.forEach(selectWhole);
 		startPointDrag(nearestPoint(path, point), mod(e, 'alt'), point);
 	}
 
@@ -853,6 +941,36 @@
 	}
 
 	// anchor: the point that lands on the grid; click: where the mouse went down
+	// Anchor Point tool: drag from a point to pull out smooth handles, click a
+	// point to make it a corner, drag a handle to move it on its own.
+	function anchorDown(e) {
+		var handle = hitHandle(e.point);
+		if (handle) {
+			beginEdit();
+			drag = { mode: 'handle', segment: handle.segment, which: handle.which, mirror: false };
+			return;
+		}
+		var hit = hitGlyph(e.point, { stroke: false });
+		if (!hit || hit.type !== 'segment') return;
+		beginEdit();
+		deselectAll();
+		hit.segment.selected = true;
+		drag = { mode: 'convert', segment: hit.segment, moved: false };
+		updatePathStyleRow();
+	}
+
+	function setPointsSmooth(smooth) {
+		var segs = selectedSegments();
+		if (!segs.length) { setStatus('Select points with the Direct tool first'); return; }
+		edit(function () {
+			segs.forEach(function (s) {
+				if (smooth) s.smooth({ type: 'catmull-rom' });
+				else { s.handleIn = [0, 0]; s.handleOut = [0, 0]; }
+			});
+		});
+		updatePathStyleRow();
+	}
+
 	function startPointDrag(anchor, alt, click) {
 		beginEdit();
 		drag = { mode: 'points', anchorStart: anchor.clone(), click: (click || anchor).clone(), alt: alt };
@@ -974,8 +1092,15 @@
 	function clonePath(path) {
 		var np = path.clone({ insert: false });
 		np.selected = false;
-		np.data = { style: Object.assign({}, path.data.style) };
+		np.data = copyData(path);
 		return np;
+	}
+
+	// a path's editor data (style overrides and group), for a piece or copy of it
+	function copyData(path) {
+		var d = { style: Object.assign({}, path.data.style) };
+		if (path.data.group) d.group = path.data.group;
+		return d;
 	}
 
 	// New paths made from the runs of curves where keep(i) is true.
@@ -1012,7 +1137,7 @@
 		});
 		np.firstSegment.handleIn = [0, 0];
 		np.lastSegment.handleOut = [0, 0];
-		np.data = { style: Object.assign({}, path.data.style) };
+		np.data = copyData(path);
 		return np;
 	}
 
@@ -1029,6 +1154,7 @@
 		var pieces = selectionPieces();
 		if (!pieces.length) return false;
 		deselectAll();
+		regroup(pieces);
 		pieces.forEach(function (p) {
 			pathStyle(p);
 			glyphLayer.addChild(p);
@@ -1050,7 +1176,7 @@
 			.filter(function (o, i, arr) { return i === 0 || o - arr[i - 1] > MIN_PIECE; });
 		if (path.closed && offs.length > 1 && L - offs[offs.length - 1] + offs[0] < MIN_PIECE) offs.pop();
 		if (!offs.length) return 0;
-		var style = path.data.style || {}, cuts = offs.length;
+		var data = copyData(path), cuts = offs.length;
 		if (path.closed) {
 			// opening a closed path moves its start to the cut
 			var last = offs.pop();
@@ -1061,7 +1187,7 @@
 			var tail = path.splitAt(offs[k]);
 			if (tail && tail !== path) {
 				tail.selected = false;
-				tail.data = { style: Object.assign({}, style) };
+				tail.data = { style: Object.assign({}, data.style), group: data.group };
 				pathStyle(tail);
 			}
 		}
@@ -1106,8 +1232,10 @@
 		slicePaths(editablePaths(), function (a, b) { return a === path || b === path; });
 	}
 
-	function scissorsDown(e) {
-		var hit = hitGlyph(e.point);
+	// Cut tool: a click cuts the path there; a drag draws a knife line that
+	// cuts every path it crosses (the line itself isn't kept).
+	function clickCut(point) {
+		var hit = hitGlyph(point);
 		if (!hit) return;
 		var path = hit.item, loc;
 		if (hit.type === 'segment') {
@@ -1121,16 +1249,38 @@
 		}
 		if (!loc) return;
 		edit(function () {
-			var style = path.data.style || {};
+			var data = copyData(path);
 			var tail = path.splitAt(loc);
 			if (tail && tail !== path) {
 				tail.selected = false;
-				tail.data = { style: Object.assign({}, style) };
+				tail.data = data;
 				pathStyle(tail);
 			}
 			deselectAll();
 		});
 		setStatus('Cut');
+	}
+
+	function knifeCut(a, b) {
+		var blade = new P.Path.Line({ from: a, to: b, insert: false });
+		var cuts = 0;
+		edit(function () {
+			editablePaths().forEach(function (path) {
+				var offsets = path.getIntersections(blade).map(function (loc) { return loc.offset; });
+				if (offsets.length) cuts += splitAtOffsets(path, offsets);
+			});
+			deselectAll();
+		});
+		updatePathStyleRow();
+		setStatus(cuts ? 'Cut at ' + cuts + ' point' + (cuts === 1 ? '' : 's') : 'The line didn\u2019t cross anything');
+	}
+
+	// Shift keeps a line to 45 degree steps
+	function constrain(from, to, on) {
+		if (!on) return to;
+		var v = to.subtract(from);
+		v.angle = Math.round(v.angle / 45) * 45;
+		return from.add(v);
 	}
 
 	function closeEnds(p) {
@@ -1376,7 +1526,7 @@
 			return false;
 		}
 		state.clipboard = pieces.map(function (p) {
-			return { d: p.getPathData(null, 3), style: Object.assign({}, p.data.style) };
+			return { d: p.getPathData(null, 3), style: Object.assign({}, p.data.style), group: p.data.group };
 		});
 		setStatus('Copied ' + pieces.length + ' path' + (pieces.length === 1 ? '' : 's'));
 		return true;
@@ -1387,16 +1537,22 @@
 		if (!state.clipboard) return;
 		edit(function () {
 			deselectAll();
+			var added = [];
 			state.clipboard.forEach(function (c) {
 				var item = P.PathItem.create(c.d);
 				var parts = item instanceof P.CompoundPath ? item.removeChildren() : [item];
 				item.remove();
 				parts.forEach(function (p) {
 					p.data.style = Object.assign({}, c.style);
-					pathStyle(p);
-					glyphLayer.addChild(p);
-					selectPath(p);
+					if (c.group) p.data.group = c.group;
+					added.push(p);
 				});
+			});
+			regroup(added);
+			added.forEach(function (p) {
+				pathStyle(p);
+				glyphLayer.addChild(p);
+				selectPath(p);
 			});
 		});
 		updatePathStyleRow();
@@ -1417,6 +1573,7 @@
 		if (ctrl && key === 'x') { e.preventDefault(); cutSelection(); return; }
 		if (ctrl && key === 'v') { paste(); return; }
 		if (ctrl && key === 'j') { e.preventDefault(); joinSelection(); return; }
+		if (ctrl && key === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); return; }
 		if (ctrl) return;
 
 		var step = e.shiftKey ? state.grid : 1;
@@ -1425,7 +1582,7 @@
 			case 'a': setTool('direct'); break;
 			case 'p': setTool('pen'); break;
 			case 'e': setTool('ellipse'); break;
-			case 'c': setTool('scissors'); break;
+			case 'c': setTool(e.shiftKey ? 'anchor' : 'scissors'); break;
 			case 'x': sliceSelection(); break;
 			case 'r': rotateSelection(e.shiftKey ? -90 : 90); break;
 			case 'h': flipSelection(e.shiftKey); break;
@@ -1497,7 +1654,10 @@
 			{ label: 'Select all', key: 'Ctrl+A', run: selectAll },
 			{ label: 'Deselect', key: 'Esc', run: deselect, enabled: hasSelection }
 		] },
-		{ title: 'Path', items: [
+		{ title: 'Object', items: [
+			{ label: 'Group', key: 'Ctrl+G', run: groupSelection, enabled: function () { return selectedPaths().length > 1; } },
+			{ label: 'Ungroup', key: 'Ctrl+Shift+G', run: ungroupSelection, enabled: function () { return selectedPaths().some(function (p) { return p.data.group; }); } },
+			'-',
 			{ label: 'Join', key: 'Ctrl+J', run: joinSelection, enabled: hasSelection },
 			{ label: 'Slice at crossings', key: 'X', run: sliceSelection },
 			'-',
@@ -1505,6 +1665,9 @@
 			{ label: 'Rotate 90° counter-clockwise', key: 'Shift+R', run: function () { rotateSelection(-90); }, enabled: hasSelection },
 			{ label: 'Flip horizontal', key: 'H', run: function () { flipSelection(false); }, enabled: hasSelection },
 			{ label: 'Flip vertical', key: 'Shift+H', run: function () { flipSelection(true); }, enabled: hasSelection },
+			'-',
+			{ label: 'Make points smooth', run: function () { setPointsSmooth(true); }, enabled: function () { return selectedSegments().length > 0; } },
+			{ label: 'Make points corners', run: function () { setPointsSmooth(false); }, enabled: function () { return selectedSegments().length > 0; } },
 			'-',
 			{ label: 'Auto-slice new strokes', run: function () { setAutoSlice(!state.autoSlice); }, checked: function () { return state.autoSlice; } }
 		] },

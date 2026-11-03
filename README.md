@@ -69,7 +69,7 @@ Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json
 
 - **glyphs** are keyed by the character itself. Longer keys (`"ampersandalt"`) are named extra glyphs, like alternates, which text setting doesn't use yet.
 - **lsb / rsb** (left/right side bearing) are the gaps, in font units, before and after the glyph's ink when setting proportionally. Monospaced setting ignores them and places the cell as drawn.
-- **paths** can override `strokeCap`, `strokeJoin` or `miterLimit` from `style`.
+- **paths** can override `strokeCap`, `strokeJoin` or `miterLimit` from `style`. Paths the editor has grouped share a `group` number; the typesetter ignores it.
 - **kerning** maps two-character pairs to an adjustment added between them (proportional only).
 - **spacing** holds the defaults the typesetter's controls reset to.
 - The file is written one glyph per line, so git diffs show which glyphs changed.
@@ -82,8 +82,8 @@ Open `editor.html` (or **Edit fonts ↗** in the typesetter). Pick a font at the
 
 The layout follows desktop drawing apps:
 
-- **Tools** are in the palette down the left of the canvas: Select, Direct select, Pen, Ellipse and Cut. A hint line at the bottom of the canvas explains the current tool.
-- **Commands** are in the menus at the top: **File** (new, import, save), **Edit** (undo, clipboard, delete, select all), **Path** (join, slice, rotate, flip) and **View** (fit, snap). Each menu item shows its keyboard shortcut.
+- **Tools** are in the palette down the left of the canvas: Select, Direct select, Pen, Anchor point, Ellipse and Cut. A hint line at the bottom of the canvas explains the current tool.
+- **Commands** are in the menus at the top: **File** (new, import, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) and **View** (fit, snap). Each menu item shows its keyboard shortcut.
 - **Options** for drawing (snap, grid size, on-screen stroke width, auto-slice) are in the bar above the canvas.
 
 | Tool / command | How |
@@ -91,9 +91,11 @@ The layout follows desktop drawing apps:
 | **Select** <kbd>V</kbd> | Picks whole paths. Click a path, Shift-click to add more, or drag a box. A box appears around the selection: drag its handles to scale (Shift keeps proportions, Alt scales from the center), or drag just outside a corner to rotate (Shift for 15° steps). Drag a path to move it, Alt-drag to move a copy. |
 | **Direct** <kbd>A</kbd> | Picks points and the segments between them. Click a point, or click a line to pick just that segment (Flash-style). Shift-click to add more, or drag a box around points. Drag to move them, drag handles to reshape curves (Alt breaks a smooth point into a corner), Alt-drag to move a copy. |
 | **Pen** <kbd>P</kbd> | Click for corner points, click-drag for curves. Click the first point to close the path, or press Enter/Esc to finish it open. Click the end of an existing open path to continue it, or to join onto it while drawing. |
+| **Anchor point** <kbd>Shift+C</kbd> | Like Illustrator's: drag out from a point to pull out curve handles, click a point to make it a sharp corner, drag a handle to move it on its own. **Object → Make points smooth / corners** does the same for every selected point at once. |
 | **Ellipse** <kbd>E</kbd> | Drag out an ellipse; Shift for a circle. |
-| **Cut** <kbd>C</kbd> | Click a path to cut it there. Cutting a closed shape opens it. |
+| **Cut** <kbd>C</kbd> | Click a path to cut it there, or drag a line across paths to cut everything it crosses; the line itself isn't kept. Shift keeps the line to 45° steps. Cutting a closed shape opens it. |
 | **Slice** <kbd>X</kbd> | Cuts the selected paths (or the whole glyph if nothing is selected) wherever they cross, so every piece between crossings can be picked up on its own. With **Auto-slice** on, new pen and ellipse strokes slice whatever they cross as soon as they're drawn. |
+| **Group** <kbd>Ctrl+G</kbd> | Groups the selected paths so the Select tool picks them up, moves and transforms them together. <kbd>Ctrl+Shift+G</kbd> ungroups. The Direct tool still edits single points inside a group. Pieces cut from a grouped path stay in the group; pasted or Alt-dragged copies become a new group. |
 | **Join** <kbd>Ctrl+J</kbd> | Joins the selected open paths into one, closest ends first. Ends that touch become one point; ends that don't get a straight line. With two end points selected, joins exactly those. With one open path selected, closes it. Dragged points snap onto other points, so pieces line up exactly before joining. |
 | Rotate / flip | <kbd>R</kbd> rotates the selection 90° clockwise (Shift+R the other way); <kbd>H</kbd> flips it horizontally (Shift+H vertically). |
 | Copy / cut / paste | Ctrl+C copies the selection: whole paths, or just the selected segments when only part of a path is selected. Ctrl+X cuts. Ctrl+V pastes in place, into whichever glyph is open, so it also copies between glyphs. Nothing selected copies the whole glyph. |
