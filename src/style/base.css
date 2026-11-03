@@ -3,8 +3,8 @@
  * themes, and the common pieces (buttons, fields, switches, menus, the top
  * bar, the tool tab, foldable sections). The canvas colours are read by
  * the pages' scripts for drawing, so every canvas colour lives here too.
- * Two themes: dark panels around a light canvas, or light panels around a
- * dark canvas.
+ * Two themes: dark (dark panels and canvas) or light (light panels and
+ * canvas).
  */
 :root,
 :root[data-theme="dark"] {
@@ -22,22 +22,22 @@
 	--danger: #ef7a7a;
 	--shadow: rgba(0, 0, 0, 0.45);
 
-	/* the canvas side: light */
-	--canvas: #f3f3f1;
-	--canvas-grid: #e3e3e0;
-	--canvas-grid-major: #d1d1cd;
-	--canvas-cell: rgba(0, 0, 0, 0.1);
-	--ink: #141414;
-	--guide-cap: #2f6fd0;
-	--guide-xh: #127a58;
-	--guide-base: #b05f00;
-	--guide-desc: #7a3a95;
-	--bearing: #c2286a;
-	--select: #2f6fe0;
-	--order-start: #15803d;
-	--order-end: #be123c;
+	/* the canvas: dark */
+	--canvas: #1a1b1f;
+	--canvas-grid: #25262b;
+	--canvas-grid-major: #31323a;
+	--canvas-cell: rgba(255, 255, 255, 0.08);
+	--ink: #f2f2ef;
+	--guide-cap: #6aa5ff;
+	--guide-xh: #3ec99a;
+	--guide-base: #ffad42;
+	--guide-desc: #c39af0;
+	--bearing: #ff5fa2;
+	--select: #5b95ff;
+	--order-start: #22c55e;
+	--order-end: #fb7185;
 	--order-travel: #8a8c93;
-	--missing: #2a2b30;
+	--missing: #e7e7ea;
 }
 
 :root[data-theme="light"] {
@@ -55,22 +55,22 @@
 	--danger: #c43c3c;
 	--shadow: rgba(24, 24, 27, 0.16);
 
-	/* the canvas side: dark */
-	--canvas: #1a1b1f;
-	--canvas-grid: #25262b;
-	--canvas-grid-major: #31323a;
-	--canvas-cell: rgba(255, 255, 255, 0.08);
-	--ink: #f2f2ef;
-	--guide-cap: #6aa5ff;
-	--guide-xh: #3ec99a;
-	--guide-base: #ffad42;
-	--guide-desc: #c39af0;
-	--bearing: #ff5fa2;
-	--select: #5b95ff;
-	--order-start: #22c55e;
-	--order-end: #fb7185;
+	/* the canvas: light */
+	--canvas: #f3f3f1;
+	--canvas-grid: #e3e3e0;
+	--canvas-grid-major: #d1d1cd;
+	--canvas-cell: rgba(0, 0, 0, 0.1);
+	--ink: #141414;
+	--guide-cap: #2f6fd0;
+	--guide-xh: #127a58;
+	--guide-base: #b05f00;
+	--guide-desc: #7a3a95;
+	--bearing: #c2286a;
+	--select: #2f6fe0;
+	--order-start: #15803d;
+	--order-end: #be123c;
 	--order-travel: #8a8c93;
-	--missing: #e7e7ea;
+	--missing: #2a2b30;
 }
 
 * { box-sizing: border-box; }

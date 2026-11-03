@@ -96,7 +96,7 @@ The layout follows desktop drawing apps:
 - **Commands** are in the menus at the top: **File** (new, import and export SVG, save), **Edit** (undo, clipboard, delete, select all), **Object** (group, join, slice, rotate, flip, smooth/corner points) **View** (fit, snap, show or hide the grid, guides and cell, light mode) and **Help** (tips). Each menu item shows its keyboard shortcut.
 - **Options** for drawing (snapping, grid size, on-screen stroke width, auto-slice, and which shape the Shapes tool draws) are in the bar above the canvas.
 - **Number fields can be dragged**: sideways for most, up and down for the guides (the line moves the way you drag). Shift drags in bigger steps, Alt in smaller ones. Click a field to type instead. A whole drag on a side bearing is one undo step.
-- **Light / dark**: the sun/moon button in the top bar (or View → Light mode). Dark mode puts dark panels around a light canvas; light mode puts light panels around a dark canvas with white strokes. The choice is remembered.
+- **Light / dark**: the sun/moon button in the top bar (or View → Light mode). Dark mode makes the panels and canvas dark, with light strokes; light mode makes both light. In the typesetter the page itself stays white, like paper. The choice is remembered.
 
 | Tool / command | How |
 | --- | --- |
