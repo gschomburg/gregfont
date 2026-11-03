@@ -208,14 +208,25 @@
 
 	// ---------------------------------------------------------- undo / redo
 
+	// The open undo step: { ch, before }. A step stays open for the length of
+	// a mouse drag, a pen stroke, or dragging a number field (fieldEdit), so
+	// all of it undoes at once.
 	var pending = null;
+	var fieldEdit = false;
 
 	function snapshot(ch) {
 		var g = font().glyphs[ch];
 		return g ? JSON.stringify(g) : null;
 	}
 
+	function editInProgress() {
+		return !!(drag || penPath || fieldEdit);
+	}
+
 	function beginEdit() {
+		// A step left open with nothing going on (or for another glyph) was
+		// never closed: close it now, so it can't swallow the edits after it.
+		if (pending && (pending.ch !== state.ch || !editInProgress())) endEdit();
 		if (!pending) pending = { ch: state.ch, before: snapshot(state.ch) };
 	}
 
@@ -235,6 +246,7 @@
 	// a change to many glyphs at once (like updating from an SVG).
 	function restore(from, to) {
 		finishPen();   // may add the pen stroke as its own undo step first
+		if (pending && !editInProgress()) endEdit();   // and any step left open
 		var e = from.pop();
 		if (!e) return;
 		var items = e.batch || [e];
@@ -261,11 +273,14 @@
 	function undo() { restore(state.undo, state.redo); }
 	function redo() { restore(state.redo, state.undo); }
 
-	// Glyph-level edit wrapped as one undo step.
+	// Glyph-level edit wrapped as one undo step. Made during a drag or pen
+	// stroke, it becomes part of that step instead of cutting it short.
 	function edit(fn) {
+		var inside = !!pending && pending.ch === state.ch && editInProgress();
 		beginEdit();
 		fn();
-		endEdit();
+		if (inside) commit();
+		else endEdit();
 	}
 
 	// --------------------------------------------------------------- guides
@@ -857,6 +872,7 @@
 
 	tool.onMouseDown = function (e) {
 		if (panning || e.event.button !== 0) return;
+		if (drag) { drag = null; endEdit(); }   // the last drag's mouse-up went missing
 		stopPlay();
 		clearHover();
 		if (state.tool === 'select') selectDown(e);
@@ -2748,13 +2764,14 @@
 		var drag = null;
 		['x', 'y', 'w', 'h'].forEach(function (key) {
 			var input = $('pos-' + key);
-			input.addEventListener('scrubstart', function () { beginEdit(); drag = capturePosition(); });
+			input.addEventListener('scrubstart', function () { beginEdit(); fieldEdit = true; drag = capturePosition(); });
 			input.addEventListener('scrub', function () { applyPosition(key, parseFloat(input.value), drag); });
 			input.addEventListener('change', function () {
 				var v = parseFloat(input.value);
 				if (drag) {
 					applyPosition(key, v, drag);
 					drag = null;
+					fieldEdit = false;
 					endEdit();
 				} else {
 					edit(function () { applyPosition(key, v, capturePosition()); });
@@ -3559,8 +3576,22 @@
 		});
 		$('save').addEventListener('click', save);
 
-		$('glyph-lsb').addEventListener('change', function () { setBearing('lsb', parseFloat(this.value)); });
-		$('glyph-rsb').addEventListener('change', function () { setBearing('rsb', parseFloat(this.value)); });
+		['lsb', 'rsb'].forEach(function (key) {
+			$('glyph-' + key).addEventListener('change', function () {
+				var v = parseFloat(this.value);
+				if (fieldEdit) {
+					// the end of a drag on the field: it opened the step, so it closes it
+					var glyph = font().glyphs[state.ch];
+					if (glyph && !isNaN(v)) glyph[key] = v;
+					fieldEdit = false;
+					endEdit();
+					drawGuides();
+					renderPreview();
+				} else {
+					setBearing(key, v);
+				}
+			});
+		});
 		[['path-cap', 'strokeCap'], ['path-join', 'strokeJoin']].forEach(function (pair) {
 			$(pair[0]).querySelectorAll('button').forEach(function (b) {
 				b.addEventListener('click', function () { setPathStyle(pair[1], b.dataset.value); updatePathStyleRow(); });
@@ -3579,7 +3610,7 @@
 		setAlignTo(alignTo);
 		['lsb', 'rsb'].forEach(function (key) {
 			var input = $('glyph-' + key);
-			input.addEventListener('scrubstart', function () { beginEdit(); });
+			input.addEventListener('scrubstart', function () { beginEdit(); fieldEdit = true; });
 			input.addEventListener('scrub', function () {
 				var glyph = font().glyphs[state.ch], v = parseFloat(this.value);
 				if (!glyph || isNaN(v)) return;
