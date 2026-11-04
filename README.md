@@ -19,7 +19,7 @@ There is no build step. Either way below works.
 python tools/server.py        # or: python tools/server.py 8080
 ```
 
-It serves `src/`, and the editor saves through it with no folder prompt. Other static servers (like VS Code's Live Server extension) work too, and saving then falls back to the folder prompt. Live Server reloads the page whenever a file changes, including when you save a font, so set `liveServer.settings.ignoreFiles` to include `src/fonts/**`.
+It serves `src/`, and the editor saves through it with no folder prompt. Other static servers (like VS Code's Live Server extension) work too, and saving then falls back to the folder prompt. Live Server reloads the page whenever a file changes, including when you save a font, so the repo's `.vscode/settings.json` sets `liveServer.settings.ignoreFiles` to skip `src/fonts/**`. It only applies when VS Code has the repo folder itself open.
 
 `fonts.js` is rebuilt whenever the editor or the dev server saves. After changing a font file any other way (by hand, or with git), rebuild it:
 
