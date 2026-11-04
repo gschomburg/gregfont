@@ -119,6 +119,7 @@
 	}
 
 	function glyphLabel(ch) {
+		if (ch === GregFont.SCRATCH) return 'Scratch pad: spare shapes, saved with the font. Copy and paste between it and any glyph.';
 		if (ch.length > 1) return ch;
 		var name = GregFont.GLYPH_NAMES[ch];
 		return name ? ch + '  (' + name + ')' : ch;
@@ -354,10 +355,10 @@
 			label('0,0', [-px(6), px(14)], COLORS.guide.baseline, 'right');
 		}
 
-		// side bearings
+		// side bearings (none on the scratch pad)
 		var glyph = f.glyphs[state.ch];
 		var ink = inkBounds();
-		if (glyph && ink) {
+		if (glyph && ink && state.ch !== GregFont.SCRATCH) {
 			var lx = ink.left - glyph.lsb, rx = ink.right + glyph.rsb;
 			line([lx, vb.top], [lx, vb.bottom], COLORS.bearing, true);
 			line([rx, vb.top], [rx, vb.bottom], COLORS.bearing, true);
@@ -677,6 +678,7 @@
 	// The side bearing lines are only grabbed at the top, by their lsb / rsb
 	// labels, so clicks along the lines still select and marquee.
 	function hitBearing(point) {
+		if (state.ch === GregFont.SCRATCH) return null;
 		var b = bearingLines();
 		if (!b) return null;
 		var top = P.view.bounds.top, tol = px(6), labelW = px(64);
@@ -2530,7 +2532,7 @@
 	function glyphChars() {
 		var f = font();
 		var extra = Object.keys(f.glyphs).concat(state.added).filter(function (ch, i, all) {
-			return STANDARD.indexOf(ch) < 0 && all.indexOf(ch) === i;
+			return STANDARD.indexOf(ch) < 0 && all.indexOf(ch) === i && ch !== GregFont.SCRATCH;
 		});
 		return STANDARD.concat(extra);
 	}
@@ -2538,10 +2540,10 @@
 	function renderGrid() {
 		var grid = $('glyph-grid');
 		grid.innerHTML = '';
-		glyphChars().forEach(function (ch) {
+		[GregFont.SCRATCH].concat(glyphChars()).forEach(function (ch) {
 			var btn = document.createElement('button');
 			btn.type = 'button';
-			btn.className = 'glyph-cell';
+			btn.className = 'glyph-cell' + (ch === GregFont.SCRATCH ? ' scratch-cell' : '');
 			btn.dataset.ch = ch;
 			btn.title = glyphLabel(ch);
 			btn.addEventListener('click', function () { selectGlyph(ch); });
@@ -2555,12 +2557,14 @@
 		var btn = Array.prototype.find.call($('glyph-grid').children, function (b) { return b.dataset.ch === ch; });
 		if (!btn) { renderGrid(); return; }
 		btn.innerHTML = '';
-		var glyph = f.glyphs[ch];
-		btn.classList.toggle('missing', !glyph);
+		var glyph = f.glyphs[ch], scratch = ch === GregFont.SCRATCH;
+		if (scratch && glyph && !glyph.paths.length) glyph = null;
+		btn.classList.toggle('missing', !glyph && !scratch);
+		btn.classList.toggle('empty', !glyph && scratch);
 		btn.classList.toggle('current', ch === state.ch);
 		var lbl = document.createElement('span');
 		lbl.className = 'label';
-		lbl.textContent = glyph ? ch : ch + ' +';
+		lbl.textContent = scratch ? (glyph ? 'scratch pad' : 'Scratch pad: park spare shapes here') : glyph ? ch : ch + ' +';
 		if (glyph) btn.appendChild(glyphSvg(f, ch, 1.5));
 		btn.appendChild(lbl);
 	}
@@ -2593,12 +2597,13 @@
 	// ---------------------------------------------------------- inspector
 
 	function updateGlyphPanel() {
-		var f = font(), ch = state.ch, glyph = f.glyphs[ch];
-		$('glyph-title').textContent = ch;
+		var f = font(), ch = state.ch, glyph = f.glyphs[ch], scratch = ch === GregFont.SCRATCH;
+		$('glyph-title').textContent = scratch ? 'Scratch pad' : ch;
 		var code = Array.from(ch).length === 1
 			? 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + ' \u00b7 '
 			: '';
-		$('glyph-layer-name').textContent = code + 'char-' + GregFont.charToName(ch);
+		$('glyph-layer-name').textContent = scratch ? 'saved with the font, never in text' : code + 'char-' + GregFont.charToName(ch);
+		$('spacing-section').hidden = scratch;   // no spacing or kerning for spare parts
 		var n = glyph ? glyph.paths.length : 0;
 		$('glyph-info').textContent = glyph ? n + ' path' + (n === 1 ? '' : 's') : 'Empty: draw on the canvas';
 		var big = $('glyph-big');
@@ -2785,7 +2790,7 @@
 	}
 
 	function updateFontMeta() {
-		var n = Object.keys(font().glyphs).length;
+		var n = GregFont.glyphCount(font());
 		$('font-meta').textContent = (state.entry.file || 'not saved yet') + ' \u00b7 ' + n + ' glyph' + (n === 1 ? '' : 's');
 	}
 

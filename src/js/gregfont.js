@@ -572,6 +572,15 @@
 	// --- Illustrator grid
 
 	var GRID_COLUMNS = 10;
+	// The scratch pad: a glyph under a reserved name, for spare shapes. It's
+	// saved with the font but never set in text (text only looks up single
+	// characters), counted, or exported.
+	var SCRATCH = '_scratch';
+
+	function glyphCount(font) {
+		return Object.keys(font.glyphs).filter(function (ch) { return ch !== SCRATCH; }).length;
+	}
+
 	var STANDARD_ORDER = [].concat(
 		'abcdefghijklmnopqrstuvwxyz'.split(''),
 		'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
@@ -620,7 +629,7 @@
 		var sw = options.strokeWidth || 2;
 		var cell = font.cell, guides = font.guides;
 		var order = STANDARD_ORDER.concat(Object.keys(font.glyphs).filter(function (ch) {
-			return STANDARD_ORDER.indexOf(ch) < 0;
+			return STANDARD_ORDER.indexOf(ch) < 0 && ch !== SCRATCH;
 		}));
 
 		// one slot size that fits every glyph, its bearings and the guides.
@@ -1102,6 +1111,8 @@
 		shapeRows: shapeRows,
 		fontFromShapes: fontFromShapes,
 		STANDARD_ORDER: STANDARD_ORDER,
+		SCRATCH: SCRATCH,
+		glyphCount: glyphCount,
 		toSVG: toSVG,
 		flipPathData: flipPathData,
 		saveToServer: saveToServer

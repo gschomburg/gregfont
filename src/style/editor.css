@@ -38,6 +38,11 @@ body {
 	text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;
 }
 .glyph-cell.current .label { color: var(--accent); }
+/* the scratch pad: a full row at the top of the grid */
+.glyph-cell.scratch-cell { grid-column: 1 / -1; height: 52px; border-style: dashed; }
+.glyph-cell.scratch-cell.current { border-style: solid; }
+.glyph-cell.scratch-cell.empty .label { top: 50%; bottom: auto; transform: translateY(-50%); font-size: 11px; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; }
+.glyph-cell.scratch-cell.empty { background: var(--canvas); opacity: 0.75; }
 .glyph-cell.missing .label { color: var(--muted); bottom: auto; top: 50%; transform: translateY(-50%); font-size: 13px; }
 #add-glyph { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); }
 #add-glyph input { flex: 1; min-width: 0; }

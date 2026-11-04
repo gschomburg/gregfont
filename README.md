@@ -149,6 +149,8 @@ The layout follows desktop drawing apps:
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
 | Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `src/fonts` folder. Browsers without folder access download the file instead. |
 
+The **scratch pad** is the dashed, full-width tile at the top of the glyph grid: a parts bin for spare shapes. Click it and it works like any glyph (draw, paste pieces in, copy them back out), but it has no spacing, isn't counted, never appears in text, and isn't exported. It's saved with the font, in the file as a glyph named `_scratch`.
+
 The **Font** panel sets the name, cell size, guide lines, default stroke caps and joins, and the typesetter defaults. Individual paths can override caps and joins from the **Glyph** panel. To add a glyph that isn't in the grid (é, ß, or a named alternate), type it into the box under the grid.
 
 The **preview** strip at the bottom sets a line of text with the font as you edit, at the strip's height; text that doesn't fit is cut off at the right. It's monospaced when the font's **Mono** switch (left panel) is on. **Stroke** sets the preview's stroke weight, in font units. **Extend ends to guides** (in the glyph panel's Spacing section) shows the typesetter's option of that name on the canvas and in the preview, so you can check how stems line up with round letters at the current stroke weight; it's view only and never changes the glyph. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
@@ -228,7 +230,6 @@ Editor:
 - Settle on one word for line thickness across both apps. The editor says "Stroke" (and "Strokes" for the default end and corner styles), the typesetter says "Pen", the code and README also say "stroke width" and "weight".
 - Context from the preview: draw the current glyph's neighbours from the preview text faintly on the canvas, where the text would put them (spacing and kerning applied). Working on A with "ABC" in the preview shows a ghost B to its right on the baseline, and moving a side bearing slides the neighbours live. Clicking a letter in the specimen would open it with that spot's neighbours around it, like zooming in to an isolation mode. Not tracing, just seeing the letter in context.
 - Picking a glyph in the grid while the specimen is open should bring that letter into view in the specimen (scroll the view to its first occurrence if it's off screen, maybe highlight it), without zooming in.
-- Scratch pad: a spot above the glyph grid that isn't a glyph but behaves like one. Paste pieces in, draw there, copy them back out later; a parts bin for shapes worth keeping. Saved with the font, never used in text or exports.
 
 Fonts:
 

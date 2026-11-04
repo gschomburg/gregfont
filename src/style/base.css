@@ -214,6 +214,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 
 /* foldable sections */
 details.fold { padding: 10px 12px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; }
+details.fold[hidden] { display: none; }
 details.fold > :not(summary) + :not(summary) { margin-top: 8px; }
 details.fold > summary + * { margin-top: 8px; }
 details.fold summary {

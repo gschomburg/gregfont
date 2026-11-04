@@ -926,7 +926,7 @@
 		$('type-sub').textContent = sel ? '' : 'settings for the next box';
 		$('font-select').value = entry.file;
 		var ver = GregFont.fontVersionText(f);
-		$('font-meta').textContent = Object.keys(f.glyphs).length + ' glyphs · cell ' + f.cell.width + '×' + f.cell.height + (ver ? ' · ' + ver : '');
+		$('font-meta').textContent = GregFont.glyphCount(f) + ' glyphs · cell ' + f.cell.width + '×' + f.cell.height + (ver ? ' · ' + ver : '');
 		setField('t-size', round(b.size));
 		setField('t-pen', round(b.pen));
 		setSegmented('t-cap', b.cap);
