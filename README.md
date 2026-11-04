@@ -64,6 +64,8 @@ The layout matches the editor: menus and tips in the top bar, the selected text'
 | Clinton | 40×60 | Proportional | Just started (1 glyph) |
 | Garfield 2015 | 40×60 | Proportional | Capitals, some digits |
 | Locust 28 | 27.5×45 | Proportional | Capitals, digits |
+| Halsey | 32×60 | Monospaced | Letters, digits. A round-ended sans drawn in code |
+| Myrtle | 32×60 | Monospaced | Letters, digits. Halsey's letters drawn as a looping coil |
 
 All are marked **proof** for now (see `status` under Font format).
 
@@ -206,6 +208,7 @@ tools/
   server.py           Dev server (static files + saving fonts)
   build_fonts.py      Rebuilds src/fonts/fonts.js
   bump_version.py     Sets the version and stamps it on the pages' scripts (run before publishing)
+  make_halsey_myrtle.py  Generates Halsey and Myrtle (Myrtle's coil size: --radius, --pitch)
 textSample*.txt       Scratch character sets for testing
 ```
 
