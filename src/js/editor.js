@@ -475,16 +475,16 @@
 		['se', 1, 1], ['s', 0.5, 1], ['sw', 0, 1], ['w', 0, 0.5]
 	];
 	// Rotate cursors: a curved double arrow around each corner (drawn for the
-	// top-left one, turned for the rest), black on a white outline so it shows
-	// on either canvas. Not the hand, which means panning.
+	// top-left one, turned for the rest), white on a black outline like the
+	// standard Windows cursors. Not the hand, which means panning.
 	var ROTATE_CURSORS = (function () {
 		var turns = { nw: 0, ne: 90, se: 180, sw: 270 }, out = {};
 		var arrow = 'M6.5 16 A9.5 9.5 0 0 1 16 6.5 M3.5 13.5 L6.5 17.5 L9.5 13.5 M13.5 3.5 L17.5 6.5 L13.5 9.5';
 		Object.keys(turns).forEach(function (k) {
 			var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">' +
 				'<g transform="rotate(' + turns[k] + ' 12 12)" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
-				'<path d="' + arrow + '" stroke="#fff" stroke-width="4"/>' +
-				'<path d="' + arrow + '" stroke="#000" stroke-width="1.5"/></g></svg>';
+				'<path d="' + arrow + '" stroke="#000" stroke-width="4"/>' +
+				'<path d="' + arrow + '" stroke="#fff" stroke-width="1.5"/></g></svg>';
 			out[k] = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '") 12 12, crosshair';
 		});
 		return out;
