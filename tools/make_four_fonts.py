@@ -91,7 +91,13 @@ def write_font(file, name, glyphs, cell, guides, style, spacing):
     head = json.dumps(top, indent='\t', ensure_ascii=False)
     lines = []
     for ch, (paths, lsb, rsb) in glyphs.items():
-        g = {'lsb': round(lsb, 2), 'rsb': round(rsb, 2), 'paths': [{'d': p.d()} for p in paths]}
+        entries = []
+        for p in paths:
+            e = {'d': p.d()}
+            if getattr(p, 'cap', None):     # a stroke with its own ends (say, a round dot)
+                e['strokeCap'] = p.cap
+            entries.append(e)
+        g = {'lsb': round(lsb, 2), 'rsb': round(rsb, 2), 'paths': entries}
         lines.append('\t\t' + json.dumps(ch, ensure_ascii=False) + ': ' + json.dumps(g, separators=(',', ':'), ensure_ascii=False))
     text = re.sub(r'\n}$', ',\n\t"glyphs": {\n' + ',\n'.join(lines) + '\n\t}\n}\n', head)
     with open(os.path.join(FONTS, file), 'w', encoding='utf-8', newline='\n') as f:
