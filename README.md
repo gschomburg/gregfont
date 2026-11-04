@@ -66,6 +66,10 @@ The layout matches the editor: menus and tips in the top bar, the selected text'
 | Locust 28 | 27.5×45 | Proportional | Capitals, digits |
 | Halsey | 32×60 | Monospaced | Letters, digits. A round-ended sans drawn in code |
 | Myrtle | 32×60 | Monospaced | Letters, digits. Halsey's letters drawn as a looping coil |
+| Mercer | 32×60 | Monospaced | Letters, digits. Every character is one continuous stroke, with 45° chamfers |
+| Delancey | 40×60 | Proportional | Letters, digits. Geometric sans with very uneven widths (i is one stroke, W is 88 wide) |
+| Hester | 16×60 | Proportional | Letters, digits. Narrow and tight; ascenders sweep back over the letter before, descenders forward under the next |
+| Astor | 48×48 | Monospaced | Symbols: space pictograms on a–z, runes on A–Z, moon phases on 0–9 |
 
 All are marked **proof** for now (see `status` under Font format).
 
@@ -209,6 +213,7 @@ tools/
   build_fonts.py      Rebuilds src/fonts/fonts.js
   bump_version.py     Sets the version and stamps it on the pages' scripts (run before publishing)
   make_halsey_myrtle.py  Generates Halsey and Myrtle (Myrtle's coil size: --radius, --pitch)
+  make_four_fonts.py  Generates Mercer, Delancey, Hester and Astor (--only to pick)
 textSample*.txt       Scratch character sets for testing
 ```
 
