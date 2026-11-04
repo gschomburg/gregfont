@@ -46,6 +46,9 @@
 			baseline: v('--guide-base', COLORS.guide.baseline),
 			descender: v('--guide-desc', COLORS.guide.descender)
 		};
+		COLORS.customGuides = ['a', 'b', 'c', 'd', 'e', 'f'].map(function (k, i) {
+			return v('--guide-' + k, GregFont.CUSTOM_GUIDE_COLORS[i]);
+		});
 		COLORS.bearing = v('--bearing', COLORS.bearing);
 		COLORS.select = COLORS.overlay = v('--select', COLORS.select);
 		COLORS.orderStart = v('--order-start', '#15803d');
@@ -347,6 +350,20 @@
 				line([vb.left, gy], [vb.right, gy], COLORS.guide[key]);
 				// past the tool tab
 				label((key === 'xHeight' ? 'x-height' : key) + ' ' + h, [vb.left + px(58), gy - px(4)], COLORS.guide[key]);
+			});
+
+			// custom guides: across the view (h) or top to bottom (v)
+			var vCount = 0;
+			f.customGuides.forEach(function (g, i) {
+				var color = customGuideColor(i), name = GregFont.customGuideName(i) + ' ' + g.at;
+				if (g.axis === 'v') {
+					line([g.at, vb.top], [g.at, vb.bottom], color);
+					// labels at the bottom, stepped up so close lines stay readable
+					label(name, [g.at + px(4), vb.bottom - px(8 + 14 * (vCount++ % 3))], color);
+				} else {
+					line([vb.left, -g.at], [vb.right, -g.at], color);
+					label(name, [vb.left + px(58), -g.at - px(4)], color);
+				}
 			});
 
 			// the origin
@@ -1253,8 +1270,10 @@
 			return round(move, 0.1);
 		}
 		var gy = [0, -f.cell.height, -f.guides.cap, -f.guides.xHeight, -f.guides.descender].filter(function (v) { return typeof v === 'number' && isFinite(v); });
+		var gx = [0, f.cell.width];
+		f.customGuides.forEach(function (g) { if (g.axis === 'v') gx.push(g.at); else gy.push(-g.at); });
 		return new P.Point(
-			axis([a.x, b.left, b.center.x, b.right], [0, f.cell.width], raw.x),
+			axis([a.x, b.left, b.center.x, b.right], gx, raw.x),
 			axis([a.y, b.top, b.center.y, b.bottom], gy, raw.y)
 		);
 	}
@@ -2823,6 +2842,7 @@
 		['cap', 'xHeight', 'descender'].forEach(function (k) {
 			$('guide-' + k).value = f.guides[k] === null ? '' : f.guides[k];
 		});
+		renderCustomGuides();
 		$('style-strokeCap').value = f.style.strokeCap;
 		$('style-strokeJoin').value = f.style.strokeJoin;
 		$('spacing-monospaced').checked = f.spacing.monospaced;
@@ -2878,6 +2898,18 @@
 				if (!isNaN(v)) { font().guides[k] = v; drawGuides(); }
 			});
 		});
+		$('add-guide').addEventListener('click', function () {
+			var f = font(), last = f.customGuides[f.customGuides.length - 1];
+			var axis = last ? last.axis : 'h';
+			// start halfway up the cap height (or across the cell), clear of the built-in lines
+			var at = Math.round((axis === 'v' ? f.cell.width / 2 : (f.guides.cap || f.cell.height) / 2) * 2) / 2;
+			// step past any guide already sitting there, so new ones don't stack
+			var taken = f.customGuides.filter(function (g) { return g.axis === axis; }).map(function (g) { return g.at; });
+			while (taken.indexOf(at) >= 0) at += state.grid || 5;
+			f.customGuides.push({ axis: axis, at: at });
+			renderCustomGuides();
+			fontChanged(false);
+		});
 		['strokeCap', 'strokeJoin'].forEach(function (k) {
 			$('style-' + k).addEventListener('change', function () {
 				font().style[k] = this.value;
@@ -2902,6 +2934,96 @@
 	// kerning
 
 	// The pairs that include the current glyph.
+	// --- custom guides
+	//
+	// One full-width row each: its name and colour, H / V, where it sits, and
+	// a remove button. Names come from the order, so removing B makes C the
+	// new B. Font settings, so not part of undo.
+
+	function customGuideColor(i) {
+		return COLORS.customGuides[i % COLORS.customGuides.length];
+	}
+
+	function renderCustomGuides() {
+		var f = font(), list = $('custom-guides');
+		list.innerHTML = '';
+		f.customGuides.forEach(function (g, i) {
+			var name = GregFont.customGuideName(i);
+			var row = document.createElement('div');
+			row.className = 'guide-row';
+			row.style.setProperty('--guide-color', 'var(--guide-' + 'abcdef'.charAt(i % 6) + ')');
+
+			var tag = document.createElement('span');
+			tag.className = 'guide-name';
+			tag.textContent = name;
+
+			var seg = document.createElement('div');
+			seg.className = 'segmented';
+			seg.setAttribute('role', 'group');
+			seg.setAttribute('aria-label', 'Guide ' + name + ' direction');
+			[['h', 'H', 'Horizontal: a line across, at a height above the baseline'],
+				['v', 'V', 'Vertical: a line up and down, at a distance right of 0,0']].forEach(function (opt) {
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.textContent = opt[1];
+				b.title = opt[2];
+				if (g.axis === opt[0]) b.classList.add('active');
+				b.setAttribute('aria-pressed', g.axis === opt[0]);
+				b.addEventListener('click', function () {
+					if (g.axis === opt[0]) return;
+					g.axis = opt[0];
+					renderCustomGuides();
+					fontChanged(false);
+				});
+				seg.appendChild(b);
+			});
+
+			var field = document.createElement('label');
+			field.className = 'field';
+			field.dataset.scrub = g.axis === 'v' ? 'x' : 'y';
+			field.title = g.axis === 'v' ? 'Distance right of 0,0: drag sideways, or type' : 'Height above the baseline: drag up or down, or type';
+			var axisLabel = document.createElement('span');
+			axisLabel.className = 'field-label';
+			axisLabel.textContent = g.axis === 'v' ? 'x' : 'y';
+			var input = document.createElement('input');
+			input.type = 'number';
+			input.step = '0.5';
+			input.value = g.at;
+			input.setAttribute('aria-label', 'Guide ' + name + ' position');
+			field.appendChild(axisLabel);
+			field.appendChild(input);
+			bindScrub(field);
+			input.addEventListener('change', function () {
+				var v = parseFloat(input.value);
+				if (isNaN(v)) { input.value = g.at; return; }
+				g.at = v;
+				fontChanged(false);
+			});
+			// while dragging, only move the line
+			input.addEventListener('scrub', function () {
+				var v = parseFloat(input.value);
+				if (!isNaN(v)) { g.at = v; drawGuides(); }
+			});
+
+			var del = document.createElement('button');
+			del.type = 'button';
+			del.textContent = '×';
+			del.title = 'Remove guide ' + name + ' (the ones after it move up a letter)';
+			del.setAttribute('aria-label', 'Remove guide ' + name);
+			del.addEventListener('click', function () {
+				f.customGuides.splice(i, 1);
+				renderCustomGuides();
+				fontChanged(false);
+			});
+
+			row.appendChild(tag);
+			row.appendChild(seg);
+			row.appendChild(field);
+			row.appendChild(del);
+			list.appendChild(row);
+		});
+	}
+
 	function renderKerning() {
 		var f = font(), list = $('kerning-list'), ch = state.ch;
 		$('kern-title').textContent = 'Kerning with ' + ch;

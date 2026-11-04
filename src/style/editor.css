@@ -164,6 +164,17 @@ body.sliding #preview-bar { box-shadow: 0 -8px 24px var(--shadow); }
 .kern-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 28px; align-items: center; gap: 6px; }
 .kern-row .pair { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 14px; }
 .kern-row button { padding: 0; height: 28px; color: var(--muted); }
+/* custom guides: full-width rows under the built-in guides */
+#custom-guides { display: flex; flex-direction: column; gap: 4px; }
+#custom-guides:empty { display: none; }
+.guide-row { display: grid; grid-template-columns: 30px auto minmax(0, 1fr) 28px; align-items: center; gap: 6px; padding: 3px 0 3px 6px; border-left: 3px solid var(--guide-color); border-radius: 2px; background: var(--surface); }
+.guide-row .guide-name { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 13px; color: var(--guide-color); }
+.guide-row .segmented { background: var(--panel-2); }
+.guide-row .segmented button { padding: 2px 8px; }
+.guide-row > button { padding: 0; height: 26px; color: var(--muted); border: 0; background: none; }
+.guide-row > button:hover { color: var(--danger); }
+#add-guide { width: 100%; height: 28px; padding: 0; font-size: 12px; color: var(--muted); border-style: dashed; background: none; }
+#add-guide:hover { color: var(--text); }
 #kerning-list { display: flex; flex-direction: column; gap: 4px; }
 #kerning-list:empty { display: none; }
 #add-kern { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 6px; }

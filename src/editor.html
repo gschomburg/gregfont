@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.13.0">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.13.0">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.14.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.14.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -59,6 +59,8 @@
 						<label class="field" data-scrub="y" title="x-height: drag up or down, or type"><span class="swatch" style="background: var(--guide-xh)"></span><span class="field-label">x-ht</span><input type="number" id="guide-xHeight" step="0.5"></label>
 						<label class="field" data-scrub="y" title="Descender: drag up or down, or type"><span class="swatch" style="background: var(--guide-desc)"></span><span class="field-label">Desc</span><input type="number" id="guide-descender" step="0.5"></label>
 					</div>
+					<div id="custom-guides"></div>
+					<button type="button" id="add-guide" title="Add a guide of your own. It's saved with the font, named A, B, C... in order.">+ Add guide</button>
 				</details>
 				<div class="field-pair">
 					<label class="field" data-scrub="x" title="Default letter spacing for the typesetter"><span class="field-label">Space</span><input type="number" id="spacing-letterSpacing"></label>
@@ -295,13 +297,13 @@
 			</div>
 		</div>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.13.0"></script>
-		<script src="fonts/fonts.js?v=2.13.0"></script>
-		<script src="js/gregfont.js?v=2.13.0"></script>
-		<script src="js/version.js?v=2.13.0"></script>
-		<script src="js/ui.js?v=2.13.0"></script>
-		<script src="js/samples.js?v=2.13.0"></script>
-		<script src="js/shapeimport.js?v=2.13.0"></script>
-		<script src="js/editor.js?v=2.13.0"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.14.0"></script>
+		<script src="fonts/fonts.js?v=2.14.0"></script>
+		<script src="js/gregfont.js?v=2.14.0"></script>
+		<script src="js/version.js?v=2.14.0"></script>
+		<script src="js/ui.js?v=2.14.0"></script>
+		<script src="js/samples.js?v=2.14.0"></script>
+		<script src="js/shapeimport.js?v=2.14.0"></script>
+		<script src="js/editor.js?v=2.14.0"></script>
 	</body>
 </html>

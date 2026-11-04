@@ -12,6 +12,7 @@
  *   "name": "Sutton",
  *   "cell":    { "width": 30, "height": 60 },
  *   "guides":  { "cap": 60, "xHeight": 30, "descender": -15 },
+ *   "customGuides": [ { "axis": "h", "at": 45 }, { "axis": "v", "at": 15 } ],
  *   "style":   { "strokeCap": "round", "strokeJoin": "round", "miterLimit": 10 },
  *   "spacing": { "monospaced": true, "letterSpacing": 45, "lineHeight": 90 },
  *   "kerning": { "AV": -4 },
@@ -26,6 +27,10 @@
  *   height). It's a drawing guide; in text, the line's top is cell.height
  *   above the baseline.
  * - guides are heights above the baseline (the baseline itself is 0).
+ * - customGuides are extra drawing guides the font's maker added: "h" lines
+ *   at a height above the baseline, "v" lines at a distance right of the
+ *   origin. They're named A, B, C... by their place in the list, so
+ *   removing one renames the ones after it. Left out of the file when empty.
  * - lsb / rsb (left/right side bearing) are gaps in font units between the
  *   glyph's ink and its neighbours, used when text is set proportionally.
  *   Monospaced setting ignores them and places the origin as drawn.
@@ -152,6 +157,9 @@
 		var cell = font.cell = font.cell || { width: 60, height: 60 };
 		font.guides = Object.assign({ cap: cell.height, xHeight: null, descender: 0 }, font.guides);
 		delete font.guides.baseline;   // always 0 now
+		font.customGuides = (Array.isArray(font.customGuides) ? font.customGuides : []).filter(function (g) {
+			return g && typeof g.at === 'number' && isFinite(g.at);
+		}).map(function (g) { return { axis: g.axis === 'v' ? 'v' : 'h', at: g.at }; });
 		font.style = Object.assign({ strokeCap: 'butt', strokeJoin: 'miter', miterLimit: 10 }, font.style);
 		font.spacing = Object.assign({ monospaced: false, letterSpacing: cell.width, lineHeight: cell.height * 1.5 }, font.spacing);
 		font.kerning = font.kerning || {};
@@ -254,11 +262,20 @@
 		return parts.join(' \u00b7 ');
 	}
 
+	// Custom guides are named by their place in the list: A, B, ... Z, then
+	// G27, G28... Each letter has its own colour (the editor reads the
+	// on-screen ones from the theme; these are for the Illustrator export).
+	var CUSTOM_GUIDE_COLORS = ['#0e8fa3', '#a68a00', '#c0392b', '#6b7d1a', '#8a5a2b', '#5a6b8c'];
+	function customGuideName(i) {
+		return i < 26 ? String.fromCharCode(65 + i) : 'G' + (i + 1);
+	}
+
 	function stringify(font) {
 		var top = {};
 		Object.keys(font).forEach(function (k) {
 			if (k !== 'glyphs' && k.charAt(0) !== '_') top[k] = font[k];
 		});
+		if (top.customGuides && !top.customGuides.length) delete top.customGuides;
 		var head = JSON.stringify(top, null, '\t');
 		var glyphLines = Object.keys(font.glyphs).map(function (ch) {
 			var g = font.glyphs[ch];
@@ -677,6 +694,18 @@
 				var y = round(cy - guideY[k]);
 				guideLines.push('<line x1="' + round(sx) + '" y1="' + y + '" x2="' + round(sx + grid.px) + '" y2="' + y +
 					'" stroke="' + guideColors[k] + '" stroke-width="0.3"/>');
+			});
+			(font.customGuides || []).forEach(function (g, gi) {
+				var color = CUSTOM_GUIDE_COLORS[gi % CUSTOM_GUIDE_COLORS.length];
+				if (g.axis === 'v') {
+					var x = round(cx + g.at);
+					guideLines.push('<line x1="' + x + '" y1="' + round(sy) + '" x2="' + x + '" y2="' + round(sy + grid.py - labelRoom) +
+						'" stroke="' + color + '" stroke-width="0.3"/>');
+				} else {
+					var y = round(cy - g.at);
+					guideLines.push('<line x1="' + round(sx) + '" y1="' + y + '" x2="' + round(sx + grid.px) + '" y2="' + y +
+						'" stroke="' + color + '" stroke-width="0.3"/>');
+				}
 			});
 			var glyph = font.glyphs[ch], ink = inks[ch];
 			if (!glyph) return;
@@ -1112,6 +1141,8 @@
 		fontFromShapes: fontFromShapes,
 		STANDARD_ORDER: STANDARD_ORDER,
 		SCRATCH: SCRATCH,
+		customGuideName: customGuideName,
+		CUSTOM_GUIDE_COLORS: CUSTOM_GUIDE_COLORS,
 		glyphCount: glyphCount,
 		toSVG: toSVG,
 		flipPathData: flipPathData,

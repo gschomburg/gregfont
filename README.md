@@ -87,6 +87,7 @@ Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json
 	"name": "Sutton",
 	"cell":    { "width": 30, "height": 60 },
 	"guides":  { "cap": 60, "xHeight": 30, "descender": -20 },
+	"customGuides": [ { "axis": "h", "at": 45 } ],
 	"style":   { "strokeCap": "round", "strokeJoin": "round", "miterLimit": 10 },
 	"spacing": { "monospaced": true, "letterSpacing": 45, "lineHeight": 90 },
 	"kerning": { "AV": -4 },
@@ -99,6 +100,7 @@ Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json
 - **glyphs** are keyed by the character itself. Longer keys (`"ampersandalt"`) are named extra glyphs, like alternates, which text setting doesn't use yet.
 - **cell** is a box sitting on the baseline, from the origin up to (width, height). It's a drawing guide: resizing it never moves a glyph. In text, a line's top is the cell height above its baseline.
 - **guides** are heights above the baseline, which is always 0.
+- **customGuides** are extra guide lines you add in the editor: `"h"` lines at a height above the baseline, `"v"` lines at a distance right of the origin. They're named A, B, C… by their place in the list, so they have no names in the file. Left out when there are none. The typesetter ignores them.
 - **lsb / rsb** (left/right side bearing) are the gaps, in font units, before and after the glyph's ink when setting proportionally. Monospaced setting ignores them and places each glyph's origin as drawn, `letterSpacing` apart.
 - **paths** can override `strokeCap`, `strokeJoin` or `miterLimit` from `style`. Paths the editor has grouped share a `group` number; the typesetter ignores it.
 - **kerning** maps two-character pairs to an adjustment added between them (proportional only).
@@ -151,7 +153,9 @@ The layout follows desktop drawing apps:
 
 The **scratch pad** is the dashed, full-width tile at the top of the glyph grid: a parts bin for spare shapes. Click it and it works like any glyph (draw, paste pieces in, copy them back out), but it has no spacing, isn't counted, never appears in text, and isn't exported. It's saved with the font, in the file as a glyph named `_scratch`.
 
-The **Font** panel sets the name, cell size, guide lines, default stroke caps and joins, and the typesetter defaults. Individual paths can override caps and joins from the **Glyph** panel. To add a glyph that isn't in the grid (é, ß, or a named alternate), type it into the box under the grid.
+The **Font** panel sets the name, cell size, guide lines, default stroke caps and joins, and the typesetter defaults.
+
+**Custom guides**: **+ Add guide** under Guides adds a line of your own, saved with the font. Each gets a full-width row: its letter, an **H / V** switch (across, at a height above the baseline, or up and down, at a distance right of 0,0), its position (drag or type) and × to remove it. They're named A, B, C… in order, each letter with its own colour, so removing B makes C the new B. A new guide starts halfway up the cap height (halfway across the cell for V), stepping past any guide already there. Dragged paths snap to them like the other guides, View → Show guides hides them too, and Export SVG for Illustrator draws them in the reference layer. Individual paths can override caps and joins from the **Glyph** panel. To add a glyph that isn't in the grid (é, ß, or a named alternate), type it into the box under the grid.
 
 The **preview** strip at the bottom sets a line of text with the font as you edit, at the strip's height; text that doesn't fit is cut off at the right. It's monospaced when the font's **Mono** switch (left panel) is on. **Stroke** sets the preview's stroke weight, in font units. **Extend ends to guides** (in the glyph panel's Spacing section) shows the typesetter's option of that name on the canvas and in the preview, so you can check how stems line up with round letters at the current stroke weight; it's view only and never changes the glyph. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
 
