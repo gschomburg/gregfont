@@ -674,12 +674,15 @@
 		return glyphLayer.hitTest(point, Object.assign({ segments: true, stroke: true, fill: false, tolerance: px(6) }, opts));
 	}
 
+	// The side bearing lines are only grabbed at the top, by their lsb / rsb
+	// labels, so clicks along the lines still select and marquee.
 	function hitBearing(point) {
 		var b = bearingLines();
 		if (!b) return null;
-		var tol = px(5);
-		if (Math.abs(point.x - b.lsb) < tol) return 'lsb';
-		if (Math.abs(point.x - b.rsb) < tol) return 'rsb';
+		var top = P.view.bounds.top, tol = px(6), labelW = px(64);
+		if (point.y < top || point.y > top + px(26)) return null;
+		if (point.x > b.lsb - labelW && point.x < b.lsb + tol) return 'lsb';
+		if (point.x > b.rsb - tol && point.x < b.rsb + labelW) return 'rsb';
 		return null;
 	}
 
