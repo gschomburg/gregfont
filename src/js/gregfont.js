@@ -219,12 +219,13 @@
 
 	// JSON with one glyph per line, so diffs show which glyphs changed.
 	/*
-	 * Where a font is at: 'draft' (still being drawn), 'proof' (all there,
-	 * being tried out) or 'final'. A font without one is final. (Earlier
+	 * Where a font is at: 'generated' (made by a script, not yet worked on
+	 * by hand), 'draft' (still being drawn), 'proof' (all there, being tried
+	 * out) or 'final'. A font without one is final. (Earlier
 	 * names still read: in-progress, beta, done.) Saving
 	 * from the editor also counts up `revision` and sets `modified` (a date).
 	 */
-	var STATUSES = { draft: 'draft', proof: 'proof', final: 'final' };
+	var STATUSES = { generated: 'generated', draft: 'draft', proof: 'proof', final: 'final' };
 	var OLD_STATUSES = { 'in-progress': 'draft', beta: 'proof', done: 'final' };
 
 	function statusOf(font) {
@@ -232,11 +233,11 @@
 		return STATUSES[s] ? s : 'final';
 	}
 
-	// Font lists group fonts by status in this order: final, proof, draft.
+	// Font lists group fonts by status in this order: final, proof, draft, generated.
 	// items: anything; fontOf(item) gives its font. Returns the groups that
 	// have fonts in them, each in the items' own order: [{ status, label, items }].
 	function groupByStatus(items, fontOf) {
-		return ['final', 'proof', 'draft'].map(function (s) {
+		return ['final', 'proof', 'draft', 'generated'].map(function (s) {
 			return {
 				status: s,
 				label: s.charAt(0).toUpperCase() + s.slice(1),

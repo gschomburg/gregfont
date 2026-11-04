@@ -85,7 +85,7 @@ def bounds(paths):
 def write_font(file, name, glyphs, cell, guides, style, spacing):
     """glyphs: {ch: (paths, lsb, rsb)}"""
     top = {
-        'format': 'gregfont', 'version': 2, 'name': name, 'status': 'proof',
+        'format': 'gregfont', 'version': 2, 'name': name, 'status': 'generated',
         'cell': cell, 'guides': guides, 'style': style, 'spacing': spacing, 'kerning': {}
     }
     head = json.dumps(top, indent='\t', ensure_ascii=False)

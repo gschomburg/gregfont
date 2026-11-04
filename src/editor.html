@@ -5,8 +5,8 @@
 		<title>gregfont editor</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.11.0">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.11.0">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.12.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.12.0">
 		<script>
 			// apply the saved theme before the page paints
 			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
@@ -40,7 +40,8 @@
 				<label class="field"><span class="field-label">Name</span><input id="font-name"></label>
 				<div class="status-row">
 					<label for="font-status" class="field-label">Status</label>
-					<select id="font-status" title="Where this font is at: Draft while you're drawing it, Proof when it's all there and you're trying it out, Final when it's finished. Draft and proof show next to its name in the font lists.">
+					<select id="font-status" title="Where this font is at: Generated if a script made it and nobody has worked on it yet, Draft while you're drawing it, Proof when it's all there and you're trying it out, Final when it's finished. Draft and proof show next to its name in the font lists.">
+						<option value="generated">Generated</option>
 						<option value="draft">Draft</option>
 						<option value="proof">Proof</option>
 						<option value="final">Final</option>
@@ -294,13 +295,13 @@
 			</div>
 		</div>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.11.0"></script>
-		<script src="fonts/fonts.js?v=2.11.0"></script>
-		<script src="js/gregfont.js?v=2.11.0"></script>
-		<script src="js/version.js?v=2.11.0"></script>
-		<script src="js/ui.js?v=2.11.0"></script>
-		<script src="js/samples.js?v=2.11.0"></script>
-		<script src="js/shapeimport.js?v=2.11.0"></script>
-		<script src="js/editor.js?v=2.11.0"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.12.0"></script>
+		<script src="fonts/fonts.js?v=2.12.0"></script>
+		<script src="js/gregfont.js?v=2.12.0"></script>
+		<script src="js/version.js?v=2.12.0"></script>
+		<script src="js/ui.js?v=2.12.0"></script>
+		<script src="js/samples.js?v=2.12.0"></script>
+		<script src="js/shapeimport.js?v=2.12.0"></script>
+		<script src="js/editor.js?v=2.12.0"></script>
 	</body>
 </html>

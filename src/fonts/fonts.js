@@ -676,7 +676,7 @@ window.GREGFONT_BUNDLE = {
 	"format": "gregfont",
 	"version": 2,
 	"name": "Halsey",
-	"status": "proof",
+	"status": "generated",
 	"cell": {
 		"width": 32,
 		"height": 60
@@ -766,7 +766,7 @@ window.GREGFONT_BUNDLE = {
 	"format": "gregfont",
 	"version": 2,
 	"name": "Myrtle",
-	"status": "proof",
+	"status": "generated",
 	"cell": {
 		"width": 32,
 		"height": 60
@@ -856,7 +856,7 @@ window.GREGFONT_BUNDLE = {
 	"format": "gregfont",
 	"version": 2,
 	"name": "Mercer",
-	"status": "proof",
+	"status": "generated",
 	"cell": {
 		"width": 32,
 		"height": 60
@@ -946,7 +946,7 @@ window.GREGFONT_BUNDLE = {
 	"format": "gregfont",
 	"version": 2,
 	"name": "Delancey",
-	"status": "proof",
+	"status": "generated",
 	"cell": {
 		"width": 40,
 		"height": 60
@@ -1036,7 +1036,7 @@ window.GREGFONT_BUNDLE = {
 	"format": "gregfont",
 	"version": 2,
 	"name": "Hester",
-	"status": "proof",
+	"status": "generated",
 	"cell": {
 		"width": 16,
 		"height": 60
@@ -1126,7 +1126,7 @@ window.GREGFONT_BUNDLE = {
 	"format": "gregfont",
 	"version": 2,
 	"name": "Astor",
-	"status": "proof",
+	"status": "generated",
 	"cell": {
 		"width": 48,
 		"height": 48
@@ -1216,7 +1216,7 @@ window.GREGFONT_BUNDLE = {
 	"format": "gregfont",
 	"version": 2,
 	"name": "Lafayette",
-	"status": "proof",
+	"status": "generated",
 	"cell": {
 		"width": 40,
 		"height": 60

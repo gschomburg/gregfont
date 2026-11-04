@@ -307,7 +307,7 @@ def num1(v):
 
 def font_json(name, glyphs, cell, guides, style, spacing):
     top = {
-        'format': 'gregfont', 'version': 2, 'name': name, 'status': 'proof',
+        'format': 'gregfont', 'version': 2, 'name': name, 'status': 'generated',
         'cell': cell, 'guides': guides, 'style': style, 'spacing': spacing, 'kerning': {}
     }
     head = json.dumps(top, indent='\t', ensure_ascii=False)
