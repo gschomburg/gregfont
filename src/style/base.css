@@ -91,6 +91,10 @@
 * { box-sizing: border-box; }
 
 html, body { height: 100%; margin: 0; }
+/* The apps are all controls: a drag that starts a few pixels off a field
+   shouldn't highlight labels. Typing places still select normally. */
+body { -webkit-user-select: none; user-select: none; }
+input, textarea, select { -webkit-user-select: text; user-select: text; }
 
 body {
 	background: var(--panel);
@@ -162,6 +166,9 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .field-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .field[data-scrub="x"] { cursor: ew-resize; }
 .field[data-scrub="y"] { cursor: ns-resize; }
+/* a few spare pixels around draggable fields, so a near miss still drags */
+.field[data-scrub] { position: relative; isolation: isolate; }
+.field[data-scrub]::before { content: ''; position: absolute; inset: -3px; z-index: -1; }   /* under the input */
 .field[data-scrub] input:not(:focus) { cursor: inherit; }
 .field.scrubbing { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
 .field.scrubbing .field-label { color: var(--text); }
