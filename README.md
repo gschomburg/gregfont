@@ -243,3 +243,4 @@ Typesetter:
 
 - Effects (the old typesetter had a stub for drawing segment points and curve normals).
 - Text on a path, and named alternate glyphs in text.
+- Ligatures: draw combined glyphs (fi, fl, ff, ffi, ffl) and have text setting swap them in. Top-heavy f's like Garfield 2015's crowd whatever follows: "fi" can only kern so far before the l in "fill" runs into the hook (it's eased off with fi −16 and il +2 for now). Needs the named alternate glyphs above.
