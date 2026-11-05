@@ -6,6 +6,24 @@
 (function (global) {
 	'use strict';
 
+	// --- storage keys were 'gregfont-x' before 2.15.0 and are 'gregfont.x' now.
+	// Carry old ones over once. Runs before editor.js and typesetter.js read
+	// their settings, because ui.js loads first.
+	try {
+		var oldKeys = [];
+		for (var i = 0; i < localStorage.length; i++) {
+			var k = localStorage.key(i);
+			if (k && k.indexOf('gregfont-') === 0) oldKeys.push(k);
+		}
+		// the editor's old theme key goes last, so the shared one wins
+		oldKeys.sort(function (a, b) { return (a === 'gregfont-editor-theme') - (b === 'gregfont-editor-theme'); });
+		oldKeys.forEach(function (k) {
+			var nk = k === 'gregfont-editor-theme' ? 'gregfont.theme' : 'gregfont.' + k.slice('gregfont-'.length);
+			if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k));
+			localStorage.removeItem(k);
+		});
+	} catch (e) { /* private mode / quota */ }
+
 	// --- menu bar
 	//
 	// menus: [{ title, items: [item | '-'] }], item: { label, key, run,
@@ -186,7 +204,16 @@
 	};
 
 	// --- light / dark (shared by both pages)
-	var THEME_KEY = 'gregfont-theme';
+	// The inline script in each page's <head> reads the same key before first
+	// paint, and falls back to the system setting the same way.
+	var THEME_KEY = 'gregfont.theme';
+
+	// the browser bar matches the top bar
+	function updateThemeColor() {
+		var meta = document.querySelector('meta[name="theme-color"]');
+		if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--panel').trim();
+	}
+	updateThemeColor();
 
 	function currentTheme() {
 		return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
@@ -195,6 +222,7 @@
 	function setTheme(theme) {
 		document.documentElement.dataset.theme = theme;
 		try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* ignore */ }
+		updateThemeColor();
 	}
 
 	// --- foldable sections: <details data-remember="name"> keep their state

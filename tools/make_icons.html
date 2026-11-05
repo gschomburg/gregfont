@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<!--
+	make_icons.html: draws gregfont's icon or share preview as an SVG, from
+	text set in one of the fonts. tools/make_icons.py loads it in headless
+	Chrome, to save the SVG (dump-dom) and the PNGs (screenshots).
+	Needs ../src/libs/paper, ../src/fonts/fonts.js and ../src/js/gregfont.js.
+
+	Params:
+	  mode=icon|preview   icon: one letter in a rounded square; preview: 1200x630 card
+	  size=N              icon pixel size (default 512)
+	  square=1            icon without rounded corners (Apple touch icon)
+-->
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>gregfont icons</title>
+		<style>
+			html, body { margin: 0; padding: 0; overflow: hidden; background: transparent; }
+			svg { display: block; }
+		</style>
+	</head>
+	<body>
+		<script src="../src/libs/paper-core-0.12.18.min.js"></script>
+		<script src="../src/fonts/fonts.js"></script>
+		<script src="../src/js/gregfont.js"></script>
+		<script>
+			(function () {
+				'use strict';
+
+				// Same colours as the dark theme in src/style/base.css (--bg, --text, --accent).
+				var BG = '#16171a', TEXT = '#ececee', ACCENT = '#5b95ff', MUTED = '#8a8b93';
+
+				var params = new URLSearchParams(location.search);
+				var mode = params.get('mode') || 'icon';
+				var P = new paper.PaperScope();
+				P.setup(document.createElement('canvas'));
+				var bundle = window.GREGFONT_BUNDLE;
+
+				function font(file) {
+					return GregFont.normalize(JSON.parse(JSON.stringify(bundle.data[file])));
+				}
+
+				// Text set in a font, as an SVG <g> at `scale` px per font
+				// unit, with the ink's top-left at (x, y) or centred on centerX / centerY.
+				// opts.cap overrides the font's ends (and makes corners round).
+				// Returns { svg, inkWidth, inkHeight }.
+				function setText(f, text, opts) {
+					var lay = GregFont.layoutBlock(P, f, text, {});
+					var left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+					var parts = [];
+					lay.glyphs.forEach(function (g) {
+						var glyph = f.glyphs[g.char];
+						var ink = GregFont.inkBounds(P, f, g.char);
+						if (!glyph || !ink) return;
+						left = Math.min(left, g.x + ink.left); right = Math.max(right, g.x + ink.right);
+						top = Math.min(top, g.y + ink.top); bottom = Math.max(bottom, g.y + ink.bottom);
+						glyph.paths.forEach(function (p) {
+							parts.push({ d: p.d, x: g.x, y: g.y,
+								cap: opts.cap || p.strokeCap || f.style.strokeCap, join: opts.cap ? 'round' : p.strokeJoin || f.style.strokeJoin });
+						});
+					});
+					var s = opts.scale;
+					var paths = parts.map(function (p) {
+						return '<path d="' + p.d + '" transform="translate(' + r(p.x) + ' ' + r(p.y) + ') scale(1 -1)"' +
+							' stroke-linecap="' + p.cap + '" stroke-linejoin="' + p.join + '"/>';
+					}).join('');
+					var ox = opts.x - left * s, oy = opts.y - top * s;
+					if (opts.centerX !== undefined) ox = opts.centerX - (left + right) / 2 * s;
+					if (opts.centerY !== undefined) oy = opts.centerY - (top + bottom) / 2 * s;
+					return {
+						svg: '<g transform="translate(' + r(ox) + ' ' + r(oy) + ') scale(' + r(s) + ')" fill="none" stroke="' +
+							opts.color + '" stroke-width="' + r(opts.stroke / s) + '">' + paths + '</g>',
+						inkWidth: right - left, inkHeight: bottom - top
+					};
+				}
+
+				function r(n) { return Math.round(n * 1000) / 1000; }
+
+				var svg;
+				if (mode === 'preview') {
+					var W = 1200, H = 630;
+					var title = font('lafayette.json'), sub = title;
+					var t = setText(title, 'gregfont', { scale: 1, x: 0, y: 0, color: ACCENT, stroke: 1 });
+					var ts = 880 / t.inkWidth;
+					var big = setText(title, 'gregfont', { scale: ts, centerX: W / 2, centerY: 270, color: ACCENT, stroke: 16 });
+					var line = 'an editor and typesetter for single line fonts';   // Lafayette has no punctuation
+					var u = setText(sub, line, { scale: 1, x: 0, y: 0, color: TEXT, stroke: 1 });
+					var us = Math.min(820 / u.inkWidth, 46 / sub.cell.height);
+					var small = setText(sub, line, { scale: us, centerX: W / 2, centerY: 500, color: MUTED, stroke: 4, cap: 'round' });
+					svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
+						'<rect width="' + W + '" height="' + H + '" fill="' + BG + '"/>' + big.svg + small.svg + '</svg>';
+				} else {
+					var N = 512, size = +params.get('size') || N;
+					var f = font('lafayette.json');
+					var g = setText(f, 'g', { scale: 1, x: 0, y: 0, color: ACCENT, stroke: 1 });
+					var gs = 330 / Math.max(g.inkWidth, g.inkHeight);
+					var glyph = setText(f, 'g', { scale: gs, centerX: N / 2, centerY: N / 2, color: ACCENT, stroke: 40, cap: 'round' });
+					var radius = params.get('square') ? 0 : 112;
+					svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + N + ' ' + N + '">' +
+						'<rect width="' + N + '" height="' + N + '" rx="' + radius + '" fill="' + BG + '"/>' + glyph.svg + '</svg>';
+				}
+				document.body.innerHTML = svg;
+			})();
+		</script>
+	</body>
+</html>

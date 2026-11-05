@@ -43,7 +43,7 @@ The live copy is at https://www.gregschomburg.com/gregfont/ (DreamHost). Everyth
 
 1. Commit first, then bump the version: `python tools/bump_version.py X.Y.Z`, and commit that.
 2. Connect to the server by SFTP (FileZilla).
-3. Upload the contents of `src/` into the `gregfont/` folder, replacing what's there.
+3. Upload the contents of `src/` into the `gregfont/` folder, replacing what's there. Include `.htaccess`: if FileZilla doesn't list it, turn on Server → Force showing hidden files.
 4. Open the live page, hover the gregfont name and check that the version is the new one.
 
 The live site has no save server, so the editor saves to a picked folder (Chrome, Edge) or downloads the font.
@@ -219,6 +219,9 @@ src/
   js/version.js       The version shown on hover in the top bar
   js/samples.js       Sample texts for the editor's specimen view
   js/shapeimport.js   The New font from shapes window
+  icon.svg, icon-*.png, preview.png  Icons and the share card (made by tools/make_icons.py)
+  manifest.webmanifest  App name and icons for browsers
+  .htaccess           Live server: caching, no folder listings, compression
   style/base.css      Shared look: colour tokens (both themes), controls, menus
   style/editor.css, style/typesetter.css
   libs/               Paper.js 0.12.18 core (vendored)
@@ -230,6 +233,7 @@ tools/
   server.py           Dev server (static files + saving fonts)
   build_fonts.py      Rebuilds src/fonts/fonts.js
   bump_version.py     Sets the version and stamps it on the pages' scripts (run before publishing)
+  make_icons.py       Redraws the icons and share card in headless Chrome, from make_icons.html
   make_halsey_myrtle.py  Generates Halsey and Myrtle (Myrtle's coil size: --radius, --pitch)
   make_four_fonts.py  Generates Mercer, Delancey, Hester and Astor (--only to pick)
   make_lafayette.py   Generates Lafayette

@@ -1,0 +1,15 @@
+{
+	"name": "gregfont",
+	"short_name": "gregfont",
+	"description": "An editor and typesetter for single-line (stroke) fonts.",
+	"start_url": "./",
+	"scope": "./",
+	"display": "standalone",
+	"background_color": "#16171a",
+	"theme_color": "#1d1e22",
+	"icons": [
+		{ "src": "icon.svg", "type": "image/svg+xml", "sizes": "any" },
+		{ "src": "icon-192.png", "type": "image/png", "sizes": "192x192" },
+		{ "src": "icon-512.png", "type": "image/png", "sizes": "512x512" }
+	]
+}

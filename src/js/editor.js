@@ -212,6 +212,13 @@
 
 	// ---------------------------------------------------------- undo / redo
 
+	var UNDO_LIMIT = 200;
+
+	function addUndo(step) {
+		state.undo.push(step);
+		if (state.undo.length > UNDO_LIMIT) state.undo.shift();
+	}
+
 	// The open undo step: { ch, before }. A step stays open for the length of
 	// a mouse drag, a pen stroke, or dragging a number field (fieldEdit), so
 	// all of it undoes at once.
@@ -239,7 +246,7 @@
 		commit();
 		var after = snapshot(pending.ch);
 		if (after !== pending.before) {
-			state.undo.push(pending);
+			addUndo(pending);
 			state.redo = [];
 			markDirty();
 		}
@@ -2052,7 +2059,7 @@
 
 	function setShowOrder(on) {
 		state.show.order = on;
-		try { localStorage.setItem('gregfont-editor-show', JSON.stringify(state.show)); } catch (e) { /* ignore */ }
+		try { localStorage.setItem('gregfont.editor-show', JSON.stringify(state.show)); } catch (e) { /* ignore */ }
 		$('show-order').checked = on;
 		drawOrder();
 	}
@@ -2302,13 +2309,13 @@
 	// View > Show grid / guides / cell. Remembered between visits.
 	function toggleShow(what) {
 		state.show[what] = !state.show[what];
-		try { localStorage.setItem('gregfont-editor-show', JSON.stringify(state.show)); } catch (e) { /* ignore */ }
+		try { localStorage.setItem('gregfont.editor-show', JSON.stringify(state.show)); } catch (e) { /* ignore */ }
 		drawGuides();
 	}
 
 	function loadShow() {
 		try {
-			var saved = JSON.parse(localStorage.getItem('gregfont-editor-show') || 'null');
+			var saved = JSON.parse(localStorage.getItem('gregfont.editor-show') || 'null');
 			if (saved) Object.keys(state.show).forEach(function (k) {
 				// stroke order always starts off
 				if (k !== 'order' && typeof saved[k] === 'boolean') state.show[k] = saved[k];
@@ -2712,7 +2719,7 @@
 	// Aligning to the cell moves the whole selection as one block.
 
 	var alignTo = 'selection';
-	try { alignTo = localStorage.getItem('gregfont-editor-align-to') === 'cell' ? 'cell' : 'selection'; } catch (e) { /* ignore */ }
+	try { alignTo = localStorage.getItem('gregfont.editor-align-to') === 'cell' ? 'cell' : 'selection'; } catch (e) { /* ignore */ }
 
 	function alignUnits() {
 		var g = selectionGeometry();
@@ -2772,7 +2779,7 @@
 
 	function setAlignTo(v) {
 		alignTo = v;
-		try { localStorage.setItem('gregfont-editor-align-to', v); } catch (e) { /* ignore */ }
+		try { localStorage.setItem('gregfont.editor-align-to', v); } catch (e) { /* ignore */ }
 		$('align-to').querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b.dataset.value === v); });
 	}
 
@@ -3147,7 +3154,7 @@
 	// and the width the text wraps at (font units), set when it opens.
 	var previewView = { stroke: 2, extend: false, zoom: 1, panX: 0, panY: 0, wrap: null, w: 0, h: 0 };
 	try {
-		var savedView = JSON.parse(localStorage.getItem('gregfont-editor-preview') || 'null');
+		var savedView = JSON.parse(localStorage.getItem('gregfont.editor-preview') || 'null');
 		if (savedView && savedView.stroke > 0) previewView.stroke = savedView.stroke;
 		if (savedView) previewView.extend = !!savedView.extend;
 	} catch (e) { /* ignore */ }
@@ -3157,7 +3164,7 @@
 	function previewMargin(f) { return Math.max(f.cell.height * 0.08, 2); }
 
 	function savePreviewView() {
-		try { localStorage.setItem('gregfont-editor-preview', JSON.stringify({ stroke: previewView.stroke, extend: previewView.extend })); } catch (e) { /* ignore */ }
+		try { localStorage.setItem('gregfont.editor-preview', JSON.stringify({ stroke: previewView.stroke, extend: previewView.extend })); } catch (e) { /* ignore */ }
 	}
 
 	var SPEC_PAD_X = 22, SPEC_PAD_Y = 18;   // screen pixels around the text
@@ -3339,7 +3346,7 @@
 		if (!f.glyphs[state.ch]) {
 			state.ch = ['a', 'A'].concat(Object.keys(f.glyphs)).find(function (ch) { return f.glyphs[ch]; }) || 'a';
 		}
-		try { localStorage.setItem('gregfont-editor-font', entry.file || ''); } catch (e) { /* ignore */ }
+		try { localStorage.setItem('gregfont.editor-font', entry.file || ''); } catch (e) { /* ignore */ }
 		refreshFontSelect();
 		updateFontPanel();
 		renderGrid();
@@ -3474,7 +3481,7 @@
 				setStatus('No changes: the shapes in ' + file.name + ' match this font');
 				return;
 			}
-			state.undo.push({ batch: batch });
+			addUndo({ batch: batch });
 			state.redo = [];
 			markDirty();
 			renderGrid();
@@ -3692,7 +3699,7 @@
 			b.addEventListener('click', function () { useShape(b.dataset.shape); });
 		});
 		// remember which foldable sections are open
-		GregUI.rememberFolds(document, 'gregfont-editor-open-');
+		GregUI.rememberFolds(document, 'gregfont.editor-open-');
 		function setGrid() {
 			var v = parseFloat(this.value);
 			if (v > 0) { state.grid = v; drawGuides(); }
@@ -3765,7 +3772,7 @@
 			});
 		});
 		$('theme-toggle').addEventListener('click', toggleTheme);
-		tips = new GregUI.Tips($('tip'), 'gregfont-editor-tips');
+		tips = new GregUI.Tips($('tip'), 'gregfont.editor-tips');
 		$('play-strokes').addEventListener('click', playStrokes);
 		$('optimize-strokes').addEventListener('click', optimizeStrokes);
 		$('reverse-strokes').addEventListener('click', reverseSelection);
@@ -3783,7 +3790,7 @@
 			delete f.glyphs[state.ch];
 			GregFont.clearCache(f, state.ch);
 			var after = null;
-			if (after !== pending.before) { state.undo.push(pending); state.redo = []; markDirty(); }
+			if (after !== pending.before) { addUndo(pending); state.redo = []; markDirty(); }
 			pending = null;
 			renderGrid();
 			loadGlyph();
@@ -3934,7 +3941,7 @@
 	setTool('select');
 	loadAll().then(function () {
 		var last = null;
-		try { last = localStorage.getItem('gregfont-editor-font'); } catch (e) { /* ignore */ }
+		try { last = localStorage.getItem('gregfont.editor-font'); } catch (e) { /* ignore */ }
 		var entry = state.entries.find(function (en) { return en.file === last; }) || state.entries[0];
 		if (entry) openEntry(entry); else newFont();
 	}).catch(function (err) {

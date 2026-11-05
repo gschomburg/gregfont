@@ -1,0 +1,21 @@
+# gregfont on DreamHost (Apache): caching and safety for the live copy.
+# Uploaded with the rest of src/.
+
+Options -Indexes
+
+AddType application/manifest+json .webmanifest
+
+<IfModule mod_headers.c>
+	# Pages, font files and the manifest: always ask for a fresh copy
+	<FilesMatch "\.(html|json|webmanifest)$">
+		Header set Cache-Control "no-cache"
+	</FilesMatch>
+	# Files stamped ?v=X.Y.Z by tools/bump_version.py never change at that URL
+	<If "%{QUERY_STRING} =~ /(^|&)v=/">
+		Header set Cache-Control "public, max-age=31536000, immutable"
+	</If>
+</IfModule>
+
+<IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>

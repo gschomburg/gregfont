@@ -2,14 +2,41 @@
 <html lang="en" data-theme="dark">
 	<head>
 		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>gregfont typesetter</title>
+		<meta name="description" content="Set text in single-line (stroke) fonts and save it as SVG for pen plotters, laser and CNC engraving.">
+		<link rel="canonical" href="https://www.gregschomburg.com/gregfont/">
+		<!-- js/ui.js sets this to the top bar colour of the current theme -->
+		<meta name="theme-color" content="#1d1e22">
+		<meta property="og:type" content="website">
+		<meta property="og:site_name" content="gregfont">
+		<meta property="og:title" content="gregfont typesetter">
+		<meta property="og:description" content="Set text in single-line (stroke) fonts and save it as SVG for pen plotters, laser and CNC engraving.">
+		<meta property="og:url" content="https://www.gregschomburg.com/gregfont/">
+		<meta property="og:image" content="https://www.gregschomburg.com/gregfont/preview.png">
+		<meta property="og:image:width" content="1200">
+		<meta property="og:image:height" content="630">
+		<meta name="twitter:card" content="summary_large_image">
+		<meta name="twitter:title" content="gregfont typesetter">
+		<meta name="twitter:description" content="Set text in single-line (stroke) fonts and save it as SVG for pen plotters, laser and CNC engraving.">
+		<meta name="twitter:image" content="https://www.gregschomburg.com/gregfont/preview.png">
+		<link rel="manifest" href="manifest.webmanifest">
+		<link rel="icon" href="icon.svg" type="image/svg+xml">
+		<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+		<link rel="apple-touch-icon" href="icon-180.png">
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.14.5">
-		<link rel="stylesheet" type="text/css" href="style/typesetter.css?v=2.14.5">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.15.0">
+		<link rel="stylesheet" type="text/css" href="style/typesetter.css?v=2.15.0">
 		<script>
-			// apply the saved theme before the page paints
-			try { document.documentElement.dataset.theme = localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme') || 'dark'; } catch (e) {}
+			// apply the saved theme, or the system's, before the page paints.
+			// Same key and fallback as setTheme in js/ui.js (old keys from before 2.15.0 too).
+			(function () {
+				var t;
+				try { t = localStorage.getItem('gregfont.theme') || localStorage.getItem('gregfont-theme') || localStorage.getItem('gregfont-editor-theme'); } catch (e) { /* private mode */ }
+				if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+				document.documentElement.dataset.theme = t;
+			})();
 		</script>
 	</head>
 	<body>
@@ -160,11 +187,11 @@
 			</details>
 		</aside>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.14.5"></script>
-		<script src="fonts/fonts.js?v=2.14.5"></script>
-		<script src="js/gregfont.js?v=2.14.5"></script>
-		<script src="js/version.js?v=2.14.5"></script>
-		<script src="js/ui.js?v=2.14.5"></script>
-		<script src="js/typesetter.js?v=2.14.5"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.15.0"></script>
+		<script src="fonts/fonts.js?v=2.15.0"></script>
+		<script src="js/gregfont.js?v=2.15.0"></script>
+		<script src="js/version.js?v=2.15.0"></script>
+		<script src="js/ui.js?v=2.15.0"></script>
+		<script src="js/typesetter.js?v=2.15.0"></script>
 	</body>
 </html>

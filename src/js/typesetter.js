@@ -16,7 +16,7 @@
 	var P = new paper.PaperScope();
 	P.setup(document.createElement('canvas'));   // offscreen, for geometry only
 
-	var STORE_KEY = 'gregfont-typesetter-document';
+	var STORE_KEY = 'gregfont.typesetter-document';
 	var LAYOUT_ID = 'gregfont-layout';
 	var PRESETS = [
 		{ id: 'a4', name: 'A4', w: 794, h: 1123 },
@@ -1272,8 +1272,8 @@
 		else starterDoc();
 		bindPanels();
 		GregUI.buildMenus($('menubar'), MENUS, $('canvas-wrap'));
-		GregUI.rememberFolds(document, 'gregfont-typesetter-open-');
-		tips = new GregUI.Tips($('tip'), 'gregfont-typesetter-tips');
+		GregUI.rememberFolds(document, 'gregfont.typesetter-open-');
+		tips = new GregUI.Tips($('tip'), 'gregfont.typesetter-tips');
 		tips.setList(TIPS);
 		document.querySelectorAll('.tool').forEach(function (b) {
 			b.addEventListener('click', function () { setTool(b.dataset.tool); });
