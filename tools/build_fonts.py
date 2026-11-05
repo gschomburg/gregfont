@@ -10,6 +10,7 @@ Usage:  python tools/build_fonts.py
 """
 import json
 import os
+import sys
 
 FONTS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'fonts'))
 
@@ -41,4 +42,6 @@ def build(fonts_dir=FONTS):
 
 
 if __name__ == '__main__':
+    if sys.argv[1:]:
+        sys.exit(__doc__)
     print('fonts.js: %d fonts' % build())

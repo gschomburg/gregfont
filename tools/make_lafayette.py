@@ -125,6 +125,8 @@ def lafayette():
 
 
 if __name__ == '__main__':
+    if sys.argv[1:]:
+        sys.exit(__doc__)
     f = lafayette()
     add_to_manifest([f])
     subprocess.check_call([sys.executable, os.path.join(HERE, 'build_fonts.py')])

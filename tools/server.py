@@ -68,7 +68,10 @@ def add_to_manifest(file_name):
 
 
 def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    args = sys.argv[1:]
+    if len(args) > 1 or (args and not args[0].isdigit()):
+        sys.exit(__doc__)
+    port = int(args[0]) if args else 8000
     server = http.server.ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, directory=SRC))
     print('gregfont dev server: http://localhost:%d  (serving %s)' % (port, SRC))
     try:
