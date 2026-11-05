@@ -1,3 +1,4 @@
-
+# Sublime Text window state, per user
 gregfont.sublime-workspace
+# Python bytecode cache from running tools/
 __pycache__/
