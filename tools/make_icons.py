@@ -2,7 +2,7 @@
 
 Usage:  python tools/make_icons.py
 
-Opens make_icons.html in headless Chrome (or Edge) and writes, into src/:
+Opens make_icons.html in headless Chrome (or Edge) and writes, into public/:
     icon.svg                 the icon (a "g" in Lafayette)
     icon-180.png             Apple touch icon (square corners)
     icon-192.png, icon-512.png
@@ -16,7 +16,7 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.normpath(os.path.join(HERE, '..', 'src'))
+PUBLIC = os.path.normpath(os.path.join(HERE, '..', 'public'))
 PAGE = 'file:///' + os.path.join(HERE, 'make_icons.html').replace('\\', '/')
 BROWSERS = [
     r'C:\Program Files\Google\Chrome\Application\chrome.exe',
@@ -54,13 +54,13 @@ def main():
     m = re.search(r'<svg.*</svg>', dom, re.S)
     if not m:
         sys.exit('make_icons.html drew no SVG')
-    out = os.path.join(SRC, 'icon.svg')
+    out = os.path.join(PUBLIC, 'icon.svg')
     open(out, 'w', encoding='utf-8', newline='\n').write(m.group(0) + '\n')
     print('wrote', os.path.relpath(out))
-    shot(exe, 'mode=icon&size=180&square=1', 180, 180, os.path.join(SRC, 'icon-180.png'))
+    shot(exe, 'mode=icon&size=180&square=1', 180, 180, os.path.join(PUBLIC, 'icon-180.png'))
     for n in (192, 512):
-        shot(exe, 'mode=icon&size=%d' % n, n, n, os.path.join(SRC, 'icon-%d.png' % n))
-    shot(exe, 'mode=preview', 1200, 630, os.path.join(SRC, 'preview.png'))
+        shot(exe, 'mode=icon&size=%d' % n, n, n, os.path.join(PUBLIC, 'icon-%d.png' % n))
+    shot(exe, 'mode=preview', 1200, 630, os.path.join(PUBLIC, 'preview.png'))
 
 
 if __name__ == '__main__':

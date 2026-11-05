@@ -2,7 +2,7 @@
 
 Usage:  python tools/bump_version.py 2.0.1
 
-Writes the version and today's date into src/js/version.js, and stamps
+Writes the version and today's date into public/js/version.js, and stamps
 ?v=<version> onto every local script and stylesheet in the pages, so
 browsers fetch the new files instead of old cached ones (web hosts often
 cache .js and .css for weeks).
@@ -12,7 +12,7 @@ import os
 import re
 import sys
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src')
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public')
 PAGES = ['index.html', 'editor.html']
 
 

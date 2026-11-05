@@ -9,7 +9,7 @@ The one list of open work. `[ ]` todo, `[~]` in progress, `[x]` done (with date 
 
 ## Editor
 
-- [ ] Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/base.css`.
+- [ ] Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `public/style/base.css`.
 - [ ] One stroke control instead of two. The glyph canvas has a Stroke field in its options bar and the preview has its own; there should be one, laid out the same way, next to the zoom controls on each.
 - [ ] Settle on one word for line thickness across both apps. The editor says "Stroke" (and "Strokes" for the default end and corner styles), the typesetter says "Pen", the code and README also say "stroke width" and "weight".
 - [ ] Context from the preview: draw the current glyph's neighbours from the preview text faintly on the canvas, where the text would put them (spacing and kerning applied). Working on A with "ABC" in the preview shows a ghost B to its right on the baseline, and moving a side bearing slides the neighbours live. Clicking a letter in the specimen would open it with that spot's neighbours around it, like zooming in to an isolation mode. Not tracing, just seeing the letter in context.

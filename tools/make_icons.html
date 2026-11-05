@@ -3,7 +3,7 @@
 	make_icons.html: draws gregfont's icon or share preview as an SVG, from
 	text set in one of the fonts. tools/make_icons.py loads it in headless
 	Chrome, to save the SVG (dump-dom) and the PNGs (screenshots).
-	Needs ../src/libs/paper, ../src/fonts/fonts.js and ../src/js/gregfont.js.
+	Needs ../public/libs/paper, ../public/fonts/fonts.js and ../public/js/gregfont.js.
 
 	Params:
 	  mode=icon|preview   icon: one letter in a rounded square; preview: 1200x630 card
@@ -20,14 +20,14 @@
 		</style>
 	</head>
 	<body>
-		<script src="../src/libs/paper-core-0.12.18.min.js"></script>
-		<script src="../src/fonts/fonts.js"></script>
-		<script src="../src/js/gregfont.js"></script>
+		<script src="../public/libs/paper-core-0.12.18.min.js"></script>
+		<script src="../public/fonts/fonts.js"></script>
+		<script src="../public/js/gregfont.js"></script>
 		<script>
 			(function () {
 				'use strict';
 
-				// Same colours as the dark theme in src/style/base.css (--bg, --text, --accent).
+				// Same colours as the dark theme in public/style/base.css (--bg, --text, --accent).
 				var BG = '#16171a', TEXT = '#ececee', ACCENT = '#5b95ff', MUTED = '#8a8b93';
 
 				var params = new URLSearchParams(location.search);

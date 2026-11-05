@@ -1,5 +1,5 @@
 # gregfont on DreamHost (Apache): caching and safety for the live copy.
-# Uploaded with the rest of src/.
+# Uploaded with the rest of public/.
 
 Options -Indexes
 

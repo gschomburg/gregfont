@@ -1,8 +1,8 @@
 """Local dev server for gregfont.
 
-Serves src/ like any static server, and also accepts
+Serves public/ like any static server, and also accepts
     PUT /fonts/<name>.json
-to save a font file into src/fonts/ (adding it to fonts/fonts.json if new,
+to save a font file into public/fonts/ (adding it to fonts/fonts.json if new,
 and rebuilding fonts/fonts.js). That's how the editor saves straight to disk.
 
 Usage:  python tools/server.py [port]      (default port 8000)
@@ -17,8 +17,8 @@ from functools import partial
 
 from build_fonts import build as build_bundle
 
-SRC = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
-FONTS = os.path.join(SRC, 'fonts')
+PUBLIC = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public'))
+FONTS = os.path.join(PUBLIC, 'fonts')
 MANIFEST = os.path.join(FONTS, 'fonts.json')
 FONT_PATH = re.compile(r'^/fonts/([a-z0-9][a-z0-9_-]*)\.json$')
 MAX_BYTES = 10 * 1024 * 1024
@@ -72,8 +72,8 @@ def main():
     if len(args) > 1 or (args and not args[0].isdigit()):
         sys.exit(__doc__)
     port = int(args[0]) if args else 8000
-    server = http.server.ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, directory=SRC))
-    print('gregfont dev server: http://localhost:%d  (serving %s)' % (port, SRC))
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, directory=PUBLIC))
+    print('gregfont dev server: http://localhost:%d  (serving %s)' % (port, PUBLIC))
     try:
         server.serve_forever()
     except KeyboardInterrupt:

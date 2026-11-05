@@ -1,11 +1,11 @@
 {
-	// Saving a font in the editor writes into src/fonts; don't let Live Server
+	// Saving a font in the editor writes into public/fonts; don't let Live Server
 	// reload the page (and lose the editor's state) when that happens.
 	"liveServer.settings.ignoreFiles": [
 		".vscode/**",
 		"**/*.scss",
 		"**/*.sass",
 		"**/*.ts",
-		"**/src/fonts/**"
+		"**/public/fonts/**"
 	]
 }

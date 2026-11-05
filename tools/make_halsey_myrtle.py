@@ -21,7 +21,7 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FONTS = os.path.join(HERE, '..', 'src', 'fonts')
+FONTS = os.path.join(HERE, '..', 'public', 'fonts')
 
 W = 32          # glyph width
 X = 36          # x-height

@@ -1,4 +1,4 @@
-"""Rebuild src/fonts/fonts.js from fonts.json and the font files.
+"""Rebuild public/fonts/fonts.js from fonts.json and the font files.
 
 fonts.js holds a copy of every font as a script, so the typesetter and the
 editor also work when their HTML file is opened straight from disk (where
@@ -12,7 +12,7 @@ import json
 import os
 import sys
 
-FONTS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'fonts'))
+FONTS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public', 'fonts'))
 
 HEADER = ('// Generated from fonts.json and the font files so the pages work when opened\n'
           '// straight from disk. Don\'t edit: the JSON files are the fonts. Rebuild with\n'

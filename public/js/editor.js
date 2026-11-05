@@ -3582,7 +3582,7 @@
 		a.download = entry.file;
 		a.click();
 		setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-		setStatus('This browser can\u2019t write to folders, so the font was downloaded. Put it in src/fonts/, add it to fonts.json, and run python tools/build_fonts.py.', true);
+		setStatus('This browser can\u2019t write to folders, so the font was downloaded. Put it in public/fonts/, add it to fonts.json, and run python tools/build_fonts.py.', true);
 	}
 
 	// --- saving into the fonts folder (File System Access API)
@@ -3621,10 +3621,10 @@
 	}
 
 	function pickFontsDir() {
-		setStatus('Choose the src/fonts folder to save into\u2026');
+		setStatus('Choose the public/fonts folder to save into\u2026');
 		return window.showDirectoryPicker({ id: 'gregfont-fonts', mode: 'readwrite' }).then(function (dir) {
 			return dir.getFileHandle('fonts.json').then(function () { return dir; }, function () {
-				throw new Error('that folder has no fonts.json; choose the src/fonts folder');
+				throw new Error('that folder has no fonts.json; choose the public/fonts folder');
 			});
 		}).then(function (dir) {
 			rememberedDir(dir);

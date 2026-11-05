@@ -11,7 +11,7 @@ Glyphs are stroked paths rendered with [Paper.js](http://paperjs.org/). Because 
 
 There is no build step. Either way below works.
 
-**Open the files directly.** Drag `src/index.html` (typesetter) or `src/editor.html` (editor) into the browser. Browsers block reading other files from a page opened this way, so the fonts come from `src/fonts/fonts.js`, a copy of every font that loads as a script. When you save in the editor, Chrome and Edge ask once for the `src/fonts` folder and then save straight into it, keeping `fonts.json` and `fonts.js` up to date. Other browsers download the font file instead.
+**Open the files directly.** Drag `public/index.html` (typesetter) or `public/editor.html` (editor) into the browser. Browsers block reading other files from a page opened this way, so the fonts come from `public/fonts/fonts.js`, a copy of every font that loads as a script. When you save in the editor, Chrome and Edge ask once for the `public/fonts` folder and then save straight into it, keeping `fonts.json` and `fonts.js` up to date. Other browsers download the font file instead.
 
 **Or run the dev server** from the repo root, then open http://localhost:8000 (typesetter) or http://localhost:8000/editor.html (editor):
 
@@ -19,7 +19,7 @@ There is no build step. Either way below works.
 python tools/server.py        # or: python tools/server.py 8080
 ```
 
-It serves `src/`, and the editor saves through it with no folder prompt. Other static servers (like VS Code's Live Server extension) work too, and saving then falls back to the folder prompt. Live Server reloads the page whenever a file changes, including when you save a font, so the repo's `.vscode/settings.json` sets `liveServer.settings.ignoreFiles` to skip `src/fonts/**`. It only applies when VS Code has the repo folder itself open.
+It serves `public/`, and the editor saves through it with no folder prompt. Other static servers (like VS Code's Live Server extension) work too, and saving then falls back to the folder prompt. Live Server reloads the page whenever a file changes, including when you save a font, so the repo's `.vscode/settings.json` sets `liveServer.settings.ignoreFiles` to skip `public/fonts/**`. It only applies when VS Code has the repo folder itself open.
 
 `fonts.js` is rebuilt whenever the editor or the dev server saves. After changing a font file any other way (by hand, or with git), rebuild it:
 
@@ -35,15 +35,15 @@ Hover the **gregfont** name in either page's top bar to see the version and its 
 python tools/bump_version.py 2.0.2
 ```
 
-That writes the version and today's date into `src/js/version.js`, and adds `?v=2.0.2` to every script and stylesheet link in the two pages. Web hosts often tell browsers to keep `.js` and `.css` files for weeks, so without a new `?v=` visitors keep running the old scripts against the new pages. Use the first number for changes that break font or layout files, the middle for features, the last for fixes.
+That writes the version and today's date into `public/js/version.js`, and adds `?v=2.0.2` to every script and stylesheet link in the two pages. Web hosts often tell browsers to keep `.js` and `.css` files for weeks, so without a new `?v=` visitors keep running the old scripts against the new pages. Use the first number for changes that break font or layout files, the middle for features, the last for fixes.
 
 ## Deploying
 
-The live copy is at https://www.gregschomburg.com/gregfont/ (DreamHost). Everything in `src/` is uploaded; nothing outside it is.
+The live copy is at https://www.gregschomburg.com/gregfont/ (DreamHost). Everything in `public/` is uploaded; nothing outside it is.
 
 1. Commit first, then bump the version: `python tools/bump_version.py X.Y.Z`, and commit that.
 2. Connect to the server by SFTP (FileZilla).
-3. Upload the contents of `src/` into the `gregfont/` folder, replacing what's there. Include `.htaccess`: if FileZilla doesn't list it, turn on Server → Force showing hidden files.
+3. Upload the contents of `public/` into the `gregfont/` folder, replacing what's there. Include `.htaccess`: if FileZilla doesn't list it, turn on Server → Force showing hidden files.
 4. Open the live page, hover the gregfont name and check that the version is the new one.
 
 The live site has no save server, so the editor saves to a picked folder (Chrome, Edge) or downloads the font.
@@ -89,7 +89,7 @@ Curly quotes, the apostrophe `’` and en/em dashes fall back to the plain `"` `
 
 ## Font format
 
-Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json` (which sets the dropdown order). Glyphs are stroked paths stored as SVG path data, in font units laid out like type: the origin (0,0) sits on the baseline at the left of the cell, x grows right and **y grows up**. So the cap line is a positive height and descenders go negative. The editor marks the origin with a small "0,0".
+Each font is a single JSON file in `public/fonts/`, listed in `public/fonts/fonts.json` (which sets the dropdown order). Glyphs are stroked paths stored as SVG path data, in font units laid out like type: the origin (0,0) sits on the baseline at the left of the cell, x grows right and **y grows up**. So the cap line is a positive height and descenders go negative. The editor marks the origin with a small "0,0".
 
 ```json
 {
@@ -121,7 +121,7 @@ Each font is a single JSON file in `src/fonts/`, listed in `src/fonts/fonts.json
 - The file is written one glyph per line, so git diffs show which glyphs changed.
 - Version 1 files (y down, origin at the cell's top-left, an explicit baseline guide) still load; they're converted on the way in and saved as version 2.
 
-All reading, writing and importing lives in `src/js/gregfont.js`.
+All reading, writing and importing lives in `public/js/gregfont.js`.
 
 ## Editor
 
@@ -160,7 +160,7 @@ The layout follows desktop drawing apps:
 | Snap | Two switches in the bar above the canvas. **Grid** (<kbd>G</kbd>) snaps to the grid; set its size next to it. **Paths** (<kbd>Shift+G</kbd>) snaps onto other paths' points, or failing that onto their lines, when dragging points or handles, placing pen points (and pulling their handles) and drawing shapes; a pink ring shows where. A handle never snaps onto its own point. A nearby path wins over the grid; with both off, points go exactly where you put them. When you drag whole paths, their outline's edges snap too (left, centre, right; top, middle, bottom, including the low point of a curve): onto the guides (baseline, x-height, cap, descender, 0 and the cell edges) when one is close, else onto the grid, whichever edge needs the smallest nudge. So a shape dragged near the baseline sits its real bottom on it. |
 | View | Mouse wheel zooms, Space-drag or middle-drag pans. The − / % / + / **Fit** buttons at the right of the bar above the canvas zoom out, go back to 100% (one font unit per pixel), zoom in, and fit the glyph; so do Ctrl+− / Ctrl+= / Ctrl+0, and <kbd>F</kbd> fits too. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
-| Save | Ctrl+S. Writes `src/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `src/fonts` folder. Browsers without folder access download the file instead. |
+| Save | Ctrl+S. Writes `public/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `public/fonts` folder. Browsers without folder access download the file instead. |
 
 The **scratch pad** is the dashed, full-width tile at the top of the glyph grid: a parts bin for spare shapes. Click it and it works like any glyph (draw, paste pieces in, copy them back out), but it has no spacing, isn't counted, never appears in text, and isn't exported. It's saved with the font, in the file as a glyph named `_scratch`.
 
@@ -170,7 +170,7 @@ The **Font** panel sets the name, cell size, guide lines, default stroke caps an
 
 The **preview** strip at the bottom sets a line of text with the font as you edit, at the strip's height; text that doesn't fit is cut off at the right. It's monospaced when the font's **Mono** switch (left panel) is on. **Stroke** sets the preview's stroke weight, in font units. **Extend ends to guides** (in the glyph panel's Spacing section) shows the typesetter's option of that name on the canvas and in the preview, so you can check how stems line up with round letters at the current stroke weight; it's view only and never changes the glyph. Click a letter to edit it. Shift-click two letters to set up a kerning pair, then enter the amount in the **Kerning** panel.
 
-The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The **Specimen** button at the right of the preview bar (or picking a sample) slides the preview up into a **specimen view** over the glyph canvas. The text is wrapped once, to the view's width, and then you zoom and move around it like the canvas: the wheel (or a trackpad pinch) zooms around the cursor, dragging moves around, and the − / % / + / **Fit** buttons in the bar (or Ctrl+= / Ctrl+− / Ctrl+0) zoom, go back to 100% (one font unit per pixel) or fit the whole specimen in view. Line breaks never change while zooming; reopening the specimen wraps it to the view again. Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `src/js/samples.js`.
+The dropdown next to it picks a **sample** instead of your own text: the character set, lowercase, initial caps, kerning pairs and reading paragraphs, for checking spacing. The **Specimen** button at the right of the preview bar (or picking a sample) slides the preview up into a **specimen view** over the glyph canvas. The text is wrapped once, to the view's width, and then you zoom and move around it like the canvas: the wheel (or a trackpad pinch) zooms around the cursor, dragging moves around, and the − / % / + / **Fit** buttons in the bar (or Ctrl+= / Ctrl+− / Ctrl+0) zoom, go back to 100% (one font unit per pixel) or fit the whole specimen in view. Line breaks never change while zooming; reopening the specimen wraps it to the view again. Clicking a letter goes back to editing it; Esc closes the specimen. The sample texts are in `public/js/samples.js`.
 
 ## Working in Illustrator
 
@@ -209,7 +209,7 @@ Every group (or loose path) becomes a tile, in reading order: rows top to bottom
 ## Project layout
 
 ```
-src/
+public/
   index.html          Typesetter UI
   editor.html         Editor UI
   js/typesetter.js    Typesetter: text boxes, page, plot, save/open SVG
@@ -231,7 +231,7 @@ src/
     <font>.json       Fonts
 tools/
   server.py           Dev server (static files + saving fonts)
-  build_fonts.py      Rebuilds src/fonts/fonts.js
+  build_fonts.py      Rebuilds public/fonts/fonts.js
   bump_version.py     Sets the version and stamps it on the pages' scripts (run before publishing)
   make_icons.py       Redraws the icons and share card in headless Chrome, from make_icons.html
   make_halsey_myrtle.py  Generates Halsey and Myrtle (Myrtle's coil size: --radius, --pitch)
