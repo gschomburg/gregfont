@@ -1,0 +1,26 @@
+# Store text with LF line endings, whatever the OS
+* text=auto eol=lf
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+
+# Audio
+*.mp3 binary
+*.wav binary
+*.ogg binary
+
+# Video
+*.mp4 binary
+*.webm binary
+*.mov binary
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
