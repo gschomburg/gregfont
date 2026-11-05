@@ -37,6 +37,17 @@ python tools/bump_version.py 2.0.2
 
 That writes the version and today's date into `src/js/version.js`, and adds `?v=2.0.2` to every script and stylesheet link in the two pages. Web hosts often tell browsers to keep `.js` and `.css` files for weeks, so without a new `?v=` visitors keep running the old scripts against the new pages. Use the first number for changes that break font or layout files, the middle for features, the last for fixes.
 
+## Deploying
+
+The live copy is at https://www.gregschomburg.com/gregfont/ (DreamHost). Everything in `src/` is uploaded; nothing outside it is.
+
+1. Commit first, then bump the version: `python tools/bump_version.py X.Y.Z`, and commit that.
+2. Connect to the server by SFTP (FileZilla).
+3. Upload the contents of `src/` into the `gregfont/` folder, replacing what's there.
+4. Open the live page, hover the gregfont name and check that the version is the new one.
+
+The live site has no save server, so the editor saves to a picked folder (Chrome, Edge) or downloads the font.
+
 ## Typesetter
 
 Open `index.html`. It sets text on a page, ready for a plotter. Everything is measured in pixels at 96 per inch (A4 landscape is 1123 × 794), which is how SVG sizes things; plotter software converts to millimetres.
@@ -222,25 +233,16 @@ tools/
   make_halsey_myrtle.py  Generates Halsey and Myrtle (Myrtle's coil size: --radius, --pitch)
   make_four_fonts.py  Generates Mercer, Delancey, Hester and Astor (--only to pick)
   make_lafayette.py   Generates Lafayette
+docs/
+  TODO.md             The one list of open work
+  meat_notes.md       Raw notes inbox, sorted into the other docs by Claude
+CLAUDE.md             Working guide for Claude
 textSample*.txt       Scratch character sets for testing
 ```
 
-## Ideas / TODO
+Open work is in [docs/TODO.md](docs/TODO.md).
 
-Editor:
+## Credits
 
-- Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `src/style/base.css`.
-- One stroke control instead of two. The glyph canvas has a Stroke field in its options bar and the preview has its own; there should be one, laid out the same way, next to the zoom controls on each.
-- Settle on one word for line thickness across both apps. The editor says "Stroke" (and "Strokes" for the default end and corner styles), the typesetter says "Pen", the code and README also say "stroke width" and "weight".
-- Context from the preview: draw the current glyph's neighbours from the preview text faintly on the canvas, where the text would put them (spacing and kerning applied). Working on A with "ABC" in the preview shows a ghost B to its right on the baseline, and moving a side bearing slides the neighbours live. Clicking a letter in the specimen would open it with that spot's neighbours around it, like zooming in to an isolation mode. Not tracing, just seeing the letter in context.
-- Picking a glyph in the grid while the specimen is open should bring that letter into view in the specimen (scroll the view to its first occurrence if it's off screen, maybe highlight it), without zooming in.
-
-Fonts:
-
-- Troutman's guides are off (x-height 20.1, descender −40.2). They were guessed from the letter shapes on import. Set them by hand in Font settings → Guides and save.
-
-Typesetter:
-
-- Effects (the old typesetter had a stub for drawing segment points and curve normals).
-- Text on a path, and named alternate glyphs in text.
-- Ligatures: draw combined glyphs (fi, fl, ff, ffi, ffl) and have text setting swap them in. Top-heavy f's like Garfield 2015's crowd whatever follows: "fi" can only kern so far before the l in "fill" runs into the hook (it's eased off with fi −16 and il +2 for now). Needs the named alternate glyphs above.
+- [Paper.js](http://paperjs.org/) 0.12.18 draws the glyphs (MIT licence).
+- [IBM Plex Sans and Mono](https://www.ibm.com/plex/) set the interface, from Google Fonts (SIL Open Font License).

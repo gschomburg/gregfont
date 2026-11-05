@@ -3,7 +3,7 @@
 # gregfont
 
 A font editor (`src/editor.html`) and a typesetter (`src/index.html`). README.md has the
-full picture, including the font format and the TODO list.
+full picture, including the font format. Open work is in `docs/TODO.md`.
 
 ## Differences from web.md (keep these)
 - `src/` is the web root (no build). Don't rename it to `public/`.
