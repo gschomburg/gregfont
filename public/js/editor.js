@@ -1879,7 +1879,7 @@
 		var ctrl = e.ctrlKey || e.metaKey;
 		var key = e.key.toLowerCase();
 
-		if (ctrl && key === 's') { e.preventDefault(); save(); return; }
+		if (ctrl && key === 's') { e.preventDefault(); save(e.shiftKey); return; }
 		if (isTyping(e)) return;
 
 		if (ctrl && key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
@@ -2477,7 +2477,8 @@
 			{ label: 'Export SVG for Illustrator', run: exportSVG },
 			{ label: 'Update shapes from SVG\u2026', run: function () { chooseSVG('update'); } },
 			'-',
-			{ label: 'Save', key: 'Ctrl+S', run: function () { save(); } }
+			{ label: 'Save', key: 'Ctrl+S', run: function () { save(); } },
+			{ label: 'Save as\u2026', key: 'Ctrl+Shift+S', run: function () { save(true); } }
 		] },
 		{ title: 'Edit', items: [
 			{ label: 'Undo', key: 'Ctrl+Z', run: function () { undo(); }, enabled: function () { return state.undo.length > 0 || !!penPath; } },
@@ -3534,7 +3535,8 @@
 		setStatus('Exported ' + a.download + '. Edit it in Illustrator, then use File \u2192 Update shapes from SVG.');
 	}
 
-	function save() {
+	// saveAs: skip the server and the remembered folder, and pick a folder.
+	function save(saveAs) {
 		finishPen();
 		var entry = state.entry;
 		if (!entry.file) {
@@ -3552,7 +3554,11 @@
 			if (before.revision === undefined) delete f.revision; else f.revision = before.revision;
 			if (before.modified === undefined) delete f.modified; else f.modified = before.modified;
 		}
-		function saved(where) {
+		function saved(where, copyOnly) {
+			if (copyOnly) {
+				setStatus('Saved a copy to ' + where + entry.file + ' at ' + now.toLocaleTimeString() + '. That folder has no fonts.json, so Ctrl+S still saves to the fonts folder.');
+				return;
+			}
 			entry.dirty = false;
 			refreshFontSelect();
 			updateFontPanel();
@@ -3560,12 +3566,13 @@
 		}
 		// From the dev server: save through it. Opened from disk: write into
 		// the fonts folder (Chrome/Edge ask for it once). Otherwise download.
-		var viaServer = location.protocol === 'file:' ? Promise.resolve(false) : GregFont.saveToServer(entry.file, entry.font);
+		// Save as: always pick a folder.
+		var viaServer = saveAs || location.protocol === 'file:' ? Promise.resolve(false) : GregFont.saveToServer(entry.file, entry.font);
 		viaServer.then(function (ok) {
 			if (ok) { saved('fonts/'); return; }
 			if (!window.showDirectoryPicker) { downloadFont(entry); return; }
-			saveToFolder(entry).then(function (dirName) {
-				saved(dirName + '/');
+			(saveAs ? saveAsToFolder(entry) : saveToFolder(entry).then(function (name) { return { name: name }; })).then(function (r) {
+				saved(r.name + '/', r.copyOnly);
 			}, function (err) {
 				failed();
 				if (err && err.name === 'AbortError') { setStatus('Not saved: no folder chosen', true); return; }
@@ -3669,6 +3676,23 @@
 		});
 	}
 
+	// Save as: a fonts folder (one with fonts.json) gets a full save and becomes
+	// the remembered folder. Any other folder just gets a copy of the font file.
+	function saveAsToFolder(entry) {
+		setStatus('Choose a folder to save into\u2026');
+		return window.showDirectoryPicker({ id: 'gregfont-fonts', mode: 'readwrite' }).then(function (dir) {
+			return dir.getFileHandle('fonts.json').then(function () {
+				fontsDir = dir;
+				rememberedDir(dir);
+				return writeFontToDir(dir, entry).then(function (name) { return { name: name }; });
+			}, function () {
+				return writeText(dir, entry.file, GregFont.stringify(entry.font)).then(function () {
+					return { name: dir.name, copyOnly: true };
+				});
+			});
+		});
+	}
+
 	function writeFontToDir(dir, entry) {
 		return Promise.resolve().then(function () {
 			return writeText(dir, entry.file, GregFont.stringify(entry.font))
@@ -3741,7 +3765,7 @@
 			if (this.files[0]) importSVG(this.files[0]);
 			this.value = '';
 		});
-		$('save').addEventListener('click', save);
+		$('save').addEventListener('click', function () { save(); });
 
 		['lsb', 'rsb'].forEach(function (key) {
 			$('glyph-' + key).addEventListener('change', function () {
