@@ -3656,6 +3656,21 @@
 	// the files on disk. Resolves to the folder's name.
 	function saveToFolder(entry) {
 		return getFontsDir().then(function (dir) {
+			return writeFontToDir(dir, entry);
+		}).catch(function (err) {
+			// The remembered folder was moved or renamed (as when src/ became
+			// public/). Forget it, ask for the folder again, and retry once.
+			if (!err || err.name !== 'NotFoundError') throw err;
+			fontsDir = null;
+			return pickFontsDir().then(function (dir) {
+				fontsDir = dir;
+				return writeFontToDir(dir, entry);
+			});
+		});
+	}
+
+	function writeFontToDir(dir, entry) {
+		return Promise.resolve().then(function () {
 			return writeText(dir, entry.file, GregFont.stringify(entry.font))
 				.then(function () { return readText(dir, 'fonts.json'); })
 				.then(function (text) {
