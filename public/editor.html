@@ -26,8 +26,8 @@
 		<link rel="apple-touch-icon" href="icon-180.png">
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.16.0">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.16.0">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.17.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.17.0">
 		<script>
 			// apply the saved theme, or the system's, before the page paints.
 			// Same key and fallback as setTheme in js/ui.js (old keys from before 2.15.0 too).
@@ -50,8 +50,9 @@
 				<svg class="icon-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></svg>
 			</button>
 			<a href="index.html" target="_blank" class="link">Typesetter ↗</a>
-			<button type="button" id="save" class="primary" title="Save (Ctrl+S) · Save as: Ctrl+Shift+S">Save</button>
+			<button type="button" id="save" class="primary" title="Save to the library (Ctrl+S)">Save</button>
 			<input type="file" id="import-file" accept=".svg,image/svg+xml" hidden>
+			<input type="file" id="open-file" accept=".json,application/json" hidden>
 		</header>
 
 		<!-- left: the font -->
@@ -277,6 +278,20 @@
 			</div>
 		</aside>
 
+		<!-- File > Import font, when the library already has that font -->
+		<div id="import-clash" class="modal" hidden>
+			<div class="modal-box modal-small" role="dialog" aria-modal="true" aria-labelledby="ic-title">
+				<header class="modal-head"><span id="ic-title" class="modal-title">That font is already in the library</span></header>
+				<p id="ic-text" class="modal-text"></p>
+				<footer class="modal-foot">
+					<span class="spacer"></span>
+					<button type="button" id="ic-cancel">Cancel</button>
+					<button type="button" id="ic-replace">Replace</button>
+					<button type="button" id="ic-copy" class="primary">Add a copy</button>
+				</footer>
+			</div>
+		</div>
+
 		<!-- File > New font from shapes: name each shape in an SVG -->
 		<div id="shape-import" class="modal" hidden>
 			<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="si-title">
@@ -324,13 +339,13 @@
 			</div>
 		</div>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.16.0"></script>
-		<script src="fonts/fonts.js?v=2.16.0"></script>
-		<script src="js/gregfont.js?v=2.16.0"></script>
-		<script src="js/version.js?v=2.16.0"></script>
-		<script src="js/ui.js?v=2.16.0"></script>
-		<script src="js/samples.js?v=2.16.0"></script>
-		<script src="js/shapeimport.js?v=2.16.0"></script>
-		<script src="js/editor.js?v=2.16.0"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.17.0"></script>
+		<script src="fonts/fonts.js?v=2.17.0"></script>
+		<script src="js/gregfont.js?v=2.17.0"></script>
+		<script src="js/version.js?v=2.17.0"></script>
+		<script src="js/ui.js?v=2.17.0"></script>
+		<script src="js/samples.js?v=2.17.0"></script>
+		<script src="js/shapeimport.js?v=2.17.0"></script>
+		<script src="js/editor.js?v=2.17.0"></script>
 	</body>
 </html>

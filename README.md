@@ -161,7 +161,8 @@ The layout follows desktop drawing apps:
 | View | Mouse wheel zooms, Space-drag or middle-drag pans. The − / % / + / **Fit** buttons at the right of the bar above the canvas zoom out, go back to 100% (one font unit per pixel), zoom in, and fit the glyph; so do Ctrl+− / Ctrl+= / Ctrl+0, and <kbd>F</kbd> fits too. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
 | Save | Ctrl+S. Writes `public/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `public/fonts` folder. Browsers without folder access download the file instead. If the remembered folder has moved, it asks for it again. |
-| Save as | Ctrl+Shift+S. Always asks for a folder, even through the dev server. A folder with `fonts.json` gets a full save and becomes the remembered folder. Any other folder just gets a copy of the font file, and Ctrl+S keeps saving to the fonts folder. |
+| Import font | Ctrl+O. Brings a font `.json` in from anywhere, such as an exported copy or a backup. It shows in the font menu as unsaved, and Ctrl+S saves it into `public/fonts` under its file name. If the library already has a font with that file name or font name, you choose: Replace (the imported version takes its place, nothing on disk changes until you save) or Add a copy ("Bleecker 427 2"). |
+| Export font | Ctrl+Shift+S. Writes a copy of the current font anywhere you pick (other browsers download it). The font in the library, and whether it's saved, don't change. |
 
 The **scratch pad** is the dashed, full-width tile at the top of the glyph grid: a parts bin for spare shapes. Click it and it works like any glyph (draw, paste pieces in, copy them back out), but it has no spacing, isn't counted, never appears in text, and isn't exported. It's saved with the font, in the file as a glyph named `_scratch`.
 

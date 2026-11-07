@@ -1879,7 +1879,8 @@
 		var ctrl = e.ctrlKey || e.metaKey;
 		var key = e.key.toLowerCase();
 
-		if (ctrl && key === 's') { e.preventDefault(); save(e.shiftKey); return; }
+		if (ctrl && key === 's') { e.preventDefault(); if (e.shiftKey) exportFont(); else save(); return; }
+		if (ctrl && key === 'o') { e.preventDefault(); $('open-file').click(); return; }
 		if (isTyping(e)) return;
 
 		if (ctrl && key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
@@ -2477,8 +2478,10 @@
 			{ label: 'Export SVG for Illustrator', run: exportSVG },
 			{ label: 'Update shapes from SVG\u2026', run: function () { chooseSVG('update'); } },
 			'-',
-			{ label: 'Save', key: 'Ctrl+S', run: function () { save(); } },
-			{ label: 'Save as\u2026', key: 'Ctrl+Shift+S', run: function () { save(true); } }
+			{ label: 'Import font\u2026', key: 'Ctrl+O', run: function () { $('open-file').click(); } },
+			{ label: 'Export font\u2026', key: 'Ctrl+Shift+S', run: function () { exportFont(); } },
+			'-',
+			{ label: 'Save', key: 'Ctrl+S', run: function () { save(); } }
 		] },
 		{ title: 'Edit', items: [
 			{ label: 'Undo', key: 'Ctrl+Z', run: function () { undo(); }, enabled: function () { return state.undo.length > 0 || !!penPath; } },
@@ -3384,6 +3387,119 @@
 		$('font-name').select();
 	}
 
+	// ---------- import and export ----------
+	// The fonts folder is the library: every font in the font menu lives there
+	// and Save writes there. Import brings a font file in from anywhere (it
+	// stays unsaved until Ctrl+S); Export writes a copy out and changes nothing.
+
+	function exportFont() {
+		finishPen();
+		var entry = state.entry;
+		var name = entry.file || slug(entry.font.name) + '.json';
+		var text = GregFont.stringify(entry.font);
+		if (!window.showSaveFilePicker) {
+			var a = document.createElement('a');
+			a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+			a.download = name;
+			a.click();
+			setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+			setStatus('Exported ' + name + ' to your downloads. The font in the library is unchanged.');
+			return;
+		}
+		window.showSaveFilePicker({
+			id: 'gregfont-export', suggestedName: name,
+			types: [{ description: 'gregfont font', accept: { 'application/json': ['.json'] } }]
+		}).then(function (h) {
+			return h.createWritable().then(function (w) {
+				return w.write(text).then(function () { return w.close(); });
+			}).then(function () {
+				setStatus('Exported ' + h.name + ' at ' + new Date().toLocaleTimeString() + '. The font in the library is unchanged.');
+			});
+		}).catch(function (err) {
+			if (err && err.name === 'AbortError') { setStatus('Not exported'); return; }
+			console.error(err);
+			setStatus('Not exported: ' + err.message, true);
+		});
+	}
+
+	function importFont(file) {
+		var reader = new FileReader();
+		reader.onerror = function () { setStatus('Can\u2019t read ' + file.name, true); };
+		reader.onload = function () {
+			var f;
+			try { f = GregFont.normalize(JSON.parse(reader.result)); }
+			catch (err) { setStatus('Can\u2019t import ' + file.name + ': ' + err.message, true); return; }
+			var base = slug(file.name.replace(/\.json$/i, ''));
+			if (base === 'fonts') base = slug(f.name);   // fonts.json is the library's list
+			var fileName = base + '.json';
+			var lower = f.name.toLowerCase();
+			var match = state.entries.find(function (e) { return e.file === fileName; }) ||
+				state.entries.find(function (e) { return e.font.name.toLowerCase() === lower; });
+			if (!match) { addImported(addEntry(f, fileName), file.name); return; }
+			askImportClash(match, f).then(function (choice) {
+				if (choice === 'replace') {
+					f.name = match.font.name;
+					match.font = f;
+					addImported(match, file.name);
+				} else if (choice === 'copy') {
+					var copy = uniqueCopy(f.name);
+					f.name = copy.name;
+					addImported(addEntry(f, copy.file), file.name);
+				} else {
+					setStatus('Not imported');
+				}
+			});
+		};
+		reader.readAsText(file);
+	}
+
+	function addImported(entry, from) {
+		entry.dirty = true;
+		openEntry(entry);
+		setStatus('Imported ' + from + ' as ' + entry.font.name + '. Ctrl+S saves it to the library as ' + entry.file + '.');
+	}
+
+	// "Bleecker 427" -> "Bleecker 427 2", with a file name nothing else uses
+	function uniqueCopy(name) {
+		var names = state.entries.map(function (e) { return e.font.name.toLowerCase(); });
+		var files = state.entries.map(function (e) { return e.file; }).concat(['fonts.json']);
+		for (var n = 2; ; n++) {
+			var tryName = name + ' ' + n, tryFile = slug(tryName) + '.json';
+			if (names.indexOf(tryName.toLowerCase()) < 0 && files.indexOf(tryFile) < 0) return { name: tryName, file: tryFile };
+		}
+	}
+
+	// Resolves to 'replace', 'copy' or null (cancelled).
+	function askImportClash(match, f) {
+		var box = $('import-clash');
+		$('ic-text').textContent = 'The library already has ' + match.font.name + ' (' + (match.file || 'not saved yet') + '). ' +
+			'Replace puts the imported version in its place; nothing on disk changes until you save. ' +
+			'Add a copy brings it in as ' + uniqueCopy(f.name).name + '.' +
+			(match.dirty ? ' ' + match.font.name + ' has unsaved changes, and replacing it loses them.' : '');
+		box.hidden = false;
+		$('ic-copy').focus();
+		return new Promise(function (resolve) {
+			function done(choice) {
+				box.hidden = true;
+				document.removeEventListener('keydown', onKey, true);
+				box.removeEventListener('click', onClick);
+				resolve(choice);
+			}
+			function onClick(e) {
+				if (e.target === box || e.target.id === 'ic-cancel') done(null);
+				else if (e.target.id === 'ic-copy') done('copy');
+				else if (e.target.id === 'ic-replace') done('replace');
+			}
+			// keep the editor's shortcuts away while the dialog is up
+			function onKey(e) {
+				if (e.key === 'Escape') { e.preventDefault(); done(null); }
+				if (e.key !== 'Tab' && e.key !== 'Enter' && e.key !== ' ') e.stopImmediatePropagation();
+			}
+			box.addEventListener('click', onClick);
+			document.addEventListener('keydown', onKey, true);
+		});
+	}
+
 	// what the hidden file input is choosing a file for: 'new' or 'update'
 	var importMode = 'new';
 
@@ -3535,8 +3651,7 @@
 		setStatus('Exported ' + a.download + '. Edit it in Illustrator, then use File \u2192 Update shapes from SVG.');
 	}
 
-	// saveAs: skip the server and the remembered folder, and pick a folder.
-	function save(saveAs) {
+	function save() {
 		finishPen();
 		var entry = state.entry;
 		if (!entry.file) {
@@ -3554,11 +3669,7 @@
 			if (before.revision === undefined) delete f.revision; else f.revision = before.revision;
 			if (before.modified === undefined) delete f.modified; else f.modified = before.modified;
 		}
-		function saved(where, copyOnly) {
-			if (copyOnly) {
-				setStatus('Saved a copy to ' + where + entry.file + ' at ' + now.toLocaleTimeString() + '. That folder has no fonts.json, so Ctrl+S still saves to the fonts folder.');
-				return;
-			}
+		function saved(where) {
 			entry.dirty = false;
 			refreshFontSelect();
 			updateFontPanel();
@@ -3566,13 +3677,12 @@
 		}
 		// From the dev server: save through it. Opened from disk: write into
 		// the fonts folder (Chrome/Edge ask for it once). Otherwise download.
-		// Save as: always pick a folder.
-		var viaServer = saveAs || location.protocol === 'file:' ? Promise.resolve(false) : GregFont.saveToServer(entry.file, entry.font);
+		var viaServer = location.protocol === 'file:' ? Promise.resolve(false) : GregFont.saveToServer(entry.file, entry.font);
 		viaServer.then(function (ok) {
 			if (ok) { saved('fonts/'); return; }
 			if (!window.showDirectoryPicker) { downloadFont(entry); return; }
-			(saveAs ? saveAsToFolder(entry) : saveToFolder(entry).then(function (name) { return { name: name }; })).then(function (r) {
-				saved(r.name + '/', r.copyOnly);
+			saveToFolder(entry).then(function (dirName) {
+				saved(dirName + '/');
 			}, function (err) {
 				failed();
 				if (err && err.name === 'AbortError') { setStatus('Not saved: no folder chosen', true); return; }
@@ -3676,23 +3786,6 @@
 		});
 	}
 
-	// Save as: a fonts folder (one with fonts.json) gets a full save and becomes
-	// the remembered folder. Any other folder just gets a copy of the font file.
-	function saveAsToFolder(entry) {
-		setStatus('Choose a folder to save into\u2026');
-		return window.showDirectoryPicker({ id: 'gregfont-fonts', mode: 'readwrite' }).then(function (dir) {
-			return dir.getFileHandle('fonts.json').then(function () {
-				fontsDir = dir;
-				rememberedDir(dir);
-				return writeFontToDir(dir, entry).then(function (name) { return { name: name }; });
-			}, function () {
-				return writeText(dir, entry.file, GregFont.stringify(entry.font)).then(function () {
-					return { name: dir.name, copyOnly: true };
-				});
-			});
-		});
-	}
-
 	function writeFontToDir(dir, entry) {
 		return Promise.resolve().then(function () {
 			return writeText(dir, entry.file, GregFont.stringify(entry.font))
@@ -3763,6 +3856,10 @@
 		});
 		$('import-file').addEventListener('change', function () {
 			if (this.files[0]) importSVG(this.files[0]);
+			this.value = '';
+		});
+		$('open-file').addEventListener('change', function () {
+			if (this.files[0]) importFont(this.files[0]);
 			this.value = '';
 		});
 		$('save').addEventListener('click', function () { save(); });
