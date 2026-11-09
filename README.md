@@ -71,7 +71,7 @@ The layout matches the editor: menus and tips in the top bar, the selected text'
 | Nassau | 60×60 | Proportional | Letters, digits, punctuation |
 | Kosciuszko | 20×60 | Monospaced | Letters only |
 | Troutman | 40×60 | Proportional | Letters, digits, punctuation |
-| Bleeker_03 | 51.5×60 | Proportional | Capitals, 0 and 2 |
+| Bleecker 426 | 50×60 | Proportional | Letters, digits |
 | Clinton | 40×60 | Proportional | Just started (1 glyph) |
 | Garfield 2015 | 40×60 | Proportional | Capitals, some digits |
 | Locust 28 | 27.5×45 | Proportional | Capitals, digits |
@@ -161,7 +161,7 @@ The layout follows desktop drawing apps:
 | View | Mouse wheel zooms, Space-drag or middle-drag pans. The − / % / + / **Fit** buttons at the right of the bar above the canvas zoom out, go back to 100% (one font unit per pixel), zoom in, and fit the glyph; so do Ctrl+− / Ctrl+= / Ctrl+0, and <kbd>F</kbd> fits too. |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (glyph edits). |
 | Save | Ctrl+S. Writes `public/fonts/<file>.json`; a new font is also added to `fonts.json`. Through the dev server it saves directly; from a page opened from disk (or another server), Chrome and Edge ask once for the `public/fonts` folder. Browsers without folder access download the file instead. If the remembered folder has moved, it asks for it again. |
-| Import font | Ctrl+O. Brings a font `.json` in from anywhere, such as an exported copy or a backup. It shows in the font menu as unsaved, and Ctrl+S saves it into `public/fonts` under its file name. If the library already has a font with that file name or font name, you choose: Replace (the imported version takes its place, nothing on disk changes until you save) or Add a copy ("Bleecker 427 2"). |
+| Import font | Ctrl+O. Brings a font `.json` in from anywhere, such as an exported copy or a backup. It shows in the font menu as unsaved, and Ctrl+S saves it into `public/fonts` under its file name. If the library already has a font with that file name or font name, you choose: Replace (the imported version takes its place, nothing on disk changes until you save) or Add a copy ("Bleecker 426 2"). |
 | Export font | Ctrl+Shift+S. Writes a copy of the current font anywhere you pick (other browsers download it). The font in the library, and whether it's saved, don't change. |
 
 The **scratch pad** is the dashed, full-width tile at the top of the glyph grid: a parts bin for spare shapes. Click it and it works like any glyph (draw, paste pieces in, copy them back out), but it has no spacing, isn't counted, never appears in text, and isn't exported. It's saved with the font, in the file as a glyph named `_scratch`.

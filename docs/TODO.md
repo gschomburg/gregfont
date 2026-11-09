@@ -4,7 +4,7 @@ The one list of open work. `[ ]` todo, `[~]` in progress, `[x]` done (with date 
 
 ## Next session: start here
 
-- [ ] Bleecker 427: a kerning pass, then review g, f, k and e.
+- [ ] Bleecker 426: a kerning pass, then review g, f, k and e.
 - [x] Bring gregfont in line with the shared web rules: storage keys, theme default, editor undo cap, HTML head, `.htaccess`. (2026-11-04, 2.15.0)
 
 ## Editor

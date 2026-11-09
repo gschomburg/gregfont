@@ -3520,7 +3520,7 @@
 		setStatus('Imported ' + from + ' as ' + entry.font.name + '. Ctrl+S saves it to the library as ' + entry.file + '.');
 	}
 
-	// "Bleecker 427" -> "Bleecker 427 2", with a file name nothing else uses
+	// "Bleecker 426" -> "Bleecker 426 2", with a file name nothing else uses
 	function uniqueCopy(name) {
 		var names = state.entries.map(function (e) { return e.font.name.toLowerCase(); });
 		var files = state.entries.map(function (e) { return e.file; }).concat(['fonts.json']);
