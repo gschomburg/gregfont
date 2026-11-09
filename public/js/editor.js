@@ -598,7 +598,7 @@
 		pen: 'Click for corners, drag for curves \u00b7 click the first point to close, or the end of another path to join \u00b7 Enter or Esc finishes',
 
 		anchor: 'Drag from a point to pull out curve handles \u00b7 click a point to make it a corner \u00b7 drag a handle to move it on its own',
-		scissors: 'Click a path to cut it there \u00b7 drag a line across paths to cut everything it crosses (Shift: 45\u00b0 steps)'
+		scissors: 'Click a path to slice it there \u00b7 drag a line across paths to slice everything it crosses (Shift: 45\u00b0 steps)'
 	};
 
 	// --- selection model
@@ -1503,7 +1503,8 @@
 	}
 
 	// Cut paths wherever they cross (only pairs where pairOk(a, b), if given).
-	function slicePaths(paths, pairOk) {
+	// With onlyCut (a Set), only those paths are cut; the rest stay whole.
+	function slicePaths(paths, pairOk, onlyCut) {
 		var cuts = new Map();
 		paths.forEach(function (p) { cuts.set(p, []); });
 		for (var i = 0; i < paths.length; i++) {
@@ -1512,13 +1513,13 @@
 				if (pairOk && !pairOk(a, b)) continue;
 				var locs = i === j ? a.getIntersections() : a.getIntersections(b);
 				locs.forEach(function (loc) {
-					cuts.get(a).push(loc.offset);
-					if (loc.intersection) cuts.get(b).push(loc.intersection.offset);
+					if (!onlyCut || onlyCut.has(a)) cuts.get(a).push(loc.offset);
+					if (loc.intersection && (!onlyCut || onlyCut.has(b))) cuts.get(b).push(loc.intersection.offset);
 				});
 			}
 		}
 		var n = 0;
-		cuts.forEach(function (offsets, path) { n += splitAtOffsets(path, offsets); });
+		cuts.forEach(function (offsets, path) { if (offsets.length) n += splitAtOffsets(path, offsets); });
 		return n;
 	}
 
@@ -1532,6 +1533,21 @@
 		});
 		updatePathStyleRow();
 		setStatus(n ? 'Sliced at ' + n + ' crossing' + (n === 1 ? '' : 's') + '. Pick up the pieces with the Select tool.' : 'No crossings to slice');
+	}
+
+	// Alt+X: slice only the selected paths, wherever they cross any path.
+	// The paths they cross act as the knife and stay whole, so you can trim
+	// one stroke against another like a boolean.
+	function sliceSelectedOnly() {
+		var sel = new Set(selectedPaths());
+		if (!sel.size) { setStatus('Select the paths to slice first. The paths they cross stay whole.', true); return; }
+		var n = 0;
+		edit(function () {
+			n = slicePaths(editablePaths(), function (a, b) { return a !== b && (sel.has(a) || sel.has(b)); }, sel);
+			deselectAll();
+		});
+		updatePathStyleRow();
+		setStatus(n ? 'Sliced the selection at ' + n + ' crossing' + (n === 1 ? '' : 's') + '; the other paths are untouched. Pick up the pieces with the Select tool.' : 'The selection doesn\u2019t cross any other path');
 	}
 
 	// with Auto-slice on, a new stroke cuts (and is cut by) what it crosses
@@ -1566,7 +1582,7 @@
 			}
 			deselectAll();
 		});
-		setStatus('Cut');
+		setStatus('Sliced');
 	}
 
 	function knifeCut(a, b) {
@@ -1580,7 +1596,7 @@
 			deselectAll();
 		});
 		updatePathStyleRow();
-		setStatus(cuts ? 'Cut at ' + cuts + ' point' + (cuts === 1 ? '' : 's') : 'The line didn\u2019t cross anything');
+		setStatus(cuts ? 'Sliced at ' + cuts + ' point' + (cuts === 1 ? '' : 's') : 'The line didn\u2019t cross anything');
 	}
 
 	// Shift keeps a line to 45 degree steps
@@ -1919,7 +1935,8 @@
 		if (ctrl && key === ']') { e.preventDefault(); moveInOrder(1); return; }
 		if (ctrl) return;
 
-		// Alt+R by its code: on a Mac, Option+R types '®'
+		// Alt shortcuts by key code: on a Mac, Option+letter types a symbol
+		if (e.altKey && e.code === 'KeyX') { e.preventDefault(); sliceSelectedOnly(); return; }
 		if (e.altKey && e.code === 'KeyR') { e.preventDefault(); rotateSelection(e.shiftKey ? -90 : 90); return; }
 
 		var step = e.shiftKey ? state.grid : 1;
@@ -2545,6 +2562,7 @@
 			'-',
 			{ label: 'Join', key: 'Ctrl+J', run: joinSelection, enabled: hasSelection },
 			{ label: 'Slice at crossings', key: 'X', run: sliceSelection },
+			{ label: 'Slice selected only, others stay whole', key: 'Alt+X', run: sliceSelectedOnly, enabled: hasSelection },
 			'-',
 			{ label: 'Rotate 90° clockwise', key: 'Alt+R', run: function () { rotateSelection(90); }, enabled: hasSelection },
 			{ label: 'Rotate 90° counter-clockwise', key: 'Alt+Shift+R', run: function () { rotateSelection(-90); }, enabled: hasSelection },

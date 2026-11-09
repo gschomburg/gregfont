@@ -21,6 +21,7 @@ The one list of open work. `[ ]` todo, `[~]` in progress, `[x]` done (with date 
 - [x] Shape keys are E ellipse, R rectangle, L line; rotate 90° moved to Alt+R / Alt+Shift+R. **Decided (Greg, 2026-11-09).** Dropped: M and \ as extra keys, to keep one key per shape. (2026-11-09, 2.18.0)
 - [x] Hold Ctrl (Cmd on Mac) while drawing or dragging to skip all snapping: grid, guides and paths. (2026-11-09, 2.18.0)
 - [x] The path being snapped onto lights up in its own `--snap` colour (orange), not just a ring. (2026-11-09, 2.18.0)
+- [x] Alt+X slices only the selected paths where they cross others; the paths they cross stay whole. The Cut tool is now Scissors, and the act is "slicing" everywhere; "Cut" is only the clipboard. **Decided (Greg, 2026-11-09).** (2026-11-09, 2.19.0)
 
 ## Fonts
 
