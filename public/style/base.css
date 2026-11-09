@@ -41,6 +41,7 @@
 	--guide-e: #8a5a2b;
 	--guide-f: #5a6b8c;
 	--bearing: #c2286a;
+	--snap: #e8590c;   /* the path a point is snapping onto */
 	--select: #2f6fe0;
 	--order-start: #15803d;
 	--order-end: #be123c;
@@ -81,6 +82,7 @@
 	--guide-e: #d9a066;
 	--guide-f: #9fb0d6;
 	--bearing: #ff5fa2;
+	--snap: #ff8a3d;
 	--select: #5b95ff;
 	--order-start: #22c55e;
 	--order-end: #fb7185;

@@ -27,6 +27,7 @@
 		cell: 'rgba(0, 0, 0, 0.1)',
 		guide: { cap: '#2f8cff', xHeight: '#20a37a', baseline: '#e07b00', descender: '#9b59b6' },
 		bearing: '#d6337a',
+		snap: '#e8590c',
 		select: '#2f8cff',
 		overlay: '#2f8cff'
 	};
@@ -50,6 +51,7 @@
 			return v('--guide-' + k, GregFont.CUSTOM_GUIDE_COLORS[i]);
 		});
 		COLORS.bearing = v('--bearing', COLORS.bearing);
+		COLORS.snap = v('--snap', COLORS.snap);
 		COLORS.select = COLORS.overlay = v('--select', COLORS.select);
 		COLORS.orderStart = v('--order-start', '#15803d');
 		COLORS.orderEnd = v('--order-end', '#be123c');
@@ -106,8 +108,18 @@
 
 	// ------------------------------------------------------------- helpers
 
+	// Holding Ctrl (Cmd on Mac) skips all snapping: grid, guides and paths.
+	// Each canvas mouse event sets it, so it follows the key mid-drag.
+	var snapOff = false;
+	function gridSnap() { return state.snap && !snapOff; }
+	function pathSnap() { return state.snapPath && !snapOff; }
+	function ctrlHeld(e) {
+		var ev = e.event;
+		return ev ? !!(ev.ctrlKey || ev.metaKey) : !!(e.modifiers && (e.modifiers.control || e.modifiers.meta));
+	}
+
 	function snap(point) {
-		if (!state.snap) return new P.Point(round(point.x, 0.1), round(point.y, 0.1));
+		if (!gridSnap()) return new P.Point(round(point.x, 0.1), round(point.y, 0.1));
 		return new P.Point(round(point.x, state.grid), round(point.y, state.grid));
 	}
 
@@ -900,6 +912,7 @@
 	// --- mouse
 
 	tool.onMouseMove = function (e) {
+		snapOff = ctrlHeld(e);
 		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(-e.point.y, 0.1);
 		if (state.tool === 'pen' && penPath) {
 			if (rubber) rubber.remove();
@@ -923,6 +936,7 @@
 	};
 
 	tool.onMouseDown = function (e) {
+		snapOff = ctrlHeld(e);
 		if (panning || e.event.button !== 0) return;
 		if (drag) { drag = null; endEdit(); }   // the last drag's mouse-up went missing
 		stopPlay();
@@ -936,6 +950,7 @@
 	};
 
 	tool.onMouseDrag = function (e) {
+		snapOff = ctrlHeld(e);
 		if (panning || !drag) return;
 		$('cursor-pos').textContent = round(e.point.x, 0.1) + ', ' + round(-e.point.y, 0.1);
 		var p = snap(e.point);
@@ -999,6 +1014,7 @@
 	};
 
 	tool.onMouseUp = function (e) {
+		snapOff = ctrlHeld(e);
 		if (!drag) return;
 		if (drag.marker) drag.marker.remove();
 		if (drag.mode === 'marquee') {
@@ -1220,9 +1236,10 @@
 		drag.box = g && !g.single && g.whole ? g.box.clone() : null;
 		// other points, and lines of paths that aren't moving, to snap onto
 		drag.targets = [];
+		drag.targetPaths = [];   // same order as targets
 		drag.staticPaths = [];
 		editablePaths().forEach(function (p) {
-			p.segments.forEach(function (s) { if (!moving.has(s)) drag.targets.push(s.point.clone()); });
+			p.segments.forEach(function (s) { if (!moving.has(s)) { drag.targets.push(s.point.clone()); drag.targetPaths.push(p); } });
 			if (p.segments.length > 1 && !p.segments.some(function (s) { return moving.has(s); })) drag.staticPaths.push(p);
 		});
 	}
@@ -1243,12 +1260,12 @@
 		else if (lock === 'y') delta = new P.Point(0, delta.y);
 		// snap onto nearby points (so pieces line up for joining), else onto lines
 		var best = null, tol = px(8);
-		if (state.snapPath && !lock) {
+		if (pathSnap() && !lock) {
 			drag.starts.forEach(function (st) {
 				var q = st.add(raw);
-				drag.targets.forEach(function (t) {
+				drag.targets.forEach(function (t, i) {
 					var d = t.getDistance(q);
-					if (d < tol && (!best || d < best.d)) best = { d: d, delta: t.subtract(st), at: t };
+					if (d < tol && (!best || d < best.d)) best = { d: d, delta: t.subtract(st), at: t, path: drag.targetPaths[i] };
 				});
 			});
 			// lines too, when only a few points are moving
@@ -1259,7 +1276,7 @@
 					drag.staticPaths.forEach(function (p) {
 						var loc = p.getNearestLocation(q);
 						if (loc && loc.distance < ctol && (!best || loc.distance < best.d)) {
-							best = { d: loc.distance, delta: loc.point.subtract(st), at: loc.point };
+							best = { d: loc.distance, delta: loc.point.subtract(st), at: loc.point, path: p };
 						}
 					});
 				});
@@ -1268,8 +1285,7 @@
 		if (drag.marker) { drag.marker.remove(); drag.marker = null; }
 		if (best) {
 			delta = best.delta;
-			drag.marker = marker(best.at, overlayLayer, true);
-			drag.marker.strokeColor = COLORS.bearing;
+			drag.marker = snapHighlight(best.at, best.path);
 		}
 		drag.segments.forEach(function (s, i) { s.point = drag.starts[i].add(delta); });
 		commit();
@@ -1286,11 +1302,11 @@
 			var guide = null, grid = null;
 			cands.forEach(function (c) {
 				var at = c + move;
-				guides.forEach(function (g) {
+				if (!snapOff) guides.forEach(function (g) {
 					var d = g - at;
 					if (Math.abs(d) < tol && (!guide || Math.abs(d) < Math.abs(guide))) guide = d;
 				});
-				if (state.snap) {
+				if (gridSnap()) {
 					var d = round(at, state.grid) - at;
 					if (grid === null || Math.abs(d) < Math.abs(grid)) grid = d;
 				}
@@ -1366,7 +1382,7 @@
 		var segs = movingSegments();
 		if (!segs.length) { setStatus('Select something first'); return; }
 		var center = (selectionBox() || pointBounds(segs)).center;
-		if (state.snap) center = new P.Point(round(center.x, state.grid / 2), round(center.y, state.grid / 2));
+		if (gridSnap()) center = new P.Point(round(center.x, state.grid / 2), round(center.y, state.grid / 2));
 		var origs = segs.map(origOf);
 		edit(function () { applyMatrix(origs, makeMatrix(center)); });
 	}
@@ -1903,17 +1919,19 @@
 		if (ctrl && key === ']') { e.preventDefault(); moveInOrder(1); return; }
 		if (ctrl) return;
 
+		// Alt+R by its code: on a Mac, Option+R types '®'
+		if (e.altKey && e.code === 'KeyR') { e.preventDefault(); rotateSelection(e.shiftKey ? -90 : 90); return; }
+
 		var step = e.shiftKey ? state.grid : 1;
 		switch (key) {
 			case 'v': setTool('select'); break;
 			case 'a': setTool('direct'); break;
 			case 'p': setTool('pen'); break;
 			case 'e': useShape('ellipse'); break;
-			case 'm': useShape('rect'); break;
-			case '\\': useShape('line'); break;
+			case 'r': useShape('rect'); break;
+			case 'l': useShape('line'); break;
 			case 'c': setTool(e.shiftKey ? 'anchor' : 'scissors'); break;
 			case 'x': sliceSelection(); break;
-			case 'r': rotateSelection(e.shiftKey ? -90 : 90); break;
 			case 'h': flipSelection(e.shiftKey); break;
 			case 'g': if (e.shiftKey) setSnapPath(!state.snapPath); else setSnap(!state.snap); break;
 			case 'o': setShowOrder(!state.show.order); break;
@@ -1952,14 +1970,14 @@
 	// For a handle, pass its own segment as `handleOf`: the handle won't snap
 	// onto its own point (that would flatten it) or its own path's line.
 	function snapTarget(raw, exclude, handleOf) {
-		if (state.snapPath) {
+		if (pathSnap()) {
 			var best = null, tol = px(8);
 			editablePaths().forEach(function (p) {
 				if (exclude && exclude.indexOf(p) >= 0) return;
 				p.segments.forEach(function (s) {
 					if (s === handleOf) return;
 					var d = s.point.getDistance(raw);
-					if (d < tol && (!best || d < best.d)) best = { d: d, point: s.point.clone(), kind: 'point' };
+					if (d < tol && (!best || d < best.d)) best = { d: d, point: s.point.clone(), kind: 'point', path: p };
 				});
 			});
 			if (best) return best;
@@ -1968,11 +1986,11 @@
 				if (exclude && exclude.indexOf(p) >= 0 || p.segments.length < 2) return;
 				if (handleOf && p === handleOf.path) return;
 				var loc = p.getNearestLocation(raw);
-				if (loc && loc.distance < ctol && (!best || loc.distance < best.d)) best = { d: loc.distance, point: loc.point.clone(), kind: 'path' };
+				if (loc && loc.distance < ctol && (!best || loc.distance < best.d)) best = { d: loc.distance, point: loc.point.clone(), kind: 'path', path: p };
 			});
 			if (best) return best;
 		}
-		return { point: snap(raw), kind: state.snap ? 'grid' : null };
+		return { point: snap(raw), kind: gridSnap() ? 'grid' : null };
 	}
 
 	// Where a dragged handle's tip should go (snapped), with the ring updated.
@@ -1983,12 +2001,29 @@
 		return t.point;
 	}
 
-	// a ring showing where a point will snap onto a path
+	// shows where a point will snap onto a path
 	function snapMarker(target) {
 		if (!target || (target.kind !== 'point' && target.kind !== 'path')) return null;
-		var m = marker(target.point, overlayLayer, true);
-		m.strokeColor = COLORS.bearing;
-		return m;
+		return snapHighlight(target.point, target.path);
+	}
+
+	// The path being snapped onto, lit up in the snap colour, plus a ring at
+	// the snap point, so a path snap can't be mistaken for a grid snap.
+	function snapHighlight(at, path) {
+		var g = new P.Group({ insert: false });
+		if (path) {
+			var c = new P.Path({ segments: path.segments, closed: path.closed, insert: false });
+			c.strokeColor = COLORS.snap;
+			c.strokeWidth = 2;
+			c.strokeScaling = false;
+			c.fillColor = null;
+			g.addChild(c);
+		}
+		var m = marker(at, overlayLayer, true);
+		m.strokeColor = COLORS.snap;
+		g.addChild(m);
+		overlayLayer.addChild(g);
+		return g;
 	}
 
 
@@ -2511,8 +2546,8 @@
 			{ label: 'Join', key: 'Ctrl+J', run: joinSelection, enabled: hasSelection },
 			{ label: 'Slice at crossings', key: 'X', run: sliceSelection },
 			'-',
-			{ label: 'Rotate 90° clockwise', key: 'R', run: function () { rotateSelection(90); }, enabled: hasSelection },
-			{ label: 'Rotate 90° counter-clockwise', key: 'Shift+R', run: function () { rotateSelection(-90); }, enabled: hasSelection },
+			{ label: 'Rotate 90° clockwise', key: 'Alt+R', run: function () { rotateSelection(90); }, enabled: hasSelection },
+			{ label: 'Rotate 90° counter-clockwise', key: 'Alt+Shift+R', run: function () { rotateSelection(-90); }, enabled: hasSelection },
 			{ label: 'Flip horizontal', key: 'H', run: function () { flipSelection(false); }, enabled: hasSelection },
 			{ label: 'Flip vertical', key: 'Shift+H', run: function () { flipSelection(true); }, enabled: hasSelection },
 			'-',

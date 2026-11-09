@@ -26,8 +26,8 @@
 		<link rel="apple-touch-icon" href="icon-180.png">
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.17.1">
-		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.17.1">
+		<link rel="stylesheet" type="text/css" href="style/base.css?v=2.18.0">
+		<link rel="stylesheet" type="text/css" href="style/editor.css?v=2.18.0">
 		<script>
 			// apply the saved theme, or the system's, before the page paints.
 			// Same key and fallback as setTheme in js/ui.js (old keys from before 2.15.0 too).
@@ -114,7 +114,7 @@
 		<div id="optionsbar">
 			<span class="snap-group">
 				<span class="field-label">Snap</span>
-				<label class="switch-label" title="Snap to the grid (G)"><input type="checkbox" class="switch" id="snap" checked> Grid</label>
+				<label class="switch-label" title="Snap to the grid (G). Hold Ctrl while dragging to skip snapping."><input type="checkbox" class="switch" id="snap" checked> Grid</label>
 				<label class="switch-label" title="Snap onto other paths' points and lines (Shift+G)"><input type="checkbox" class="switch" id="snap-path" checked> Paths</label>
 			</span>
 			<label class="field compact" data-scrub="x"><span class="field-label">Grid</span><input type="number" id="grid-size" value="5" min="0.5" step="0.5"></label>
@@ -123,8 +123,8 @@
 			<span id="shape-options" hidden>
 				<span class="segmented" role="group" aria-label="Shape">
 					<button type="button" data-shape="ellipse" title="Ellipse (E)">Ellipse</button>
-					<button type="button" data-shape="rect" title="Rectangle (M)">Rectangle</button>
-					<button type="button" data-shape="line" title="Line (\)">Line</button>
+					<button type="button" data-shape="rect" title="Rectangle (R)">Rectangle</button>
+					<button type="button" data-shape="line" title="Line (L)">Line</button>
 				</span>
 			</span>
 			<span id="cursor-pos"></span>
@@ -151,7 +151,7 @@
 				<button type="button" class="tool" data-tool="anchor" title="Anchor point (Shift+C): drag from a point to pull out curve handles, click a point to make a corner" aria-label="Anchor point (Shift+C)">
 					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M3.5 16 10 4.5 16.5 16"/></svg>
 				</button>
-				<button type="button" class="tool" data-tool="shape" id="shape-tool" title="Shapes: ellipse (E), rectangle (M) or line (\). Pick which in the bar above the canvas." aria-label="Shapes">
+				<button type="button" class="tool" data-tool="shape" id="shape-tool" title="Shapes: ellipse (E), rectangle (R) or line (L). Pick which in the bar above the canvas." aria-label="Shapes">
 					<svg viewBox="0 0 20 20"><ellipse cx="10" cy="10" rx="6.5" ry="6" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
 				</button>
 				<button type="button" class="tool" data-tool="scissors" title="Cut (C): click a path to cut it there, or drag a line across paths to cut everything it crosses" aria-label="Cut (C)">
@@ -339,13 +339,13 @@
 			</div>
 		</div>
 
-		<script src="libs/paper-core-0.12.18.min.js?v=2.17.1"></script>
-		<script src="fonts/fonts.js?v=2.17.1"></script>
-		<script src="js/gregfont.js?v=2.17.1"></script>
-		<script src="js/version.js?v=2.17.1"></script>
-		<script src="js/ui.js?v=2.17.1"></script>
-		<script src="js/samples.js?v=2.17.1"></script>
-		<script src="js/shapeimport.js?v=2.17.1"></script>
-		<script src="js/editor.js?v=2.17.1"></script>
+		<script src="libs/paper-core-0.12.18.min.js?v=2.18.0"></script>
+		<script src="fonts/fonts.js?v=2.18.0"></script>
+		<script src="js/gregfont.js?v=2.18.0"></script>
+		<script src="js/version.js?v=2.18.0"></script>
+		<script src="js/ui.js?v=2.18.0"></script>
+		<script src="js/samples.js?v=2.18.0"></script>
+		<script src="js/shapeimport.js?v=2.18.0"></script>
+		<script src="js/editor.js?v=2.18.0"></script>
 	</body>
 </html>
