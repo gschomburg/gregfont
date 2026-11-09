@@ -94,9 +94,17 @@
 	// settings the next new box will get.
 	function current() { return selectedBox() || state.defaults; }
 
+	// Only fields you type text into count. A focused switch, button or colour
+	// swatch must not swallow shortcuts: Ctrl+Z there runs the browser's own
+	// undo, which reverts the last typing anywhere on the page.
+	// Same check in editor.js and typesetter.js; change both.
 	function isTyping(e) {
-		var t = e.target;
-		return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
+		var t = e.target, ctrl = e.ctrlKey || e.metaKey;
+		if (!t) return false;
+		if (t.tagName === 'TEXTAREA' || t.isContentEditable) return true;
+		if (t.tagName === 'SELECT' || (t.tagName === 'INPUT' && t.type === 'range')) return !ctrl;   // keys pick options / move the slider; Ctrl shortcuts stay ours
+		if (t.tagName !== 'INPUT') return false;
+		return !/^(checkbox|radio|button|submit|reset|color|file|image)$/.test(t.type);
 	}
 
 	// ------------------------------------------------------------ document

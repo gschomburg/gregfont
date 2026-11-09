@@ -12,6 +12,7 @@ The one list of open work. `[ ]` todo, `[~]` in progress, `[x]` done (with date 
 - [ ] Autosave unsaved fonts (new, imported or edited) to the browser, so a refresh or crash doesn't lose them. Restore on load; `?fresh` skips it. The web rules ask for this.
 - [ ] Put `* ` in the page title when any font is unsaved, not just the one you're on.
 - [x] Import font (Ctrl+O) and Export font (Ctrl+Shift+S), in place of Save as. (2026-11-07, 2.17.0)
+- [x] Ctrl+Z after clicking a switch (like Grid) ran the browser's undo, which reverted typing in the preview text instead of the last edit. Fixed in the typesetter too. (2026-11-09, 2.17.1)
 - [ ] Play with the theme colours more. In particular, a way to tone down the canvas colours (guides, grid, bearing lines), maybe a canvas contrast setting. All the colours are tokens at the top of `public/style/base.css`.
 - [ ] One stroke control instead of two. The glyph canvas has a Stroke field in its options bar and the preview has its own; there should be one, laid out the same way, next to the zoom controls on each.
 - [ ] Settle on one word for line thickness across both apps. The editor says "Stroke" (and "Strokes" for the default end and corner styles), the typesetter says "Pen", the code and README also say "stroke width" and "weight".
