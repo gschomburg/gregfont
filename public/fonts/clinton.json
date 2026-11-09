@@ -9,7 +9,7 @@
 	},
 	"guides": {
 		"cap": 60,
-		"xHeight": 30,
+		"xHeight": 45,
 		"descender": -20
 	},
 	"style": {
@@ -23,9 +23,12 @@
 		"lineHeight": 90
 	},
 	"kerning": {},
-	"revision": 2,
-	"modified": "2026-11-03",
+	"revision": 4,
+	"modified": "2026-11-07",
 	"glyphs": {
-		"B": {"lsb":4,"rsb":4,"paths":[{"d":"M2.5,0c2.071,0 3.75,1.679 3.75,3.75v56.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,45c7.594,0 13.75,-6.156 13.75,-13.75v-17.5c0,-7.594 -6.156,-13.75 -13.75,-13.75c-7.594,0 -13.75,6.156 -13.75,13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,60c4.142,0 7.5,-3.358 7.5,-7.5c0,-4.142 -3.358,-7.5 -7.5,-7.5","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,60h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,45h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M0,0h2.5","strokeCap":"butt","strokeJoin":"miter"}]}
+		"B": {"lsb":4,"rsb":4,"paths":[{"d":"M2.5,0c2.071,0 3.75,1.679 3.75,3.75v56.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,45c7.594,0 13.75,-6.156 13.75,-13.75v-17.5c0,-7.594 -6.156,-13.75 -13.75,-13.75c-7.594,0 -13.75,6.156 -13.75,13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,60c4.142,0 7.5,-3.358 7.5,-7.5c0,-4.142 -3.358,-7.5 -7.5,-7.5","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,60h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,45h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M0,0h2.5","strokeCap":"butt","strokeJoin":"miter"}]},
+		"_scratch": {"lsb":4,"rsb":4,"paths":[{"d":"M2.5,0c2.071,0 3.75,1.679 3.75,3.75v56.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,45c7.594,0 13.75,-6.156 13.75,-13.75v-17.5c0,-7.594 -6.156,-13.75 -13.75,-13.75c-7.594,0 -13.75,6.156 -13.75,13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,60c4.142,0 7.5,-3.358 7.5,-7.5c0,-4.142 -3.358,-7.5 -7.5,-7.5","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,60h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M3.75,45h16.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M0,0h2.5","strokeCap":"butt","strokeJoin":"miter"},{"d":"M60,52.5v-52.5","strokeCap":"butt"},{"d":"M38,0h3.25","strokeCap":"butt"},{"d":"M42.2,45h17.8","strokeCap":"butt"},{"d":"M45,52.5c0,4.142 3.358,7.5 7.5,7.5c4.142,0 7.5,-3.358 7.5,-7.5"},{"d":"M45,52.5v-48.75","strokeCap":"butt"},{"d":"M41.25,0c2.071,0 3.75,1.679 3.75,3.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M75,0v60h6.25c7.594,0 13.75,-6.156 13.75,-13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M95,46.25v-46.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M70,45h25.004","strokeCap":"butt","strokeJoin":"miter"},{"d":"M72.5,0h5","strokeJoin":"miter","strokeCap":"butt"},{"d":"M92.5,0h5","strokeJoin":"miter","strokeCap":"butt"}]},
+		"A": {"lsb":4,"rsb":4,"paths":[{"d":"M0,0v60h6.25c7.594,0 13.75,-6.156 13.75,-13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M20,46.25v-46.25","strokeCap":"butt","strokeJoin":"miter"},{"d":"M-5,45h25.004","strokeCap":"butt","strokeJoin":"miter"},{"d":"M-2.5,0h5","strokeJoin":"miter","strokeCap":"butt"},{"d":"M17.5,0h5","strokeJoin":"miter","strokeCap":"butt"}]},
+		"C": {"lsb":4,"rsb":4,"paths":[{"d":"M13.75,0c-7.594,0 -13.75,6.156 -13.75,13.75l0,32.5c0,7.594 6.156,13.75 13.75,13.75c7.594,0 13.75,-6.156 13.75,-13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M27.5,13.75c0,-7.594 -6.156,-13.75 -13.75,-13.75","strokeCap":"butt","strokeJoin":"miter"},{"d":"M25,15h5"},{"d":"M27.5,46.25v-6.25"}]}
 	}
 }
