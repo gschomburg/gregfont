@@ -18,6 +18,9 @@ The one list of open work. `[ ]` todo, `[~]` in progress, `[x]` done (with date 
 - [ ] Settle on one word for line thickness across both apps. The editor says "Stroke" (and "Strokes" for the default end and corner styles), the typesetter says "Pen", the code and README also say "stroke width" and "weight".
 - [ ] Context from the preview: draw the current glyph's neighbours from the preview text faintly on the canvas, where the text would put them (spacing and kerning applied). Working on A with "ABC" in the preview shows a ghost B to its right on the baseline, and moving a side bearing slides the neighbours live. Clicking a letter in the specimen would open it with that spot's neighbours around it, like zooming in to an isolation mode. Not tracing, just seeing the letter in context.
 - [ ] Picking a glyph in the grid while the specimen is open should bring that letter into view in the specimen (scroll the view to its first occurrence if it's off screen, maybe highlight it), without zooming in.
+- [ ] Shape tool shortcuts. Today it's E ellipse, M rectangle, \ line. M and \ are Illustrator's; E is our own (Illustrator uses L for ellipse). Greg would like L for line, which is Figma's key, but Illustrator has L as ellipse. Figma's R (rectangle) and O (ellipse) are taken here by rotate and show order. Pick one scheme and stick to it, then update the tooltips and README.
+- [ ] Hold a key while dragging to skip snapping. Ctrl is free during drags (Shift constrains, Alt mirrors or scales from the centre), and Figma uses Ctrl held to ignore snapping. Decide whether it skips all snapping or just the grid. `snapTarget()` in `public/js/editor.js` is the one place to check it.
+- [ ] When a point snaps onto another path, light up that whole path, not just the small ring at the snap point, so you can tell a path snap from a grid snap. `snapTarget()` already knows which path it found; `snapMarker()` draws the ring.
 
 ## Fonts
 
