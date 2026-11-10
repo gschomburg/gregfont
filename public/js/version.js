@@ -3,4 +3,4 @@
  * Bump it (and the date) when publishing: major for breaking changes to
  * the font or layout files, minor for new features, patch for fixes.
  */
-window.GREGFONT_VERSION = { version: '2.19.3', date: '2026-11-09' };
+window.GREGFONT_VERSION = { version: '2.19.4', date: '2026-11-09' };
